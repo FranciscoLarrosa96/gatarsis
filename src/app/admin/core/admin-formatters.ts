@@ -57,6 +57,38 @@ export function auditActionLabel(action: string): string {
       REFUND_SUCCEEDED: 'Reembolso realizado',
       REFUND_FAILED: 'Reembolso fallido',
       REFUND_RECONCILED: 'Reembolso conciliado',
+      RAFFLE_CREATED: 'Rifa creada',
+      RAFFLE_UPDATED: 'Rifa actualizada',
+      RAFFLE_ACTIVATED: 'Rifa activada',
+      RAFFLE_PAUSED: 'Rifa pausada',
+      RAFFLE_RESUMED: 'Rifa reanudada',
+      RAFFLE_CLOSED: 'Rifa cerrada',
+      RAFFLE_DRAWN: 'Ganador registrado',
     }[action] ?? action
+  );
+}
+
+export function raffleStatusLabel(status: string): string {
+  return (
+    {
+      DRAFT: 'Borrador',
+      ACTIVE: 'Activa',
+      PAUSED: 'Pausada',
+      CLOSED: 'Cerrada',
+      DRAWN: 'Sorteada',
+    }[status] ?? status
+  );
+}
+
+export function rafflePurchaseStatusLabel(status: string): string {
+  return (
+    {
+      RESERVED: 'Reservada',
+      PAYMENT_PENDING: 'Pago pendiente',
+      PAID: 'Pagada',
+      EXPIRED: 'Vencida',
+      REQUIRES_REVIEW: 'Requiere revisión',
+      REFUNDED: 'Reembolsada',
+    }[status] ?? status
   );
 }

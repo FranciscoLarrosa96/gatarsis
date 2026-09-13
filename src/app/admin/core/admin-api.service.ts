@@ -3,6 +3,17 @@ import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { ADMIN_API_BASE_URL } from './admin-api.config';
 import {
+  AdminRaffleDetail,
+  AdminRaffleListItem,
+  AdminRaffleListQuery,
+  AdminRaffleNumber,
+  AdminRafflePurchase,
+  AdminRafflePurchaseDetail,
+  AdminRafflePurchaseListQuery,
+  CreateAdminRaffleRequest,
+  UpdateAdminRaffleRequest,
+} from './admin-raffle.models';
+import {
   AdminAuditLog,
   AdminAuditQuery,
   AdminCatalogDeletionResult,
@@ -201,6 +212,86 @@ export class AdminApiService {
     return this.http.get<AdminPaginatedResponse<AdminAuditLog>>(
       `${ADMIN_API_BASE_URL}/audit`,
       this.options(query),
+    );
+  }
+
+  raffles(query: AdminRaffleListQuery = {}): Observable<AdminFlatPage<AdminRaffleListItem>> {
+    return this.http.get<AdminFlatPage<AdminRaffleListItem>>(
+      `${ADMIN_API_BASE_URL}/raffles`,
+      this.options(query),
+    );
+  }
+
+  raffle(raffleId: string): Observable<AdminRaffleDetail> {
+    return this.http.get<AdminRaffleDetail>(`${ADMIN_API_BASE_URL}/raffles/${raffleId}`);
+  }
+
+  createRaffle(body: CreateAdminRaffleRequest): Observable<AdminRaffleListItem> {
+    return this.http.post<AdminRaffleListItem>(`${ADMIN_API_BASE_URL}/raffles`, body);
+  }
+
+  updateRaffle(
+    raffleId: string,
+    body: UpdateAdminRaffleRequest,
+  ): Observable<AdminRaffleListItem> {
+    return this.http.patch<AdminRaffleListItem>(
+      `${ADMIN_API_BASE_URL}/raffles/${raffleId}`,
+      body,
+    );
+  }
+
+  publishRaffle(raffleId: string): Observable<AdminRaffleListItem> {
+    return this.raffleAction(raffleId, 'publish');
+  }
+
+  pauseRaffle(raffleId: string): Observable<AdminRaffleListItem> {
+    return this.raffleAction(raffleId, 'pause');
+  }
+
+  resumeRaffle(raffleId: string): Observable<AdminRaffleListItem> {
+    return this.raffleAction(raffleId, 'resume');
+  }
+
+  closeRaffle(raffleId: string): Observable<AdminRaffleListItem> {
+    return this.raffleAction(raffleId, 'close');
+  }
+
+  drawRaffle(raffleId: string, winningNumber: number): Observable<AdminRaffleListItem> {
+    return this.http.post<AdminRaffleListItem>(
+      `${ADMIN_API_BASE_URL}/raffles/${raffleId}/draw`,
+      { winningNumber },
+    );
+  }
+
+  raffleNumbers(raffleId: string): Observable<AdminRaffleNumber[]> {
+    return this.http.get<AdminRaffleNumber[]>(
+      `${ADMIN_API_BASE_URL}/raffles/${raffleId}/numbers`,
+    );
+  }
+
+  rafflePurchases(
+    raffleId: string,
+    query: AdminRafflePurchaseListQuery = {},
+  ): Observable<AdminFlatPage<AdminRafflePurchase>> {
+    return this.http.get<AdminFlatPage<AdminRafflePurchase>>(
+      `${ADMIN_API_BASE_URL}/raffles/${raffleId}/purchases`,
+      this.options(query),
+    );
+  }
+
+  rafflePurchase(raffleId: string, purchaseId: string): Observable<AdminRafflePurchaseDetail> {
+    return this.http.get<AdminRafflePurchaseDetail>(
+      `${ADMIN_API_BASE_URL}/raffles/${raffleId}/purchases/${purchaseId}`,
+    );
+  }
+
+  private raffleAction(
+    raffleId: string,
+    action: 'publish' | 'pause' | 'resume' | 'close',
+  ): Observable<AdminRaffleListItem> {
+    return this.http.post<AdminRaffleListItem>(
+      `${ADMIN_API_BASE_URL}/raffles/${raffleId}/${action}`,
+      {},
     );
   }
 }

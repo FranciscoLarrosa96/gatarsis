@@ -22,6 +22,7 @@ describe('CheckoutStatusPageComponent payment safety', () => {
     fixture?.destroy();
     http?.verify();
     localStorage.clear();
+    sessionStorage.clear();
     vi.useRealTimers();
   });
 
@@ -39,7 +40,9 @@ describe('CheckoutStatusPageComponent payment safety', () => {
 
       expect(component.isPending()).toBe(true);
       expect(component.pollingTimedOut()).toBe(false);
-      expect(cart.checkoutContext()?.status).toBe(status === 'awaiting_payment' ? 'AWAITING_PAYMENT' : 'PAYMENT_PENDING');
+      expect(cart.checkoutContext()?.status).toBe(
+        status === 'awaiting_payment' ? 'AWAITING_PAYMENT' : 'PAYMENT_PENDING',
+      );
     },
   );
 
@@ -113,7 +116,11 @@ describe('CheckoutStatusPageComponent payment safety', () => {
     setup('checkout/pending', { external_reference: orderId });
     flushStatus('payment_pending');
 
-    for (let elapsed = POLLING_INTERVAL_MS; elapsed < POLLING_TIMEOUT_MS; elapsed += POLLING_INTERVAL_MS) {
+    for (
+      let elapsed = POLLING_INTERVAL_MS;
+      elapsed < POLLING_TIMEOUT_MS;
+      elapsed += POLLING_INTERVAL_MS
+    ) {
       vi.advanceTimersByTime(POLLING_INTERVAL_MS);
       flushStatus('payment_pending');
     }
@@ -121,7 +128,9 @@ describe('CheckoutStatusPageComponent payment safety', () => {
     fixture.detectChanges();
 
     expect(component.pollingTimedOut()).toBe(true);
-    expect(fixture.nativeElement.textContent).toContain('La confirmación está demorando más de lo habitual');
+    expect(fixture.nativeElement.textContent).toContain(
+      'La confirmación está demorando más de lo habitual',
+    );
     expect(fixture.nativeElement.textContent).toContain('Consultar estado');
     http.expectNone(statusUrl);
   });
@@ -131,7 +140,11 @@ describe('CheckoutStatusPageComponent payment safety', () => {
     setup('checkout/pending', { external_reference: orderId });
     flushStatus('awaiting_payment');
 
-    for (let elapsed = POLLING_INTERVAL_MS; elapsed < POLLING_TIMEOUT_MS; elapsed += POLLING_INTERVAL_MS) {
+    for (
+      let elapsed = POLLING_INTERVAL_MS;
+      elapsed < POLLING_TIMEOUT_MS;
+      elapsed += POLLING_INTERVAL_MS
+    ) {
       vi.advanceTimersByTime(POLLING_INTERVAL_MS);
       flushStatus('awaiting_payment');
     }
@@ -141,7 +154,10 @@ describe('CheckoutStatusPageComponent payment safety', () => {
     const request = http.expectOne(statusUrl);
     expect(request.request.method).toBe('GET');
     request.flush({ orderId, status: 'payment_pending' });
-    http.expectNone((pendingRequest) => pendingRequest.url.includes('preference') || pendingRequest.url.includes('reserve'));
+    http.expectNone(
+      (pendingRequest) =>
+        pendingRequest.url.includes('preference') || pendingRequest.url.includes('reserve'),
+    );
   });
 
   it('cancels polling when the component is destroyed', () => {
@@ -165,7 +181,9 @@ describe('CheckoutStatusPageComponent payment safety', () => {
         provideHttpClientTesting(),
         {
           provide: ActivatedRoute,
-          useValue: { snapshot: { queryParamMap: convertToParamMap(query), routeConfig: { path } } },
+          useValue: {
+            snapshot: { queryParamMap: convertToParamMap(query), routeConfig: { path } },
+          },
         },
       ],
     });

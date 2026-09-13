@@ -50,6 +50,15 @@ import { IconComponent } from '../icon/icon.component';
             <span>Dónde va tu ayuda</span>
           </a>
           <a
+            routerLink="/rifa"
+            routerLinkActive="nav-active"
+            class="inline-flex items-center gap-1.5 rounded-full border border-transparent px-3 py-2 text-[var(--color-text)] transition hover:bg-[var(--color-recovering-bg)] hover:text-[var(--color-accent)]"
+            ariaCurrentWhenActive="page"
+          >
+            <app-icon name="ticket" class="size-4" />
+            <span>Rifa</span>
+          </a>
+          <a
             routerLink="/tienda"
             routerLinkActive="nav-active"
             class="inline-flex items-center gap-1.5 rounded-full border border-transparent px-3 py-2 text-[var(--color-text)] transition hover:bg-[var(--color-recovering-bg)] hover:text-[var(--color-accent)]"
@@ -86,7 +95,6 @@ import { IconComponent } from '../icon/icon.component';
           </button>
         </div>
       </div>
-
     </header>
   `,
 })

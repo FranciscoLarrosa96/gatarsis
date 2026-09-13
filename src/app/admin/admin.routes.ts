@@ -74,6 +74,27 @@ export const ADMIN_ROUTES: Routes = [
           import('./pages/admin-payments.component').then((m) => m.AdminPaymentsComponent),
       },
       {
+        path: 'raffles',
+        loadComponent: () =>
+          import('./pages/admin-raffles.component').then((m) => m.AdminRafflesComponent),
+      },
+      {
+        path: 'raffles/new',
+        loadComponent: () =>
+          import('./pages/admin-raffle-editor.component').then(
+            (m) => m.AdminRaffleEditorComponent,
+          ),
+        canDeactivate: [(component: AdminRaffleEditorComponent) => component.canLeave()],
+      },
+      {
+        path: 'raffles/:raffleId',
+        loadComponent: () =>
+          import('./pages/admin-raffle-editor.component').then(
+            (m) => m.AdminRaffleEditorComponent,
+          ),
+        canDeactivate: [(component: AdminRaffleEditorComponent) => component.canLeave()],
+      },
+      {
         path: 'audit',
         loadComponent: () =>
           import('./pages/admin-audit.component').then((m) => m.AdminAuditComponent),
@@ -84,5 +105,9 @@ export const ADMIN_ROUTES: Routes = [
 
 // Kept as an interface so the route can protect unsaved product edits without coupling to implementation details.
 interface AdminProductEditorComponent {
+  canLeave(): boolean;
+}
+
+interface AdminRaffleEditorComponent {
   canLeave(): boolean;
 }

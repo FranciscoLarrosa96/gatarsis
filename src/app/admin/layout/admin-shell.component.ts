@@ -16,6 +16,7 @@ import { AdminAuthStore } from '../core/admin-auth.store';
         <a routerLink="/admin/inventory" routerLinkActive="active" ariaCurrentWhenActive="page" (click)="closeDrawer()">Stock</a>
         <a routerLink="/admin/orders" routerLinkActive="active" ariaCurrentWhenActive="page" (click)="closeDrawer()">Pedidos</a>
         <a routerLink="/admin/payments" routerLinkActive="active" ariaCurrentWhenActive="page" (click)="closeDrawer()">Pagos</a>
+        <a routerLink="/admin/raffles" routerLinkActive="active" ariaCurrentWhenActive="page" (click)="closeDrawer()">Rifas</a>
         <a routerLink="/admin/audit" routerLinkActive="active" ariaCurrentWhenActive="page" (click)="closeDrawer()">Auditoría</a>
       </nav>
       <div class="account">

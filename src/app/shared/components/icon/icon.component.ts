@@ -12,6 +12,7 @@ import {
   LucideClock3,
   LucideCopy,
   LucideFileText,
+  LucideGift,
   LucideHeart,
   LucideHouse,
   LucideInfo,
@@ -22,6 +23,7 @@ import {
   LucidePawPrint,
   LucidePlus,
   LucideReceiptText,
+  LucideRefreshCw,
   LucideShare2,
   LucideShieldCheck,
   LucideShoppingCart,
@@ -29,7 +31,9 @@ import {
   LucideStethoscope,
   LucideStore,
   LucideSun,
+  LucideTicket,
   LucideTrash2,
+  LucideTrophy,
   LucideWalletCards,
   LucideX,
 } from '@lucide/angular';
@@ -47,6 +51,7 @@ export type IconName =
   | 'copy'
   | 'document'
   | 'expand'
+  | 'gift'
   | 'heart'
   | 'home'
   | 'info'
@@ -56,6 +61,7 @@ export type IconName =
   | 'moon'
   | 'paw'
   | 'receipt'
+  | 'refresh'
   | 'trash'
   | 'shield'
   | 'share'
@@ -63,7 +69,9 @@ export type IconName =
   | 'spark'
   | 'stethoscope'
   | 'sun'
+  | 'ticket'
   | 'wallet'
+  | 'trophy'
   | 'plus'
   | 'x';
 
@@ -98,6 +106,7 @@ export class IconComponent {
     copy: LucideCopy,
     document: LucideFileText,
     expand: LucideMaximize2,
+    gift: LucideGift,
     heart: LucideHeart,
     home: LucideHouse,
     info: LucideInfo,
@@ -107,6 +116,7 @@ export class IconComponent {
     moon: LucideMoon,
     paw: LucidePawPrint,
     receipt: LucideReceiptText,
+    refresh: LucideRefreshCw,
     trash: LucideTrash2,
     shield: LucideShieldCheck,
     share: LucideShare2,
@@ -114,7 +124,9 @@ export class IconComponent {
     spark: LucideSparkles,
     stethoscope: LucideStethoscope,
     sun: LucideSun,
+    ticket: LucideTicket,
     wallet: LucideWalletCards,
+    trophy: LucideTrophy,
     plus: LucidePlus,
     x: LucideX,
   };

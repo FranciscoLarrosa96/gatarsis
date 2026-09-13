@@ -341,6 +341,47 @@
   font-family: inherit;
 }
 
+.flatpickr-calendar.open {
+  z-index: 100;
+}
+
+.flatpickr-calendar.hasTime .flatpickr-time {
+  height: 3.25rem;
+  max-height: none;
+  border-top: 1px solid var(--color-border);
+  background: color-mix(in srgb, var(--color-surface) 72%, var(--color-card));
+}
+
+.flatpickr-calendar.hasTime .flatpickr-time input,
+.flatpickr-calendar.hasTime .flatpickr-time .flatpickr-am-pm {
+  height: 2.25rem;
+  color: var(--color-text);
+  font-weight: 800;
+}
+
+.flatpickr-calendar.hasTime .flatpickr-time input:focus,
+.flatpickr-calendar.hasTime .flatpickr-time .flatpickr-am-pm:focus {
+  background: var(--color-card);
+}
+
+.flatpickr-calendar.hasTime .flatpickr-time .flatpickr-time-separator {
+  color: var(--color-text-muted);
+  font-weight: 900;
+}
+
+.flatpickr-calendar .flatpickr-confirm {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.25rem;
+  margin: 0.35rem 0.55rem 0.55rem;
+  border-radius: 0.65rem;
+  background: var(--color-accent);
+  color: #fff;
+  font-size: 0.8rem;
+  font-weight: 850;
+}
+
 .flatpickr-calendar::before,
 .flatpickr-calendar::after {
   display: none;

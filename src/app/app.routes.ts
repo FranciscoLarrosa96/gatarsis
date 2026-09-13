@@ -52,6 +52,32 @@ export const routes: Routes = [
       import('./shop/pages/cart-page/cart-page.component').then((m) => m.CartPageComponent),
   },
   {
+    path: 'rifa',
+    loadComponent: () =>
+      import('./raffle/pages/raffle-page/raffle-page.component').then((m) => m.RafflePageComponent),
+  },
+  {
+    path: 'rifa/checkout/success',
+    loadComponent: () =>
+      import('./raffle/pages/raffle-status-page/raffle-status-page.component').then(
+        (m) => m.RaffleStatusPageComponent,
+      ),
+  },
+  {
+    path: 'rifa/checkout/pending',
+    loadComponent: () =>
+      import('./raffle/pages/raffle-status-page/raffle-status-page.component').then(
+        (m) => m.RaffleStatusPageComponent,
+      ),
+  },
+  {
+    path: 'rifa/checkout/failure',
+    loadComponent: () =>
+      import('./raffle/pages/raffle-status-page/raffle-status-page.component').then(
+        (m) => m.RaffleStatusPageComponent,
+      ),
+  },
+  {
     path: 'checkout/success',
     loadComponent: () =>
       import('./shop/pages/checkout-status-page/checkout-status-page.component').then(

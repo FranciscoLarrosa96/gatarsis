@@ -3,5 +3,6 @@ Allow: /
 Disallow: /admin
 Disallow: /carrito
 Disallow: /checkout/
+Disallow: /rifa/checkout/
 
 Sitemap: https://gatarsis.com.ar/sitemap.xml
