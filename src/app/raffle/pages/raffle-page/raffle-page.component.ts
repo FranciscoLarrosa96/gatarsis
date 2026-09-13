@@ -140,7 +140,7 @@ const dateTimeFormatter = new Intl.DateTimeFormat('es-AR', {
                   {{ currentRaffle.prizeName }}
                 </h1>
                 <p
-                  class="mt-5 max-w-2xl text-left text-base leading-7 text-[var(--color-text-muted)] sm:text-lg"
+                  class="raffle-hero-copy mt-5 max-w-lg text-left text-base leading-7 text-[var(--color-text-muted)] sm:text-lg"
                 >
                   {{
                     currentRaffle.description ||
@@ -195,7 +195,7 @@ const dateTimeFormatter = new Intl.DateTimeFormat('es-AR', {
                   <div class="mb-2 flex items-center justify-between gap-3 text-sm font-bold">
                     <span>{{ currentStats().sold }} de {{ currentStats().total }} vendidos</span>
                     <span class="text-[var(--color-text-muted)]"
-                      >{{ currentStats().available }} disponibles</span
+                      >{{ currentStats().available }} {{ availableLabel() }}</span
                     >
                   </div>
                   <div class="h-2.5 overflow-hidden rounded-full bg-[var(--color-surface-strong)]">
@@ -204,27 +204,29 @@ const dateTimeFormatter = new Intl.DateTimeFormat('es-AR', {
                       [style.width.%]="soldPercentage()"
                     ></div>
                   </div>
-                  <div class="mt-2 flex gap-4 text-xs font-semibold text-[var(--color-text-muted)]">
-                    <span>{{ currentStats().reserved }} reservados</span>
-                    <span>{{ currentStats().available }} disponibles</span>
-                  </div>
+                  @if (currentRaffle.status === 'ACTIVE' || currentRaffle.status === 'PAUSED') {
+                    <div class="mt-2 flex gap-4 text-xs font-semibold text-[var(--color-text-muted)]">
+                      <span>{{ currentStats().reserved }} reservados</span>
+                      <span>{{ currentStats().available }} {{ availableLabel() }}</span>
+                    </div>
+                  }
                 </div>
               </div>
 
               <figure
-                class="raffle-prize order-1 m-0 overflow-hidden rounded-[2rem] border lg:order-2"
+                class="raffle-prize order-1 m-0 rounded-[2rem] border lg:order-2"
               >
                 @if (!imageFailed() && currentRaffle.imageUrl) {
                   @if (!imageLoaded()) {
                     <div
-                      class="absolute inset-0 animate-pulse bg-[var(--color-surface-strong)]"
+                      class="raffle-prize-skeleton animate-pulse bg-[var(--color-surface-strong)]"
                       aria-hidden="true"
                     ></div>
                   }
                   <img
                     [src]="currentRaffle.imageUrl"
                     [alt]="'Premio de la rifa: ' + currentRaffle.prizeName"
-                    class="raffle-prize-image h-full w-full object-contain transition-opacity duration-300"
+                    class="raffle-prize-image transition-opacity duration-300"
                     [class.opacity-0]="!imageLoaded()"
                     (load)="imageLoaded.set(true)"
                     (error)="imageFailed.set(true)"
@@ -264,32 +266,24 @@ const dateTimeFormatter = new Intl.DateTimeFormat('es-AR', {
           }
 
           @if (currentRaffle.status === 'DRAWN') {
-            <section class="mx-auto max-w-3xl px-5 py-10 sm:px-6 lg:px-8">
+            <section class="mx-auto max-w-3xl px-5 pt-6 sm:px-6 lg:px-8">
               <div
-                class="draw-result-card surface-card relative overflow-hidden rounded-3xl border px-6 py-6 text-center sm:p-8"
+                class="draw-result-bar flex flex-wrap items-center justify-center gap-x-2 gap-y-1 rounded-full border px-4 py-2 text-center text-xs font-semibold text-[var(--color-text-muted)]"
                 role="status"
               >
-                <p
-                  class="text-xs font-extrabold uppercase tracking-[0.14em] text-[var(--color-accent)]"
-                >
-                  Resultado del sorteo
-                </p>
+                <app-icon name="shield" class="size-3.5 shrink-0 text-[var(--color-accent)]" />
                 @if (currentRaffle.drawnAt) {
-                  <p class="mt-2 text-sm font-bold text-[var(--color-text-muted)]">
-                    Sorteado el {{ formatDateTime(currentRaffle.drawnAt) }}
-                  </p>
+                  <span>Sorteado el {{ formatDateTime(currentRaffle.drawnAt) }} ·</span>
                 }
-                <p class="mx-auto mt-3 max-w-md text-center leading-7 text-[var(--color-text-muted)]">
-                  El número se sorteó de forma pública y no exponemos datos de quién participó.
-                </p>
+                <span>sorteo público, sin datos de participantes expuestos.</span>
               </div>
             </section>
           }
 
           @if (checkoutBanner(); as banner) {
-            <section class="mx-auto max-w-3xl px-5 pt-10 sm:px-6 lg:px-8">
+            <section class="mx-auto max-w-3xl px-5 pt-6 sm:px-6 lg:px-8">
               <div
-                class="checkout-banner surface-elevated relative overflow-hidden rounded-2xl border p-5 sm:p-6"
+                class="checkout-banner surface-elevated relative flex flex-wrap items-center gap-3 overflow-hidden rounded-2xl border p-3.5 pr-9 sm:flex-nowrap"
                 [class.checkout-banner--success]="banner.status === 'PAID'"
                 [class.checkout-banner--attention]="
                   banner.status === 'EXPIRED' || banner.status === 'REFUNDED'
@@ -304,31 +298,30 @@ const dateTimeFormatter = new Intl.DateTimeFormat('es-AR', {
                 >
                   <app-icon name="x" class="size-4" />
                 </button>
-                <div class="flex items-start gap-3 pr-6">
-                  <span
-                    class="checkout-banner-icon grid size-11 shrink-0 place-items-center rounded-xl text-white"
-                  >
-                    <app-icon [name]="checkoutBannerIcon(banner.status)" class="size-5" />
-                  </span>
-                  <div class="min-w-0 text-left">
-                    <h2 class="text-lg font-black">{{ checkoutBannerTitle(banner.status) }}</h2>
-                    <p class="mt-1 text-sm leading-6 text-[var(--color-text-muted)]">
+                <span
+                  class="checkout-banner-icon grid size-9 shrink-0 place-items-center rounded-lg text-white"
+                >
+                  <app-icon [name]="checkoutBannerIcon(banner.status)" class="size-4" />
+                </span>
+                <div class="min-w-0 flex-1 text-left">
+                  <h2 class="text-sm font-black">{{ checkoutBannerTitle(banner.status) }}</h2>
+                  @if (banner.status !== 'PAID') {
+                    <p class="mt-0.5 text-xs leading-5 text-[var(--color-text-muted)]">
                       {{ checkoutBannerDescription(banner.status) }}
                     </p>
-                    @if (banner.status === 'PAID' && banner.numbers.length) {
-                      <div class="mt-3 flex flex-wrap gap-2">
-                        @for (number of sortedBannerNumbers(); track number) {
-                          <span class="number-chip">{{ numberLabel(number) }}</span>
-                        }
-                      </div>
-                    }
-                    <a
-                      [routerLink]="checkoutBannerRoute(banner.status)"
-                      class="button-primary mt-4 inline-flex min-h-10 items-center justify-center rounded-lg px-4 text-sm font-extrabold"
-                      >{{ checkoutBannerCta(banner.status) }}</a
-                    >
-                  </div>
+                  } @else if (banner.numbers.length) {
+                    <div class="mt-1.5 flex flex-wrap gap-1.5">
+                      @for (number of sortedBannerNumbers(); track number) {
+                        <span class="number-chip number-chip--sm">{{ numberLabel(number) }}</span>
+                      }
+                    </div>
+                  }
                 </div>
+                <a
+                  [routerLink]="checkoutBannerRoute(banner.status)"
+                  class="button-primary inline-flex min-h-9 shrink-0 items-center justify-center rounded-lg px-3.5 text-xs font-extrabold"
+                  >{{ checkoutBannerCta(banner.status) }}</a
+                >
               </div>
             </section>
           }
@@ -351,11 +344,16 @@ const dateTimeFormatter = new Intl.DateTimeFormat('es-AR', {
                     </div>
                     <button
                       type="button"
-                      class="inline-flex min-h-11 items-center gap-2 self-start rounded-xl border border-[var(--color-border)] px-4 text-sm font-bold transition hover:border-[var(--color-accent)]"
+                      class="inline-flex items-center gap-1.5 self-start rounded-lg text-[var(--color-text-muted)] transition hover:text-[var(--color-accent)]"
+                      [class]="
+                        currentRaffle.status === 'ACTIVE'
+                          ? 'min-h-11 border border-[var(--color-border)] px-4 text-sm font-bold hover:border-[var(--color-accent)]'
+                          : 'min-h-8 px-1 text-xs font-semibold'
+                      "
                       [disabled]="numbersRefreshing()"
                       (click)="refreshNumbers()"
                     >
-                      <app-icon name="refresh" class="size-4" />
+                      <app-icon name="refresh" class="size-3.5" />
                       {{ numbersRefreshing() ? 'Actualizando...' : 'Actualizar' }}
                     </button>
                   </div>
@@ -419,8 +417,7 @@ const dateTimeFormatter = new Intl.DateTimeFormat('es-AR', {
                           currentRaffle.status === 'DRAWN' &&
                           currentRaffle.winningNumber === item.number
                         ) {
-                          <app-icon name="trophy" class="winner-trophy size-3" aria-hidden="true" />
-                          <span class="winner-dot" aria-hidden="true"></span>
+                          <app-icon name="trophy" class="winner-trophy size-2.5" aria-hidden="true" />
                           <span class="sr-only">Número ganador</span>
                         }
                       </button>
@@ -873,6 +870,11 @@ export class RafflePageComponent implements OnInit {
     return formatArs(priceInCents / 100);
   }
 
+  availableLabel(): string {
+    const status = this.raffle()?.status;
+    return status === 'ACTIVE' || status === 'PAUSED' ? 'disponibles' : 'sin asignar';
+  }
+
   inactiveTitle(status: PublicRaffleStatus): string {
     return {
       ACTIVE: '',
@@ -945,7 +947,11 @@ export class RafflePageComponent implements OnInit {
   }
 
   checkoutBannerCta(status: RafflePurchaseStatus): string {
-    return status === 'PAID' ? 'Ver compra' : status === 'EXPIRED' ? 'Ver detalle' : 'Ver estado del pago';
+    return status === 'PAID'
+      ? 'Ver mis números'
+      : status === 'EXPIRED'
+        ? 'Ver detalle'
+        : 'Ver estado del pago';
   }
 
   checkoutBannerRoute(status: RafflePurchaseStatus): string {
