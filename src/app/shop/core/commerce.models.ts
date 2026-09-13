@@ -1,4 +1,4 @@
-export const PUBLIC_API_BASE_URL = 'https://gatarsis-back.onrender.com/api/v1';
+export const PUBLIC_API_BASE_URL = 'https://gatarsisback.onrender.com/api/v1';
 
 export interface PublicProductMedia {
   id: string;

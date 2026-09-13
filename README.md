@@ -2,7 +2,7 @@
 
 ## Administración
 
-El panel lazy vive bajo `https://gatarsis.com.ar/admin`. No se enlaza desde la navegación pública. Usa la API `https://gatarsis-back.onrender.com/api/v1/admin` y requiere que el backend de Fase 3 esté desplegado.
+El panel lazy vive bajo `https://gatarsis.com.ar/admin`. No se enlaza desde la navegación pública. Usa la API `https://gatarsisback.onrender.com/api/v1/admin` y requiere que el backend de Fase 3 esté desplegado.
 
 Los tokens de acceso y refresh viven exclusivamente en memoria durante la pestaña: recargar o cerrar sesión vuelve al login. El panel no guarda credenciales ni tokens en `localStorage`, `sessionStorage`, cookies o URLs.
 
