@@ -2,7 +2,7 @@
 
 ## Administración
 
-El panel lazy vive bajo `/admin` (en GitHub Pages: `/rescatadosTandil/admin`). No se enlaza desde la navegación pública. Usa la API `https://gatarsis-back.onrender.com/api/v1/admin` y requiere que el backend de Fase 3 esté desplegado.
+El panel lazy vive bajo `https://gatarsis.com.ar/admin`. No se enlaza desde la navegación pública. Usa la API `https://gatarsis-back.onrender.com/api/v1/admin` y requiere que el backend de Fase 3 esté desplegado.
 
 Los tokens de acceso y refresh viven exclusivamente en memoria durante la pestaña: recargar o cerrar sesión vuelve al login. El panel no guarda credenciales ni tokens en `localStorage`, `sessionStorage`, cookies o URLs.
 
@@ -70,14 +70,24 @@ npm test
 
 El build de Angular genera archivos estáticos en `dist/`. El proyecto incluye `public/_redirects` para que Netlify resuelva deep links del Router como SPA.
 
-Para GitHub Pages, generá el build con el subpath del repositorio y luego publicalo:
+Para GitHub Pages con el dominio personalizado `gatarsis.com.ar`, generá y publicá el build:
 
 ```bash
 npm run prod
 npm run deploy
 ```
 
-`npm run prod` configura el `base href` para `/rescatadosTandil/`, por lo que rutas, favicon e imágenes de `public/` se resuelven correctamente dentro de GitHub Pages.
+`npm run prod` usa el `base href` raíz (`/`) y `public/CNAME` mantiene asociado el dominio personalizado durante cada despliegue.
+
+### Retornos de Mercado Pago
+
+La preferencia de pago se crea en el backend. Su configuración de `back_urls` debe usar:
+
+- `success`: `https://gatarsis.com.ar/checkout/success`
+- `pending`: `https://gatarsis.com.ar/checkout/pending`
+- `failure`: `https://gatarsis.com.ar/checkout/failure`
+
+Si el backend construye estas URLs desde una variable de entorno como `FRONTEND_URL`, `APP_URL` o `PUBLIC_WEB_URL`, su valor debe ser `https://gatarsis.com.ar` y el servicio debe volver a desplegarse.
 
 ## Restricciones de contenido
 

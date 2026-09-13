@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /carrito
+Disallow: /checkout/
+
+Sitemap: https://gatarsis.com.ar/sitemap.xml
