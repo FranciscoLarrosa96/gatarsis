@@ -208,30 +208,33 @@
 }
 
 .raffle-number--winner {
-  border-color: #d59d20;
-  background: color-mix(in srgb, #f5ca59 25%, var(--color-card));
+  border: 1.5px solid #d59d20;
+  background: color-mix(in srgb, #f5ca59 9%, var(--color-card));
   color: var(--color-text);
   text-decoration: none;
   opacity: 1;
-  box-shadow: 0 0 0 3px color-mix(in srgb, #f5ca59 18%, transparent);
+  cursor: default;
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, #f5ca59 55%, transparent),
+    0 0 10px color-mix(in srgb, #f5ca59 28%, transparent);
 }
 
-.raffle-number--winner {
-  grid-template-rows: 1fr auto;
-  gap: 0.1rem;
-  padding: 0.35rem 0.25rem 0.28rem;
-}
-
-.raffle-number-winner-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.15rem;
+.winner-trophy {
+  position: absolute;
+  top: 0.2rem;
+  left: 0.25rem;
   color: #a36e00;
-  font-size: 0.5rem;
-  font-weight: 900;
-  line-height: 1;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+}
+
+.winner-dot {
+  position: absolute;
+  bottom: 0.3rem;
+  left: 50%;
+  width: 0.28rem;
+  height: 0.28rem;
+  border-radius: 999px;
+  background: #d59d20;
+  transform: translateX(-50%);
 }
 
 .number-check {
@@ -273,6 +276,64 @@
 
 .selection-card {
   border-color: color-mix(in srgb, var(--color-accent) 30%, var(--color-border));
+}
+
+.draw-result-card {
+  border-color: color-mix(in srgb, var(--color-accent) 25%, var(--color-border));
+}
+
+.checkout-banner {
+  border-color: color-mix(in srgb, var(--color-accent) 34%, var(--color-border));
+}
+
+.checkout-banner-icon {
+  background: linear-gradient(135deg, var(--color-accent), var(--color-accent-hover));
+}
+
+.checkout-banner--success {
+  border-color: color-mix(in srgb, #22b866 40%, var(--color-border));
+}
+
+.checkout-banner--success .checkout-banner-icon {
+  background: linear-gradient(135deg, #22b866, #13894b);
+}
+
+.checkout-banner--attention {
+  border-color: color-mix(in srgb, #bd2944 32%, var(--color-border));
+}
+
+.checkout-banner--attention .checkout-banner-icon {
+  background: linear-gradient(135deg, #d45a68, #a92b43);
+}
+
+.checkout-banner-dismiss {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  display: grid;
+  place-items: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 999px;
+  color: var(--color-text-muted);
+  transition: background-color 150ms ease;
+}
+
+.checkout-banner-dismiss:hover {
+  background: var(--color-surface-strong);
+}
+
+.number-chip {
+  display: inline-flex;
+  min-width: 2.4rem;
+  justify-content: center;
+  border-radius: 0.65rem;
+  border: 1px solid color-mix(in srgb, var(--color-accent) 30%, var(--color-border));
+  background: color-mix(in srgb, var(--color-accent) 8%, var(--color-card));
+  padding: 0.35rem 0.5rem;
+  font-weight: 850;
+  letter-spacing: 0.02em;
+  color: var(--color-accent);
 }
 
 .field-label {
@@ -359,6 +420,14 @@
 
 :host-context(.dark) .field-error {
   color: #ff9bad;
+}
+
+:host-context(.dark) .raffle-number--winner {
+  background: color-mix(in srgb, #f5ca59 14%, var(--color-card));
+}
+
+:host-context(.dark) .winner-trophy {
+  color: #f2c25a;
 }
 
 @media (min-width: 768px) {

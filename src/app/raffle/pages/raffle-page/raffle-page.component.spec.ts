@@ -4,6 +4,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 
 import { PUBLIC_API_BASE_URL } from '../../../shop/core/commerce.models';
+import { RaffleCheckoutStore } from '../../core/raffle-checkout.store';
 import { PublicRaffle, PublicRaffleNumber } from '../../core/raffle.models';
 import { RafflePageComponent } from './raffle-page.component';
 
@@ -65,7 +66,7 @@ describe('RafflePageComponent', () => {
 
     expect(component.selectedCount()).toBe(10);
     expect(component.isSelected(10)).toBe(false);
-    expect(component.selectionMessage()).toContain('hasta 10');
+    expect(component.selectionMessage()).toContain('Máximo alcanzado');
   });
 
   it('calculates the summary and keeps buyer PII out of localStorage', () => {
@@ -136,7 +137,7 @@ describe('RafflePageComponent', () => {
     expect(component.paymentMessage()).toContain('dejaron de estar disponibles');
   });
 
-  it('shows a friendly empty state when there is no active raffle', () => {
+  it('shows a friendly empty state when no raffle has ever been published', () => {
     setup();
     http
       .expectOne(`${PUBLIC_API_BASE_URL}/raffles/active`)
@@ -144,10 +145,100 @@ describe('RafflePageComponent', () => {
         { code: 'RAFFLE_ACTIVE_NOT_FOUND', message: 'No hay una rifa activa.' },
         { status: 404, statusText: 'Not Found' },
       );
+    http
+      .expectOne(`${PUBLIC_API_BASE_URL}/raffles/latest`)
+      .flush(
+        { code: 'RAFFLE_NOT_FOUND', message: 'Todavía no publicamos ninguna rifa.' },
+        { status: 404, statusText: 'Not Found' },
+      );
     fixture.detectChanges();
 
     expect(fixture.nativeElement.textContent).toContain('No hay una rifa activa en este momento');
     expect(fixture.nativeElement.textContent).toContain('Ver historias');
+  });
+
+  it('falls back to the latest raffle when there is none active, so results stay reachable', () => {
+    setup();
+    const drawnRaffle: PublicRaffle = {
+      ...raffle,
+      status: 'DRAWN',
+      winningNumber: 42,
+      drawnAt: '2026-09-01T18:00:00.000Z',
+    };
+    http.expectOne(`${PUBLIC_API_BASE_URL}/raffles/active`).flush(
+      { code: 'RAFFLE_ACTIVE_NOT_FOUND', message: 'No hay una rifa activa.' },
+      { status: 404, statusText: 'Not Found' },
+    );
+    http.expectOne(`${PUBLIC_API_BASE_URL}/raffles/latest`).flush(drawnRaffle);
+    http.expectOne(`${PUBLIC_API_BASE_URL}/raffles/${raffleId}`).flush(drawnRaffle);
+    http.expectOne(`${PUBLIC_API_BASE_URL}/raffles/${raffleId}/numbers`).flush({
+      raffleId,
+      status: 'DRAWN',
+      numbers: numbers(),
+    });
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain('Rifa finalizada');
+    expect(fixture.nativeElement.textContent).toContain('42');
+    expect(component.noActiveRaffle()).toBe(false);
+  });
+
+  it('highlights the winning number distinctly and marks it read-only once drawn', () => {
+    setup();
+    const drawnRaffle: PublicRaffle = { ...raffle, status: 'DRAWN', winningNumber: 65 };
+    loadActive(numbers(), drawnRaffle);
+
+    const numberButtons = fixture.nativeElement.querySelectorAll('.raffle-number');
+    const winnerButton = numberButtons[65] as HTMLButtonElement;
+    expect(winnerButton.classList.contains('raffle-number--winner')).toBe(true);
+    expect(winnerButton.disabled).toBe(true);
+    expect(winnerButton.getAttribute('aria-label')).toBe('Número 65, ganador');
+    expect(winnerButton.querySelector('.winner-trophy')).toBeTruthy();
+  });
+
+  it('hides the purchase form once the raffle is no longer active', () => {
+    setup();
+    const drawnRaffle: PublicRaffle = { ...raffle, status: 'DRAWN', winningNumber: 65 };
+    loadActive(numbers(), drawnRaffle);
+
+    expect(fixture.nativeElement.querySelector('form')).toBeNull();
+    expect(fixture.nativeElement.textContent).not.toContain('Pagar con Mercado Pago');
+  });
+
+  it('gives explicit feedback when the maximum of ten numbers is reached', () => {
+    setup();
+    loadActive(numbers());
+    for (let number = 0; number < 10; number += 1) {
+      component.toggleNumber({ number, status: 'AVAILABLE' });
+    }
+    component.toggleNumber({ number: 10, status: 'AVAILABLE' });
+
+    expect(component.selectionMessage()).toContain('Máximo alcanzado');
+  });
+
+  it('shows a persistent banner for a pending checkout and lets the user jump back to its status', () => {
+    TestBed.configureTestingModule({
+      imports: [RafflePageComponent],
+      providers: [provideRouter([]), provideHttpClient(), provideHttpClientTesting()],
+    });
+    const store = TestBed.inject(RaffleCheckoutStore);
+    store.save({ rafflePurchaseId: purchaseId, orderId, raffleId, numbers: [7, 23] });
+    fixture = TestBed.createComponent(RafflePageComponent);
+    component = fixture.componentInstance;
+    http = TestBed.inject(HttpTestingController);
+    fixture.detectChanges();
+
+    http.expectOne(`${PUBLIC_API_BASE_URL}/raffle-purchases/${purchaseId}/status`).flush({
+      rafflePurchaseId: purchaseId,
+      orderId,
+      status: 'PAYMENT_PENDING',
+      numbers: [7, 23],
+    });
+    loadActive(numbers());
+
+    expect(fixture.nativeElement.textContent).toContain('Tenés una compra pendiente');
+    const cta = fixture.nativeElement.querySelector('a[href="/rifa/checkout/pending"]');
+    expect(cta).toBeTruthy();
   });
 
   function setup(): void {
@@ -161,12 +252,12 @@ describe('RafflePageComponent', () => {
     fixture.detectChanges();
   }
 
-  function loadActive(numberItems: PublicRaffleNumber[]): void {
-    http.expectOne(`${PUBLIC_API_BASE_URL}/raffles/active`).flush(raffle);
-    http.expectOne(`${PUBLIC_API_BASE_URL}/raffles/${raffleId}`).flush(raffle);
+  function loadActive(numberItems: PublicRaffleNumber[], overrideRaffle: PublicRaffle = raffle): void {
+    http.expectOne(`${PUBLIC_API_BASE_URL}/raffles/active`).flush(overrideRaffle);
+    http.expectOne(`${PUBLIC_API_BASE_URL}/raffles/${raffleId}`).flush(overrideRaffle);
     http.expectOne(`${PUBLIC_API_BASE_URL}/raffles/${raffleId}/numbers`).flush({
       raffleId,
-      status: 'ACTIVE',
+      status: overrideRaffle.status,
       numbers: numberItems,
     });
     fixture.detectChanges();

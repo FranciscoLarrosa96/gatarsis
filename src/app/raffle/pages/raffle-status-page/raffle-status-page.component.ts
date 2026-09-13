@@ -26,6 +26,8 @@ const PENDING_STATUSES: RafflePurchaseStatus[] = ['RESERVED', 'PAYMENT_PENDING']
 const POLLING_INTERVAL_MS = 2_500;
 const POLLING_TIMEOUT_MS = 120_000;
 
+type StepState = 'done' | 'active' | 'attention';
+
 @Component({
   selector: 'app-raffle-status-page',
   standalone: true,
@@ -101,11 +103,11 @@ const POLLING_TIMEOUT_MS = 120_000;
               >
                 Tus números
               </p>
-              <p
-                class="mt-2 text-left text-2xl font-black tracking-wide text-[var(--color-accent)]"
-              >
-                {{ numberLabels() }}
-              </p>
+              <div class="mt-3 flex flex-wrap gap-2" aria-label="Números adquiridos">
+                @for (number of sortedNumbers(); track number) {
+                  <span class="number-chip">{{ numberLabel(number) }}</span>
+                }
+              </div>
             </div>
           }
 
@@ -119,49 +121,75 @@ const POLLING_TIMEOUT_MS = 120_000;
             </div>
           }
 
-          @if (isPending() && !pollingTimedOut()) {
-            <div
-              class="relative mt-5 flex items-center gap-4 rounded-2xl border border-[var(--color-border)] bg-[var(--color-card)] px-4 py-4"
-            >
-              <span
-                class="size-6 shrink-0 animate-spin rounded-full border-2 border-[var(--color-accent)] border-r-transparent"
-                aria-hidden="true"
-              ></span>
-              <p class="text-left text-sm font-semibold leading-6 text-[var(--color-text-muted)]">
-                Consultamos el estado real con Gatarsis. No necesitás volver a realizar el pago.
-              </p>
-            </div>
+          @if (isPending() || !status()) {
+            <ol class="relative mt-6 flex flex-col gap-3" aria-label="Progreso de tu compra">
+              @for (step of steps(); track step.label) {
+                <li
+                  class="step-row"
+                  [class.step-row--active]="step.state === 'active'"
+                  [class.step-row--attention]="step.state === 'attention'"
+                >
+                  <span
+                    class="step-icon"
+                    [class.step-icon--done]="step.state === 'done'"
+                    [class.step-icon--active]="step.state === 'active'"
+                    [class.step-icon--attention]="step.state === 'attention'"
+                  >
+                    @if (step.state === 'done') {
+                      <app-icon name="check" class="size-3.5" />
+                    } @else if (step.state === 'attention') {
+                      <app-icon name="info" class="size-3.5" />
+                    } @else {
+                      <span class="step-spinner" aria-hidden="true"></span>
+                    }
+                  </span>
+                  <span class="text-sm font-semibold leading-6">{{ step.label }}</span>
+                </li>
+              }
+            </ol>
+            <p class="relative mt-3 text-left text-xs font-semibold leading-5 text-[var(--color-text-muted)]">
+              No necesitás volver a realizar el pago. Podés cerrar esta pantalla: cuando vuelvas a
+              /rifa vas a ver el estado de tu compra.
+            </p>
           }
 
-          @if (isPending() && pollingTimedOut()) {
-            <div
-              class="relative mt-5 rounded-2xl border border-[var(--color-border)] bg-[var(--color-card)] p-4"
-            >
-              <p class="text-left text-sm font-semibold leading-6 text-[var(--color-text-muted)]">
-                La confirmación está demorando más de lo habitual.
-              </p>
+          <div class="relative mt-7 flex flex-col gap-3">
+            @if (isPending() || !status()) {
               <button
                 type="button"
-                class="button-primary mt-4 min-h-11 rounded-xl px-5 font-extrabold"
+                class="button-primary inline-flex min-h-12 items-center justify-center gap-2 rounded-xl px-5 font-extrabold disabled:opacity-60"
                 [disabled]="loading()"
                 (click)="consult()"
               >
-                Consultar estado
+                @if (loading()) {
+                  <span class="step-spinner step-spinner--inverted" aria-hidden="true"></span>
+                }
+                Actualizar estado
               </button>
-            </div>
-          }
-
-          <div class="relative mt-7 grid gap-3 sm:grid-cols-2">
-            <a
-              class="button-primary inline-flex min-h-12 items-center justify-center rounded-xl px-5 font-extrabold"
-              [routerLink]="primaryRoute()"
-              >{{ primaryLabel() }}</a
-            >
-            <a
-              class="inline-flex min-h-12 items-center justify-center rounded-xl border border-[var(--color-border)] px-5 font-extrabold transition hover:border-[var(--color-accent)]"
-              routerLink="/"
-              >Volver a Gatarsis</a
-            >
+              <a
+                class="inline-flex min-h-11 items-center justify-center rounded-xl border border-[var(--color-border)] px-5 font-extrabold transition hover:border-[var(--color-accent)]"
+                routerLink="/rifa"
+                >Ver la rifa</a
+              >
+              <a
+                class="mt-1 text-center text-sm font-bold text-[var(--color-text-muted)] underline-offset-4 hover:underline"
+                routerLink="/"
+                >Volver a Gatarsis</a
+              >
+            } @else {
+              <div class="grid gap-3 sm:grid-cols-2">
+                <a
+                  class="button-primary inline-flex min-h-12 items-center justify-center rounded-xl px-5 font-extrabold"
+                  routerLink="/rifa"
+                  >{{ primaryLabel() }}</a
+                >
+                <a
+                  class="inline-flex min-h-12 items-center justify-center rounded-xl border border-[var(--color-border)] px-5 font-extrabold transition hover:border-[var(--color-accent)]"
+                  routerLink="/"
+                  >Volver a Gatarsis</a
+                >
+              </div>
+            }
           </div>
         </section>
       </main>
@@ -215,6 +243,75 @@ const POLLING_TIMEOUT_MS = 120_000;
         0 8px 20px color-mix(in srgb, #bd2944 35%, transparent),
         0 0 0 6px color-mix(in srgb, #bd2944 12%, transparent);
     }
+    .number-chip {
+      display: inline-flex;
+      min-width: 2.4rem;
+      justify-content: center;
+      border-radius: 0.65rem;
+      border: 1px solid color-mix(in srgb, var(--color-accent) 30%, var(--color-border));
+      background: color-mix(in srgb, var(--color-accent) 8%, var(--color-card));
+      padding: 0.35rem 0.5rem;
+      font-weight: 850;
+      letter-spacing: 0.02em;
+      color: var(--color-accent);
+    }
+    .step-row {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+      color: var(--color-text-muted);
+    }
+    .step-row--active {
+      color: var(--color-text);
+    }
+    .step-row--attention {
+      color: #bd2944;
+    }
+    .step-icon {
+      display: grid;
+      place-items: center;
+      width: 1.6rem;
+      height: 1.6rem;
+      flex-shrink: 0;
+      border-radius: 999px;
+      border: 1px solid var(--color-border);
+      background: var(--color-card);
+      color: var(--color-text-muted);
+    }
+    .step-icon--done {
+      border-color: color-mix(in srgb, #22b866 45%, var(--color-border));
+      background: color-mix(in srgb, #22b866 16%, var(--color-card));
+      color: #18874c;
+    }
+    .step-icon--active {
+      border-color: var(--color-accent);
+      background: color-mix(in srgb, var(--color-accent) 12%, var(--color-card));
+    }
+    .step-icon--attention {
+      border-color: color-mix(in srgb, #bd2944 45%, var(--color-border));
+      background: color-mix(in srgb, #bd2944 10%, var(--color-card));
+      color: #bd2944;
+    }
+    .step-spinner {
+      display: block;
+      width: 0.7rem;
+      height: 0.7rem;
+      border-radius: 999px;
+      border: 2px solid var(--color-accent);
+      border-right-color: transparent;
+      animation: step-spin 700ms linear infinite;
+    }
+    .step-spinner--inverted {
+      width: 0.85rem;
+      height: 0.85rem;
+      border-color: currentColor;
+      border-right-color: transparent;
+    }
+    @keyframes step-spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
     @keyframes status-card-in {
       from {
         opacity: 0;
@@ -227,6 +324,9 @@ const POLLING_TIMEOUT_MS = 120_000;
     }
     @media (prefers-reduced-motion: reduce) {
       .status-card {
+        animation: none;
+      }
+      .step-spinner {
         animation: none;
       }
     }
@@ -243,17 +343,31 @@ export class RaffleStatusPageComponent implements OnInit {
   readonly numbers = signal<number[]>([]);
   readonly loading = signal(false);
   readonly error = signal('');
-  readonly pollingTimedOut = signal(false);
   readonly isPending = computed(
     () => this.status() === 'RESERVED' || this.status() === 'PAYMENT_PENDING',
   );
-  readonly numberLabels = computed(() =>
-    this.numbers()
-      .slice()
-      .sort((left, right) => left - right)
-      .map((number) => number.toString().padStart(2, '0'))
-      .join(' · '),
-  );
+  readonly sortedNumbers = computed(() => this.numbers().slice().sort((left, right) => left - right));
+  readonly steps = computed<{ label: string; state: StepState }[]>(() => {
+    const status = this.status();
+    const finalStep =
+      status === 'PAID'
+        ? { label: 'Pago confirmado', state: 'done' as const }
+        : status === 'EXPIRED'
+          ? { label: 'Reserva vencida', state: 'attention' as const }
+          : status === 'REFUNDED'
+            ? { label: 'Pago reembolsado', state: 'attention' as const }
+            : status === 'REQUIRES_REVIEW'
+              ? { label: 'Pago en revisión', state: 'active' as const }
+              : { label: 'Confirmando pago...', state: 'active' as const };
+    return [
+      { label: 'Reserva realizada', state: 'done' },
+      {
+        label: 'Pago enviado',
+        state: status === 'EXPIRED' ? 'attention' : status ? 'done' : 'active',
+      },
+      finalStep,
+    ];
+  });
 
   private pollingSubscription: Subscription | null = null;
 
@@ -293,6 +407,10 @@ export class RaffleStatusPageComponent implements OnInit {
     this.checkStatus(purchaseId, false)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((response) => this.handleStatus(response));
+  }
+
+  numberLabel(number: number): string {
+    return number.toString().padStart(2, '0');
   }
 
   title(): string {
@@ -341,19 +459,14 @@ export class RaffleStatusPageComponent implements OnInit {
     return 'clock';
   }
 
-  primaryRoute(): string {
-    return this.status() === 'PAID' ? '/' : '/rifa';
-  }
-
   primaryLabel(): string {
-    if (this.status() === 'PAID') return 'Volver al inicio';
+    if (this.status() === 'PAID') return 'Ver mis números';
     if (this.status() === 'EXPIRED') return 'Volver a elegir números';
     return 'Ver la rifa';
   }
 
   private startPolling(purchaseId: string): void {
     this.pollingSubscription?.unsubscribe();
-    this.pollingTimedOut.set(false);
     this.pollingSubscription = concat(of(0), timer(POLLING_INTERVAL_MS, POLLING_INTERVAL_MS))
       .pipe(
         takeUntil(timer(POLLING_TIMEOUT_MS)),
@@ -361,7 +474,6 @@ export class RaffleStatusPageComponent implements OnInit {
         takeWhile((response) => PENDING_STATUSES.includes(response.status), true),
         takeUntilDestroyed(this.destroyRef),
         finalize(() => {
-          if (this.isPending()) this.pollingTimedOut.set(true);
           this.pollingSubscription = null;
         }),
       )
@@ -388,8 +500,7 @@ export class RaffleStatusPageComponent implements OnInit {
     this.status.set(response.status);
     this.purchaseId.set(response.rafflePurchaseId);
     this.numbers.set(response.numbers);
-
-    if (!PENDING_STATUSES.includes(response.status)) this.checkoutStore.clear();
+    this.checkoutStore.updateStatus(response.rafflePurchaseId, response.status, response.numbers);
   }
 }
 

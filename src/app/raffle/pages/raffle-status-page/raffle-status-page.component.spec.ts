@@ -26,7 +26,7 @@ describe('RaffleStatusPageComponent', () => {
   });
 
   it.each([
-    ['PAID', '¡Pago confirmado!', '07 · 23 · 65'],
+    ['PAID', '¡Pago confirmado!', '07'],
     ['EXPIRED', 'La reserva venció', 'Volver a elegir números'],
     ['REQUIRES_REVIEW', 'Estamos revisando tu pago', 'No vuelvas a pagar por ahora'],
     ['REFUNDED', 'Pago reembolsado', 'Este pago fue reembolsado'],
@@ -37,7 +37,16 @@ describe('RaffleStatusPageComponent', () => {
 
     expect(fixture.nativeElement.textContent).toContain(title);
     expect(fixture.nativeElement.textContent).toContain(copy);
-    expect(store.context()).toBeNull();
+    expect(store.context()?.status).toBe(status);
+  });
+
+  it('keeps the checkout context so /rifa can show a recently-processed banner', () => {
+    setup();
+    flushStatus('PAID');
+    fixture.detectChanges();
+
+    expect(store.context()).not.toBeNull();
+    expect(store.context()?.numbers).toEqual([7, 23, 65]);
   });
 
   it('keeps polling while payment is pending and ignores redirect status params', () => {
@@ -48,6 +57,24 @@ describe('RaffleStatusPageComponent', () => {
     expect(component.title()).toBe('Estamos confirmando tu pago...');
     expect(component.title()).not.toContain('confirmado!');
     expect(store.context()).not.toBeNull();
+  });
+
+  it('offers an immediate "Actualizar estado" action while pending, without waiting for a timeout', () => {
+    setup();
+    flushStatus('PAYMENT_PENDING');
+    fixture.detectChanges();
+
+    const buttons = Array.from(
+      (fixture.nativeElement as HTMLElement).querySelectorAll('button'),
+    );
+    const updateButton = buttons.find((button) => button.textContent?.includes('Actualizar estado'));
+    expect(updateButton).toBeTruthy();
+    expect(updateButton?.disabled).toBe(false);
+
+    updateButton!.click();
+    flushStatus('PAID');
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('¡Pago confirmado!');
   });
 
   it('uses the success treatment when the backend confirms payment', () => {

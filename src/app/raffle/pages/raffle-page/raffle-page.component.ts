@@ -19,14 +19,15 @@ import { formatArs } from '../../../core/utils/format-ars';
 import { AppFooterComponent } from '../../../shared/components/app-footer/app-footer.component';
 import { AppHeaderComponent } from '../../../shared/components/app-header/app-header.component';
 import { BottomNavigationComponent } from '../../../shared/components/bottom-navigation/bottom-navigation.component';
-import { IconComponent } from '../../../shared/components/icon/icon.component';
+import { IconComponent, IconName } from '../../../shared/components/icon/icon.component';
 import { PublicRaffleApiService } from '../../core/public-raffle-api.service';
-import { RaffleCheckoutStore } from '../../core/raffle-checkout.store';
+import { RaffleCheckoutContext, RaffleCheckoutStore } from '../../core/raffle-checkout.store';
 import {
   PublicRaffle,
   PublicRaffleNumber,
   PublicRaffleStatus,
   RaffleNumberStatus,
+  RafflePurchaseStatus,
   RaffleReservationResponse,
   raffleApiError,
   unavailableNumbers,
@@ -35,6 +36,13 @@ import {
 type PurchasePhase = 'IDLE' | 'RESERVING' | 'CREATING_PREFERENCE' | 'REDIRECTING' | 'ERROR';
 
 const MAX_NUMBERS = 10;
+const dateTimeFormatter = new Intl.DateTimeFormat('es-AR', {
+  day: '2-digit',
+  month: '2-digit',
+  year: 'numeric',
+  hour: '2-digit',
+  minute: '2-digit',
+});
 
 @Component({
   selector: 'app-raffle-page',
@@ -162,7 +170,7 @@ const MAX_NUMBERS = 10;
                   <p class="mt-4 text-left font-bold">
                     ¡Gracias a todas las personas que participaron!
                   </p>
-                } @else {
+                } @else if (currentRaffle.status === 'ACTIVE' || currentRaffle.status === 'PAUSED') {
                   <div class="mt-7 flex flex-wrap items-end gap-x-7 gap-y-3">
                     <div>
                       <p
@@ -233,13 +241,12 @@ const MAX_NUMBERS = 10;
             </div>
           </section>
 
-          @if (currentRaffle.status !== 'ACTIVE') {
+          @if (currentRaffle.status === 'PAUSED' || currentRaffle.status === 'CLOSED') {
             <section class="mx-auto max-w-3xl px-5 py-10 sm:px-6 lg:px-8">
               <div
                 class="inactive-raffle-card surface-card relative overflow-hidden rounded-3xl border p-6 text-center sm:p-8"
                 [class.inactive-raffle-card--paused]="currentRaffle.status === 'PAUSED'"
                 [class.inactive-raffle-card--closed]="currentRaffle.status === 'CLOSED'"
-                [class.inactive-raffle-card--drawn]="currentRaffle.status === 'DRAWN'"
                 role="status"
               >
                 <app-icon name="paw" class="inactive-raffle-paw inactive-raffle-paw--one" />
@@ -250,15 +257,88 @@ const MAX_NUMBERS = 10;
                 />
                 <h2 class="mt-4 text-2xl font-black">{{ inactiveTitle(currentRaffle.status) }}</h2>
                 <p class="mt-2 text-center leading-7 text-[var(--color-text-muted)]">
-                  {{ inactiveDescription(currentRaffle.status) }}
+                  {{ inactiveDescription(currentRaffle) }}
                 </p>
+              </div>
+            </section>
+          }
+
+          @if (currentRaffle.status === 'DRAWN') {
+            <section class="mx-auto max-w-3xl px-5 py-10 sm:px-6 lg:px-8">
+              <div
+                class="draw-result-card surface-card relative overflow-hidden rounded-3xl border px-6 py-6 text-center sm:p-8"
+                role="status"
+              >
+                <p
+                  class="text-xs font-extrabold uppercase tracking-[0.14em] text-[var(--color-accent)]"
+                >
+                  Resultado del sorteo
+                </p>
+                @if (currentRaffle.drawnAt) {
+                  <p class="mt-2 text-sm font-bold text-[var(--color-text-muted)]">
+                    Sorteado el {{ formatDateTime(currentRaffle.drawnAt) }}
+                  </p>
+                }
+                <p class="mx-auto mt-3 max-w-md text-center leading-7 text-[var(--color-text-muted)]">
+                  El número se sorteó de forma pública y no exponemos datos de quién participó.
+                </p>
+              </div>
+            </section>
+          }
+
+          @if (checkoutBanner(); as banner) {
+            <section class="mx-auto max-w-3xl px-5 pt-10 sm:px-6 lg:px-8">
+              <div
+                class="checkout-banner surface-elevated relative overflow-hidden rounded-2xl border p-5 sm:p-6"
+                [class.checkout-banner--success]="banner.status === 'PAID'"
+                [class.checkout-banner--attention]="
+                  banner.status === 'EXPIRED' || banner.status === 'REFUNDED'
+                "
+                role="status"
+              >
+                <button
+                  type="button"
+                  class="checkout-banner-dismiss"
+                  aria-label="Cerrar aviso de compra"
+                  (click)="dismissCheckoutBanner()"
+                >
+                  <app-icon name="x" class="size-4" />
+                </button>
+                <div class="flex items-start gap-3 pr-6">
+                  <span
+                    class="checkout-banner-icon grid size-11 shrink-0 place-items-center rounded-xl text-white"
+                  >
+                    <app-icon [name]="checkoutBannerIcon(banner.status)" class="size-5" />
+                  </span>
+                  <div class="min-w-0 text-left">
+                    <h2 class="text-lg font-black">{{ checkoutBannerTitle(banner.status) }}</h2>
+                    <p class="mt-1 text-sm leading-6 text-[var(--color-text-muted)]">
+                      {{ checkoutBannerDescription(banner.status) }}
+                    </p>
+                    @if (banner.status === 'PAID' && banner.numbers.length) {
+                      <div class="mt-3 flex flex-wrap gap-2">
+                        @for (number of sortedBannerNumbers(); track number) {
+                          <span class="number-chip">{{ numberLabel(number) }}</span>
+                        }
+                      </div>
+                    }
+                    <a
+                      [routerLink]="checkoutBannerRoute(banner.status)"
+                      class="button-primary mt-4 inline-flex min-h-10 items-center justify-center rounded-lg px-4 text-sm font-extrabold"
+                      >{{ checkoutBannerCta(banner.status) }}</a
+                    >
+                  </div>
+                </div>
               </div>
             </section>
           }
 
           @if (numbersLoaded()) {
             <section class="mx-auto max-w-6xl px-5 py-10 sm:px-6 lg:px-8">
-              <div class="grid items-start gap-7 lg:grid-cols-[minmax(0,1fr)_21rem]">
+              <div
+                class="grid items-start gap-7"
+                [class]="currentRaffle.status === 'ACTIVE' ? 'lg:grid-cols-[minmax(0,1fr)_21rem]' : ''"
+              >
                 <div class="surface-card dark-neon-card rounded-[1.75rem] border p-4 sm:p-6">
                   <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
                     <div>
@@ -339,16 +419,16 @@ const MAX_NUMBERS = 10;
                           currentRaffle.status === 'DRAWN' &&
                           currentRaffle.winningNumber === item.number
                         ) {
-                          <span class="raffle-number-winner-badge">
-                            <app-icon name="trophy" class="size-3" />
-                            <span>Ganador</span>
-                          </span>
+                          <app-icon name="trophy" class="winner-trophy size-3" aria-hidden="true" />
+                          <span class="winner-dot" aria-hidden="true"></span>
+                          <span class="sr-only">Número ganador</span>
                         }
                       </button>
                     }
                   </div>
                 </div>
 
+                @if (currentRaffle.status === 'ACTIVE') {
                 <aside
                   class="selection-card surface-elevated rounded-[1.75rem] border p-5 lg:sticky lg:top-24"
                   aria-labelledby="selection-title"
@@ -490,7 +570,7 @@ const MAX_NUMBERS = 10;
 
                       <button
                         type="submit"
-                        class="mercado-pago-button mt-5 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl px-4 font-black transition disabled:opacity-55"
+                        class="mercado-pago-button mt-5 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl px-4 font-black transition disabled:cursor-not-allowed disabled:opacity-55"
                         [disabled]="paymentDisabled()"
                       >
                         @if (isBusy()) {
@@ -498,12 +578,20 @@ const MAX_NUMBERS = 10;
                             class="size-4 animate-spin rounded-full border-2 border-current border-r-transparent"
                             aria-hidden="true"
                           ></span>
+                        } @else {
+                          <img
+                            src="images/mp%20icon.svg"
+                            alt=""
+                            class="size-6 shrink-0 object-contain"
+                            loading="lazy"
+                          />
                         }
                         {{ paymentButtonLabel() }}
                       </button>
                     </form>
                   }
                 </aside>
+                }
               </div>
             </section>
           }
@@ -579,7 +667,9 @@ export class RafflePageComponent implements OnInit {
   });
   readonly soldPercentage = computed(() => {
     const stats = this.currentStats();
-    return stats.total ? Math.min(100, (stats.sold / stats.total) * 100) : 0;
+    if (!stats.total) return 0;
+    const pct = Math.min(100, (stats.sold / stats.total) * 100);
+    return stats.sold > 0 ? Math.max(pct, 2.5) : 0;
   });
   readonly selectedLabels = computed(() =>
     [...this.selected()]
@@ -597,11 +687,17 @@ export class RafflePageComponent implements OnInit {
     () => this.raffle()?.status === 'ACTIVE' && !this.isBusy() && !this.reservation(),
   );
 
+  readonly checkoutBanner = signal<RaffleCheckoutContext | null>(null);
+  readonly sortedBannerNumbers = computed(() =>
+    (this.checkoutBanner()?.numbers ?? []).slice().sort((left, right) => left - right),
+  );
+
   private attemptKey: string | null = null;
   private conflictResetTimer: ReturnType<typeof setTimeout> | undefined;
 
   ngOnInit(): void {
     this.loadRaffle();
+    this.refreshCheckoutBanner();
   }
 
   @HostListener('window:focus')
@@ -616,6 +712,10 @@ export class RafflePageComponent implements OnInit {
     this.api
       .active()
       .pipe(
+        catchError((error: unknown) => {
+          if (raffleApiError(error)?.code === 'RAFFLE_ACTIVE_NOT_FOUND') return this.api.latest();
+          throw error;
+        }),
         switchMap((raffle) =>
           forkJoin({ raffle: this.api.byId(raffle.id), numbers: this.api.numbers(raffle.id) }),
         ),
@@ -629,7 +729,7 @@ export class RafflePageComponent implements OnInit {
           this.numbersLoaded.set(true);
         },
         error: (error: unknown) => {
-          if (raffleApiError(error)?.code === 'RAFFLE_ACTIVE_NOT_FOUND') {
+          if (raffleApiError(error)?.code === 'RAFFLE_NOT_FOUND') {
             this.noActiveRaffle.set(true);
             return;
           }
@@ -676,7 +776,7 @@ export class RafflePageComponent implements OnInit {
       next.delete(item.number);
       this.selectionMessage.set('');
     } else if (next.size >= MAX_NUMBERS) {
-      this.selectionMessage.set('Podés elegir hasta 10 números por compra.');
+      this.selectionMessage.set('Máximo alcanzado ✓ Ya elegiste tus 10 números.');
       return;
     } else {
       next.add(item.number);
@@ -734,6 +834,7 @@ export class RafflePageComponent implements OnInit {
             numbers: reservation.numbers,
             reservationExpiresAt: reservation.reservationExpiresAt,
           });
+          this.checkoutBanner.set(this.checkoutStore.context());
           this.createPreference(reservation);
         },
         error: (error: unknown) => this.handleReservationError(error),
@@ -776,7 +877,7 @@ export class RafflePageComponent implements OnInit {
     return {
       ACTIVE: '',
       PAUSED: 'La rifa está pausada temporalmente',
-      CLOSED: 'La venta de números ya cerró',
+      CLOSED: 'La venta finalizó',
       DRAWN: 'La rifa ya fue sorteada',
     }[status];
   }
@@ -785,13 +886,93 @@ export class RafflePageComponent implements OnInit {
     return status === 'DRAWN' ? 'trophy' : 'clock';
   }
 
-  inactiveDescription(status: PublicRaffleStatus): string {
-    return {
-      ACTIVE: '',
-      PAUSED: 'Las compras ya iniciadas continúan normalmente.',
-      CLOSED: 'Gracias a todas las personas que participaron.',
-      DRAWN: 'Podés consultar el número ganador sin exponer datos de quien participó.',
-    }[status];
+  inactiveDescription(raffle: PublicRaffle): string {
+    if (raffle.status === 'PAUSED') return 'Las compras ya iniciadas continúan normalmente.';
+    if (raffle.status === 'CLOSED') {
+      return raffle.drawAt
+        ? `Gracias por participar. El sorteo se realizará el ${this.formatDateTime(raffle.drawAt)}.`
+        : 'Gracias por participar. El sorteo se realizará próximamente.';
+    }
+    return '';
+  }
+
+  formatDateTime(value: string): string {
+    return dateTimeFormatter.format(new Date(value));
+  }
+
+  checkoutBannerIcon(status: RafflePurchaseStatus): IconName {
+    switch (status) {
+      case 'PAID':
+        return 'check';
+      case 'REQUIRES_REVIEW':
+        return 'shield';
+      case 'EXPIRED':
+      case 'REFUNDED':
+        return 'info';
+      default:
+        return 'clock';
+    }
+  }
+
+  checkoutBannerTitle(status: RafflePurchaseStatus): string {
+    switch (status) {
+      case 'PAID':
+        return 'Tu pago fue confirmado';
+      case 'EXPIRED':
+        return 'Tu reserva venció';
+      case 'REQUIRES_REVIEW':
+        return 'Estamos revisando tu pago';
+      case 'REFUNDED':
+        return 'Tu pago fue reembolsado';
+      default:
+        return 'Tenés una compra pendiente';
+    }
+  }
+
+  checkoutBannerDescription(status: RafflePurchaseStatus): string {
+    switch (status) {
+      case 'PAID':
+        return 'Gracias por ser parte de esta ayuda. Tus números quedaron confirmados.';
+      case 'EXPIRED':
+        return 'La reserva venció antes de confirmarse el pago. Podés elegir números otra vez sin riesgo de pagar dos veces.';
+      case 'REQUIRES_REVIEW':
+        return 'No vuelvas a pagar mientras confirmamos el estado con Mercado Pago.';
+      case 'REFUNDED':
+        return 'Si necesitás ayuda con este reembolso, contactanos.';
+      default:
+        return 'Estamos esperando la confirmación de Mercado Pago. No necesitás volver a pagar.';
+    }
+  }
+
+  checkoutBannerCta(status: RafflePurchaseStatus): string {
+    return status === 'PAID' ? 'Ver compra' : status === 'EXPIRED' ? 'Ver detalle' : 'Ver estado del pago';
+  }
+
+  checkoutBannerRoute(status: RafflePurchaseStatus): string {
+    if (status === 'PAID') return '/rifa/checkout/success';
+    if (status === 'EXPIRED' || status === 'REFUNDED') return '/rifa/checkout/failure';
+    return '/rifa/checkout/pending';
+  }
+
+  dismissCheckoutBanner(): void {
+    this.checkoutStore.clear();
+    this.checkoutBanner.set(null);
+  }
+
+  private refreshCheckoutBanner(): void {
+    const context = this.checkoutStore.context();
+    if (!context) return;
+    this.checkoutBanner.set(context);
+    this.api
+      .purchaseStatus(context.rafflePurchaseId)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (response) => {
+          this.checkoutStore.updateStatus(response.rafflePurchaseId, response.status, response.numbers);
+          this.checkoutBanner.set(this.checkoutStore.context());
+        },
+        error: () => undefined,
+      });
   }
 
   paymentButtonLabel(): string {

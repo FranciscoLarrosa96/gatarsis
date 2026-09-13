@@ -20,6 +20,10 @@ export class PublicRaffleApiService {
     return this.http.get<PublicRaffle>(`${PUBLIC_API_BASE_URL}/raffles/active`);
   }
 
+  latest(): Observable<PublicRaffle> {
+    return this.http.get<PublicRaffle>(`${PUBLIC_API_BASE_URL}/raffles/latest`);
+  }
+
   byId(raffleId: string): Observable<PublicRaffle> {
     return this.http.get<PublicRaffle>(`${PUBLIC_API_BASE_URL}/raffles/${raffleId}`);
   }
