@@ -4,7 +4,10 @@
       "Bash(npm run *)",
       "Bash(git stash *)",
       "Bash(npm run start -- --port 4300 > /tmp/ng-serve.log 2>&1 & *)",
-      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:4300/rifa)"
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:4300/rifa)",
+      "Bash(grep -n \"\\\\.size-2\\\\\\\\\\\\\\\\.5{\" -m1 dist/rescatadosTandil/browser/*.css)",
+      "Bash(python3 -c ' *)",
+      "Bash(node -e \"console.log\\(require\\('./package.json'\\).dependencies['@angular/core']\\)\")"
     ],
     "additionalDirectories": [
       "\\tmp"

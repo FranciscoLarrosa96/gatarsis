@@ -244,23 +244,23 @@ const dateTimeFormatter = new Intl.DateTimeFormat('es-AR', {
           </section>
 
           @if (currentRaffle.status === 'PAUSED' || currentRaffle.status === 'CLOSED') {
-            <section class="mx-auto max-w-3xl px-5 py-10 sm:px-6 lg:px-8">
+            <section class="mx-auto max-w-3xl px-5 py-8 sm:px-6 lg:px-8">
               <div
-                class="inactive-raffle-card surface-card relative overflow-hidden rounded-3xl border p-6 text-center sm:p-8"
-                [class.inactive-raffle-card--paused]="currentRaffle.status === 'PAUSED'"
-                [class.inactive-raffle-card--closed]="currentRaffle.status === 'CLOSED'"
+                class="inactive-raffle-card flex items-start gap-4 rounded-2xl border p-5 sm:p-6"
                 role="status"
               >
-                <app-icon name="paw" class="inactive-raffle-paw inactive-raffle-paw--one" />
-                <app-icon name="heart" class="inactive-raffle-paw inactive-raffle-paw--two" />
-                <app-icon
-                  [name]="inactiveIcon(currentRaffle.status)"
-                  class="inactive-raffle-icon mx-auto grid size-14 place-items-center rounded-2xl p-3 text-[var(--color-accent)]"
-                />
-                <h2 class="mt-4 text-2xl font-black">{{ inactiveTitle(currentRaffle.status) }}</h2>
-                <p class="mt-2 text-center leading-7 text-[var(--color-text-muted)]">
-                  {{ inactiveDescription(currentRaffle) }}
-                </p>
+                <span class="inactive-raffle-icon grid size-11 shrink-0 place-items-center rounded-xl">
+                  <app-icon
+                    [name]="inactiveIcon(currentRaffle.status)"
+                    class="inactive-raffle-icon-glyph"
+                  />
+                </span>
+                <div class="min-w-0 text-left">
+                  <h2 class="text-lg font-black">{{ inactiveTitle(currentRaffle.status) }}</h2>
+                  <p class="mt-1 leading-6 text-[var(--color-text-muted)]">
+                    {{ inactiveDescription(currentRaffle) }}
+                  </p>
+                </div>
               </div>
             </section>
           }
@@ -271,7 +271,7 @@ const dateTimeFormatter = new Intl.DateTimeFormat('es-AR', {
                 class="draw-result-bar flex flex-wrap items-center justify-center gap-x-2 gap-y-1 rounded-full border px-4 py-2 text-center text-xs font-semibold text-[var(--color-text-muted)]"
                 role="status"
               >
-                <app-icon name="shield" class="size-3.5 shrink-0 text-[var(--color-accent)]" />
+                <app-icon name="shield" class="draw-result-icon shrink-0 text-[var(--color-accent)]" />
                 @if (currentRaffle.drawnAt) {
                   <span>Sorteado el {{ formatDateTime(currentRaffle.drawnAt) }} ·</span>
                 }
@@ -410,14 +410,13 @@ const dateTimeFormatter = new Intl.DateTimeFormat('es-AR', {
                         (click)="toggleNumber(item)"
                       >
                         <span>{{ numberLabel(item.number) }}</span>
-                        @if (isSelected(item.number)) {
-                          <app-icon name="check" class="number-check size-3" />
-                        }
                         @if (
                           currentRaffle.status === 'DRAWN' &&
                           currentRaffle.winningNumber === item.number
                         ) {
-                          <app-icon name="trophy" class="winner-trophy size-2.5" aria-hidden="true" />
+                          <span class="number-badge number-badge--winner" aria-hidden="true">
+                            <app-icon name="trophy" class="number-badge-icon" />
+                          </span>
                           <span class="sr-only">Número ganador</span>
                         }
                       </button>

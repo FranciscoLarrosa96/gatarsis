@@ -62,45 +62,23 @@
 }
 
 .inactive-raffle-card {
-  isolation: isolate;
-  border-color: color-mix(in srgb, var(--color-accent) 30%, var(--color-border));
-  background:
-    radial-gradient(
-      circle at 18% 18%,
-      color-mix(in srgb, var(--color-accent-soft) 54%, transparent),
-      transparent 13rem
-    ),
-    var(--color-card);
+  border-color: color-mix(in srgb, var(--color-accent) 22%, var(--color-border));
+  background: color-mix(in srgb, var(--color-accent) 5%, var(--color-card));
 }
 
 .inactive-raffle-icon {
-  background: color-mix(in srgb, var(--color-accent) 10%, var(--color-card));
-  box-shadow: 0 8px 18px color-mix(in srgb, var(--color-accent) 15%, transparent);
+  background: color-mix(in srgb, var(--color-accent) 12%, var(--color-card));
 }
 
-.inactive-raffle-paw {
-  position: absolute;
-  z-index: -1;
+.inactive-raffle-icon-glyph {
+  width: 1.35rem;
+  height: 1.35rem;
   color: var(--color-accent);
-  pointer-events: none;
 }
 
-.inactive-raffle-paw--one {
-  right: -1.5rem;
-  bottom: -2.5rem;
-  width: 10rem;
-  height: 10rem;
-  opacity: 0.08;
-  transform: rotate(18deg);
-}
-
-.inactive-raffle-paw--two {
-  top: 1.5rem;
-  left: 1.5rem;
-  width: 2rem;
-  height: 2rem;
-  opacity: 0.14;
-  transform: rotate(-18deg);
+.draw-result-icon {
+  width: 0.85rem;
+  height: 0.85rem;
 }
 
 .winner-panel {
@@ -226,18 +204,28 @@
   cursor: default;
 }
 
-.winner-trophy {
+.number-badge {
   position: absolute;
-  top: 0.2rem;
-  right: 0.25rem;
-  color: #a36e00;
-  opacity: 0.7;
+  top: -0.32rem;
+  right: -0.32rem;
+  z-index: 1;
+  display: grid;
+  width: 1.05rem;
+  height: 1.05rem;
+  place-items: center;
+  border: 1.5px solid var(--color-card);
+  border-radius: 999px;
+  box-shadow: 0 2px 4px rgba(17, 11, 28, 0.18);
 }
 
-.number-check {
-  position: absolute;
-  top: 0.2rem;
-  right: 0.2rem;
+.number-badge--winner {
+  background: #d59d20;
+}
+
+.number-badge-icon {
+  width: 0.6rem;
+  height: 0.6rem;
+  color: #fff;
 }
 
 .legend-dot {
@@ -422,10 +410,6 @@
 
 :host-context(.dark) .raffle-number--winner {
   background: color-mix(in srgb, #f5ca59 14%, var(--color-card));
-}
-
-:host-context(.dark) .winner-trophy {
-  color: #f2c25a;
 }
 
 @media (min-width: 768px) {
