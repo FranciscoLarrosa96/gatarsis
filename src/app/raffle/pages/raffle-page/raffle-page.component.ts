@@ -772,7 +772,7 @@ export class RafflePageComponent implements OnInit {
       next.delete(item.number);
       this.selectionMessage.set('');
     } else if (next.size >= MAX_NUMBERS) {
-      this.selectionMessage.set('Máximo alcanzado ✓ Ya elegiste tus 10 números.');
+      this.selectionMessage.set(`Ya elegiste tus ${MAX_NUMBERS} números. Ese es el máximo por compra.`);
       return;
     } else {
       next.add(item.number);
