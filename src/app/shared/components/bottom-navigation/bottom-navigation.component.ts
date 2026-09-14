@@ -12,7 +12,7 @@ import { IconComponent } from '../icon/icon.component';
       class="surface-glass fixed inset-x-0 bottom-0 z-40 border-t px-3 pb-[max(env(safe-area-inset-bottom),0.5rem)] pt-2 lg:hidden"
       aria-label="Navegación móvil"
     >
-      <div class="mx-auto grid max-w-md grid-cols-6 gap-0.5">
+      <div class="mx-auto grid max-w-lg grid-cols-7 gap-0.5">
         <a
           routerLink="/"
           routerLinkActive="nav-active"
@@ -31,6 +31,15 @@ import { IconComponent } from '../icon/icon.component';
         >
           <app-icon name="paw" class="size-4" />
           Casos
+        </a>
+        <a
+          routerLink="/adopciones"
+          routerLinkActive="nav-active"
+          ariaCurrentWhenActive="page"
+          class="flex min-h-12 flex-col items-center justify-center rounded-full px-0.5 text-[10px] font-bold text-[var(--color-text)] sm:px-1 sm:text-xs"
+        >
+          <app-icon name="heart" class="size-4" />
+          Adoptar
         </a>
         <a
           routerLink="/donde-va-tu-ayuda"

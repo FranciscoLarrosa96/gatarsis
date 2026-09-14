@@ -16,6 +16,13 @@ export const routes: Routes = [
       import('./features/cases/cases-page.component').then((m) => m.CasesPageComponent),
   },
   {
+    path: 'adopciones',
+    loadComponent: () =>
+      import('./adoptions/pages/adoptions-page/adoptions-page.component').then(
+        (m) => m.AdoptionsPageComponent,
+      ),
+  },
+  {
     path: 'casos/:slug',
     loadComponent: () =>
       import('./features/case-detail/case-detail-page.component').then(

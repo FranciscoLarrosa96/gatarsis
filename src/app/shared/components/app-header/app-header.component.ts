@@ -20,7 +20,10 @@ import { IconComponent } from '../icon/icon.component';
           <span>{{ brandName }}</span>
         </a>
 
-        <nav class="hidden items-center gap-5 text-sm font-semibold lg:flex" aria-label="Principal">
+        <nav
+          class="hidden items-center gap-2 text-sm font-semibold lg:flex xl:gap-3"
+          aria-label="Principal"
+        >
           <a
             routerLink="/"
             routerLinkActive="nav-active"
@@ -39,6 +42,15 @@ import { IconComponent } from '../icon/icon.component';
           >
             <app-icon name="paw" class="size-4" />
             <span>Casos</span>
+          </a>
+          <a
+            routerLink="/adopciones"
+            routerLinkActive="nav-active"
+            class="inline-flex items-center gap-1.5 rounded-full border border-transparent px-3 py-2 text-[var(--color-text)] transition hover:bg-[var(--color-recovering-bg)] hover:text-[var(--color-accent)]"
+            ariaCurrentWhenActive="page"
+          >
+            <app-icon name="heart" class="size-4" />
+            <span>Adopciones</span>
           </a>
           <a
             routerLink="/donde-va-tu-ayuda"

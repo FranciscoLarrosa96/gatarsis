@@ -7,6 +7,7 @@ describe('public commerce routes', () => {
     expect(paths).toContain('tienda/:slug');
     expect(paths).toContain('carrito');
     expect(paths).toContain('rifa');
+    expect(paths).toContain('adopciones');
     expect(paths).toContain('rifa/checkout/success');
     expect(paths).toContain('rifa/checkout/pending');
     expect(paths).toContain('rifa/checkout/failure');
@@ -15,5 +16,6 @@ describe('public commerce routes', () => {
     expect(paths).toContain('checkout/failure');
     expect(paths.indexOf('checkout/success')).toBeLessThan(paths.indexOf('**'));
     expect(paths.indexOf('carrito')).toBeLessThan(paths.indexOf('**'));
+    expect(paths.indexOf('adopciones')).toBeLessThan(paths.indexOf('**'));
   });
 });
