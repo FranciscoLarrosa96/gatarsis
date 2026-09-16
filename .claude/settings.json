@@ -7,7 +7,10 @@
       "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:4300/rifa)",
       "Bash(grep -n \"\\\\.size-2\\\\\\\\\\\\\\\\.5{\" -m1 dist/rescatadosTandil/browser/*.css)",
       "Bash(python3 -c ' *)",
-      "Bash(node -e \"console.log\\(require\\('./package.json'\\).dependencies['@angular/core']\\)\")"
+      "Bash(node -e \"console.log\\(require\\('./package.json'\\).dependencies['@angular/core']\\)\")",
+      "Bash(node -e \"console.log\\(require\\('./package.json'\\).dependencies['@angular/core'], require\\('./package.json'\\).dependencies['@angular/forms']\\)\")",
+      "Bash(node -e \"let d='';process.stdin.on\\('data',c=>d+=c\\);process.stdin.on\\('end',\\(\\)=>{const p=JSON.parse\\(d\\);console.log\\(p.exports ? Object.keys\\(p.exports\\) : 'no exports field'\\); console.log\\(p.version\\)}\\)\")",
+      "Bash(node -e ' *)"
     ],
     "additionalDirectories": [
       "\\tmp"

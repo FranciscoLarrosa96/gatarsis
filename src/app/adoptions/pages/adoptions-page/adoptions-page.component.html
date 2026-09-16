@@ -94,27 +94,16 @@
           </div>
         </aside>
 
-        <form
-          id="adoption-form"
-          class="adoption-form"
-          [formGroup]="form"
-          (ngSubmit)="submit()"
-          novalidate
-        >
+        <form id="adoption-form" class="adoption-form" [formRoot]="form">
           <div class="honeypot" aria-hidden="true">
             <label for="adoption-website">Sitio web</label>
-            <input
-              id="adoption-website"
-              formControlName="website"
-              tabindex="-1"
-              autocomplete="off"
-            />
+            <input id="adoption-website" [formField]="form.website" tabindex="-1" autocomplete="off" />
           </div>
 
           @if (!reviewing()) {
             @switch (currentStep()) {
               @case (1) {
-                <section class="form-step" formGroupName="applicant" aria-labelledby="step-1-title">
+                <section class="form-step" aria-labelledby="step-1-title">
                   <header class="step-heading">
                     <span><app-icon name="heart" class="size-6" /></span>
                     <div>
@@ -131,15 +120,14 @@
                       <input
                         id="full-name"
                         type="text"
-                        formControlName="fullName"
+                        [formField]="form.applicant.fullName"
                         autocomplete="name"
-                        maxlength="100"
-                        [attr.aria-invalid]="hasError('applicant.fullName')"
+                        [attr.aria-invalid]="showError(form.applicant.fullName)"
                         [attr.aria-describedby]="
-                          hasError('applicant.fullName') ? 'full-name-error' : null
+                          showError(form.applicant.fullName) ? 'full-name-error' : null
                         "
                       />
-                      @if (hasError('applicant.fullName')) {
+                      @if (showError(form.applicant.fullName)) {
                         <p class="field-error" id="full-name-error">
                           Ingresá tu nombre y apellido.
                         </p>
@@ -150,14 +138,13 @@
                       <input
                         id="applicant-email"
                         type="email"
-                        formControlName="email"
+                        [formField]="form.applicant.email"
                         autocomplete="email"
-                        maxlength="160"
                         inputmode="email"
-                        [attr.aria-invalid]="hasError('applicant.email')"
-                        [attr.aria-describedby]="hasError('applicant.email') ? 'email-error' : null"
+                        [attr.aria-invalid]="showError(form.applicant.email)"
+                        [attr.aria-describedby]="showError(form.applicant.email) ? 'email-error' : null"
                       />
-                      @if (hasError('applicant.email')) {
+                      @if (showError(form.applicant.email)) {
                         <p class="field-error" id="email-error">Ingresá un email válido.</p>
                       }
                     </div>
@@ -166,14 +153,13 @@
                       <input
                         id="applicant-phone"
                         type="tel"
-                        formControlName="phone"
+                        [formField]="form.applicant.phone"
                         autocomplete="tel"
-                        maxlength="40"
                         inputmode="tel"
-                        [attr.aria-invalid]="hasError('applicant.phone')"
-                        [attr.aria-describedby]="hasError('applicant.phone') ? 'phone-error' : null"
+                        [attr.aria-invalid]="showError(form.applicant.phone)"
+                        [attr.aria-describedby]="showError(form.applicant.phone) ? 'phone-error' : null"
                       />
-                      @if (hasError('applicant.phone')) {
+                      @if (showError(form.applicant.phone)) {
                         <p class="field-error" id="phone-error">Ingresá un teléfono de contacto.</p>
                       }
                     </div>
@@ -182,7 +168,7 @@
               }
 
               @case (2) {
-                <section class="form-step" formGroupName="home" aria-labelledby="step-2-title">
+                <section class="form-step" aria-labelledby="step-2-title">
                   <header class="step-heading">
                     <span><app-icon name="home" class="size-6" /></span>
                     <div>
@@ -191,19 +177,19 @@
                     </div>
                   </header>
 
-                  <fieldset class="question" [class.has-error]="hasError('home.hasOtherPets')">
+                  <fieldset class="question" [class.has-error]="showError(form.home.hasOtherPets)">
                     <legend>¿Tenés otras mascotas actualmente? <em>*</em></legend>
                     <div class="choice-row">
                       <label
-                        ><input type="radio" formControlName="hasOtherPets" value="yes" />
+                        ><input type="radio" [formField]="form.home.hasOtherPets" value="yes" />
                         <span>Sí</span></label
                       >
                       <label
-                        ><input type="radio" formControlName="hasOtherPets" value="no" />
+                        ><input type="radio" [formField]="form.home.hasOtherPets" value="no" />
                         <span>No</span></label
                       >
                     </div>
-                    @if (hasError('home.hasOtherPets')) {
+                    @if (showError(form.home.hasOtherPets)) {
                       <p class="field-error">Elegí una opción.</p>
                     }
                   </fieldset>
@@ -216,33 +202,30 @@
                       @for (
                         item of [
                           {
-                            control: 'hasRegularVet',
+                            field: form.home.hasRegularVet,
                             label: '¿Cuentan con veterinario/a de cabecera?',
                           },
                           {
-                            control: 'vaccinationsUpToDate',
+                            field: form.home.vaccinationsUpToDate,
                             label: '¿Tienen el plan de vacunación al día?',
                           },
-                          { control: 'petsNeutered', label: '¿Están castradas?' },
+                          { field: form.home.petsNeutered, label: '¿Están castradas?' },
                         ];
-                        track item.control
+                        track item.label
                       ) {
-                        <fieldset
-                          class="question compact"
-                          [class.has-error]="hasError('home.' + item.control)"
-                        >
+                        <fieldset class="question compact" [class.has-error]="showError(item.field)">
                           <legend>{{ item.label }} <em>*</em></legend>
                           <div class="choice-row">
                             <label
-                              ><input type="radio" [formControlName]="item.control" value="yes" />
+                              ><input type="radio" [formField]="item.field" value="yes" />
                               <span>Sí</span></label
                             >
                             <label
-                              ><input type="radio" [formControlName]="item.control" value="no" />
+                              ><input type="radio" [formField]="item.field" value="no" />
                               <span>No</span></label
                             >
                           </div>
-                          @if (hasError('home.' + item.control)) {
+                          @if (showError(item.field)) {
                             <p class="field-error">Elegí una opción.</p>
                           }
                         </fieldset>
@@ -250,41 +233,41 @@
                     </div>
                   }
 
-                  <fieldset class="question" [class.has-error]="hasError('home.householdAgrees')">
+                  <fieldset class="question" [class.has-error]="showError(form.home.householdAgrees)">
                     <legend>
                       ¿Todos los integrantes del hogar están de acuerdo con la adopción? <em>*</em>
                     </legend>
                     <div class="choice-row">
                       <label
-                        ><input type="radio" formControlName="householdAgrees" value="yes" />
+                        ><input type="radio" [formField]="form.home.householdAgrees" value="yes" />
                         <span>Sí</span></label
                       ><label
-                        ><input type="radio" formControlName="householdAgrees" value="no" />
+                        ><input type="radio" [formField]="form.home.householdAgrees" value="no" />
                         <span>No</span></label
                       >
                     </div>
-                    @if (hasError('home.householdAgrees')) {
+                    @if (showError(form.home.householdAgrees)) {
                       <p class="field-error">Elegí una opción.</p>
                     }
                   </fieldset>
 
-                  <fieldset class="question" [class.has-error]="hasError('home.housingType')">
+                  <fieldset class="question" [class.has-error]="showError(form.home.housingType)">
                     <legend>¿Vivís en vivienda propia o alquilada? <em>*</em></legend>
                     <div class="choice-row choice-row--three">
                       <label
-                        ><input type="radio" formControlName="housingType" value="owned" />
+                        ><input type="radio" [formField]="form.home.housingType" value="owned" />
                         <span>Propia</span></label
                       >
                       <label
-                        ><input type="radio" formControlName="housingType" value="rented" />
+                        ><input type="radio" [formField]="form.home.housingType" value="rented" />
                         <span>Alquilada</span></label
                       >
                       <label
-                        ><input type="radio" formControlName="housingType" value="other" />
+                        ><input type="radio" [formField]="form.home.housingType" value="other" />
                         <span>Otra</span></label
                       >
                     </div>
-                    @if (hasError('home.housingType')) {
+                    @if (showError(form.home.housingType)) {
                       <p class="field-error">Elegí una opción.</p>
                     }
                   </fieldset>
@@ -292,39 +275,39 @@
                   @if (isRental) {
                     <fieldset
                       class="question conditional-panel"
-                      [class.has-error]="hasError('home.rentalAllowsPets')"
+                      [class.has-error]="showError(form.home.rentalAllowsPets)"
                     >
                       <legend>¿El lugar permite animales? <em>*</em></legend>
                       <div class="choice-row">
                         <label
-                          ><input type="radio" formControlName="rentalAllowsPets" value="yes" />
+                          ><input type="radio" [formField]="form.home.rentalAllowsPets" value="yes" />
                           <span>Sí</span></label
                         ><label
-                          ><input type="radio" formControlName="rentalAllowsPets" value="no" />
+                          ><input type="radio" [formField]="form.home.rentalAllowsPets" value="no" />
                           <span>No</span></label
                         >
                       </div>
-                      @if (hasError('home.rentalAllowsPets')) {
+                      @if (showError(form.home.rentalAllowsPets)) {
                         <p class="field-error">Elegí una opción.</p>
                       }
                     </fieldset>
                   }
 
-                  <fieldset class="question" [class.has-error]="hasError('home.trustedCaregiver')">
+                  <fieldset class="question" [class.has-error]="showError(form.home.trustedCaregiver)">
                     <legend>
                       En caso de mudanza o viaje, ¿contás con personas de confianza que puedan
                       cuidar al gatito? <em>*</em>
                     </legend>
                     <div class="choice-row">
                       <label
-                        ><input type="radio" formControlName="trustedCaregiver" value="yes" />
+                        ><input type="radio" [formField]="form.home.trustedCaregiver" value="yes" />
                         <span>Sí</span></label
                       ><label
-                        ><input type="radio" formControlName="trustedCaregiver" value="no" />
+                        ><input type="radio" [formField]="form.home.trustedCaregiver" value="no" />
                         <span>No</span></label
                       >
                     </div>
-                    @if (hasError('home.trustedCaregiver')) {
+                    @if (showError(form.home.trustedCaregiver)) {
                       <p class="field-error">Elegí una opción.</p>
                     }
                   </fieldset>
@@ -332,11 +315,7 @@
               }
 
               @case (3) {
-                <section
-                  class="form-step"
-                  formGroupName="adaptation"
-                  aria-labelledby="step-3-title"
-                >
+                <section class="form-step" aria-labelledby="step-3-title">
                   <header class="step-heading">
                     <span><app-icon name="spark" class="size-6" /></span>
                     <div>
@@ -354,7 +333,7 @@
                   </aside>
                   <fieldset
                     class="question"
-                    [class.has-error]="hasError('adaptation.willingToSupportAdaptation')"
+                    [class.has-error]="showError(form.adaptation.willingToSupportAdaptation)"
                   >
                     <legend>
                       ¿Estás dispuesto/a a acompañar este proceso con paciencia y compromiso?
@@ -364,20 +343,20 @@
                       <label
                         ><input
                           type="radio"
-                          formControlName="willingToSupportAdaptation"
+                          [formField]="form.adaptation.willingToSupportAdaptation"
                           value="yes"
                         />
                         <span>Sí</span></label
                       ><label
                         ><input
                           type="radio"
-                          formControlName="willingToSupportAdaptation"
+                          [formField]="form.adaptation.willingToSupportAdaptation"
                           value="no"
                         />
                         <span>No</span></label
                       >
                     </div>
-                    @if (hasError('adaptation.willingToSupportAdaptation')) {
+                    @if (showError(form.adaptation.willingToSupportAdaptation)) {
                       <p class="field-error">Elegí una opción.</p>
                     }
                   </fieldset>
@@ -385,7 +364,7 @@
               }
 
               @case (4) {
-                <section class="form-step" formGroupName="care" aria-labelledby="step-4-title">
+                <section class="form-step" aria-labelledby="step-4-title">
                   <header class="step-heading">
                     <span><app-icon name="stethoscope" class="size-6" /></span>
                     <div>
@@ -396,30 +375,30 @@
                   @for (
                     item of [
                       {
-                        control: 'hasStableIncome',
+                        field: form.care.hasStableIncome,
                         label:
                           '¿Contás con un ingreso fijo que te permita afrontar gastos de alimentación y veterinaria?',
                       },
                       {
-                        control: 'canCoverVetEmergency',
+                        field: form.care.canCoverVetEmergency,
                         label:
                           'Ante una emergencia veterinaria, ¿tenés la posibilidad de afrontar los costos necesarios?',
                       },
                     ];
-                    track item.control
+                    track item.label
                   ) {
-                    <fieldset class="question" [class.has-error]="hasError('care.' + item.control)">
+                    <fieldset class="question" [class.has-error]="showError(item.field)">
                       <legend>{{ item.label }} <em>*</em></legend>
                       <div class="choice-row">
                         <label
-                          ><input type="radio" [formControlName]="item.control" value="yes" />
+                          ><input type="radio" [formField]="item.field" value="yes" />
                           <span>Sí</span></label
                         ><label
-                          ><input type="radio" [formControlName]="item.control" value="no" />
+                          ><input type="radio" [formField]="item.field" value="no" />
                           <span>No</span></label
                         >
                       </div>
-                      @if (hasError('care.' + item.control)) {
+                      @if (showError(item.field)) {
                         <p class="field-error">Elegí una opción.</p>
                       }
                     </fieldset>
@@ -431,12 +410,11 @@
                     >
                     <textarea
                       id="previous-pets"
-                      formControlName="previousPetsDeathContext"
+                      [formField]="form.care.previousPetsDeathContext"
                       rows="5"
-                      maxlength="1000"
-                      [attr.aria-invalid]="hasError('care.previousPetsDeathContext')"
+                      [attr.aria-invalid]="showError(form.care.previousPetsDeathContext)"
                       [attr.aria-describedby]="
-                        hasError('care.previousPetsDeathContext')
+                        showError(form.care.previousPetsDeathContext)
                           ? 'previous-pets-error'
                           : 'previous-pets-help'
                       "
@@ -444,7 +422,7 @@
                     <p class="field-help" id="previous-pets-help">
                       También podés escribir “No tuve mascotas anteriormente”.
                     </p>
-                    @if (hasError('care.previousPetsDeathContext')) {
+                    @if (showError(form.care.previousPetsDeathContext)) {
                       <p class="field-error" id="previous-pets-error">
                         Contanos brevemente tu experiencia.
                       </p>
@@ -454,7 +432,7 @@
               }
 
               @case (5) {
-                <section class="form-step" formGroupName="safety" aria-labelledby="step-5-title">
+                <section class="form-step" aria-labelledby="step-5-title">
                   <header class="step-heading">
                     <span><app-icon name="shield" class="size-6" /></span>
                     <div>
@@ -471,7 +449,7 @@
                   </aside>
                   <fieldset
                     class="question"
-                    [class.has-error]="hasError('safety.homeSafetyStatus')"
+                    [class.has-error]="showError(form.safety.homeSafetyStatus)"
                   >
                     <legend>
                       ¿Tu hogar cuenta o contará con medidas de seguridad adecuadas, como redes en
@@ -479,31 +457,35 @@
                     </legend>
                     <div class="choice-stack">
                       <label
-                        ><input type="radio" formControlName="homeSafetyStatus" value="protected" />
+                        ><input
+                          type="radio"
+                          [formField]="form.safety.homeSafetyStatus"
+                          value="protected"
+                        />
                         <span>Sí, ya cuenta con protección</span></label
                       >
                       <label
                         ><input
                           type="radio"
-                          formControlName="homeSafetyStatus"
+                          [formField]="form.safety.homeSafetyStatus"
                           value="will_install"
                         />
                         <span>Todavía no, pero me comprometo a instalarla</span></label
                       >
                       <label
-                        ><input type="radio" formControlName="homeSafetyStatus" value="no" />
+                        ><input type="radio" [formField]="form.safety.homeSafetyStatus" value="no" />
                         <span>No</span></label
                       >
                       <label
                         ><input
                           type="radio"
-                          formControlName="homeSafetyStatus"
+                          [formField]="form.safety.homeSafetyStatus"
                           value="not_applicable"
                         />
                         <span>No aplica porque no hay aberturas o balcones de riesgo</span></label
                       >
                     </div>
-                    @if (hasError('safety.homeSafetyStatus')) {
+                    @if (showError(form.safety.homeSafetyStatus)) {
                       <p class="field-error">Elegí una opción.</p>
                     }
                   </fieldset>
@@ -517,37 +499,34 @@
                   @for (
                     item of [
                       {
-                        control: 'acceptsMandatoryNeutering',
+                        field: form.safety.acceptsMandatoryNeutering,
                         label: '¿Estás de acuerdo con la castración obligatoria?',
                       },
                       {
-                        control: 'commitsNeuteringProof',
+                        field: form.safety.commitsNeuteringProof,
                         label:
                           '¿Te comprometés a realizar la castración en los tiempos estimados y a enviar comprobante?',
                       },
                       {
-                        control: 'acceptsFollowUp',
+                        field: form.safety.acceptsFollowUp,
                         label:
                           '¿Estás de acuerdo con realizar seguimientos mediante fotos, mensajes o visitas acordadas?',
                       },
                     ];
-                    track item.control
+                    track item.label
                   ) {
-                    <fieldset
-                      class="question compact"
-                      [class.has-error]="hasError('safety.' + item.control)"
-                    >
+                    <fieldset class="question compact" [class.has-error]="showError(item.field)">
                       <legend>{{ item.label }} <em>*</em></legend>
                       <div class="choice-row">
                         <label
-                          ><input type="radio" [formControlName]="item.control" value="yes" />
+                          ><input type="radio" [formField]="item.field" value="yes" />
                           <span>Sí</span></label
                         ><label
-                          ><input type="radio" [formControlName]="item.control" value="no" />
+                          ><input type="radio" [formField]="item.field" value="no" />
                           <span>No</span></label
                         >
                       </div>
-                      @if (hasError('safety.' + item.control)) {
+                      @if (showError(item.field)) {
                         <p class="field-error">Elegí una opción.</p>
                       }
                     </fieldset>
@@ -556,11 +535,7 @@
               }
 
               @case (6) {
-                <section
-                  class="form-step"
-                  formGroupName="commitment"
-                  aria-labelledby="step-6-title"
-                >
+                <section class="form-step" aria-labelledby="step-6-title">
                   <header class="step-heading">
                     <span><app-icon name="heart" class="size-6" /></span>
                     <div>
@@ -585,14 +560,14 @@
                     </p>
                     <label
                       class="check-choice"
-                      [class.has-error]="hasError('commitment.acceptsResponsibleReturnClause')"
+                      [class.has-error]="showError(form.commitment.acceptsResponsibleReturnClause)"
                       ><input
                         type="checkbox"
-                        formControlName="acceptsResponsibleReturnClause"
+                        [formField]="form.commitment.acceptsResponsibleReturnClause"
                       /><span><app-icon name="check" class="size-4" /></span
                       ><b>Leí y acepto esta condición de adopción responsable. *</b></label
                     >
-                    @if (hasError('commitment.acceptsResponsibleReturnClause')) {
+                    @if (showError(form.commitment.acceptsResponsibleReturnClause)) {
                       <p class="field-error">
                         Necesitamos que aceptes esta condición para continuar.
                       </p>
@@ -607,12 +582,15 @@
                     </p>
                     <label
                       class="check-choice"
-                      [class.has-error]="hasError('commitment.acceptsLongTermCommitment')"
-                      ><input type="checkbox" formControlName="acceptsLongTermCommitment" /><span
+                      [class.has-error]="showError(form.commitment.acceptsLongTermCommitment)"
+                      ><input
+                        type="checkbox"
+                        [formField]="form.commitment.acceptsLongTermCommitment"
+                      /><span
                         ><app-icon name="check" class="size-4" /></span
                       ><b>Entiendo y asumo el compromiso de una adopción a largo plazo. *</b></label
                     >
-                    @if (hasError('commitment.acceptsLongTermCommitment')) {
+                    @if (showError(form.commitment.acceptsLongTermCommitment)) {
                       <p class="field-error">
                         Necesitamos que aceptes este compromiso para continuar.
                       </p>
@@ -666,15 +644,15 @@
                   <dl>
                     <div>
                       <dt>Nombre</dt>
-                      <dd>{{ form.controls.applicant.controls.fullName.value }}</dd>
+                      <dd>{{ form.applicant.fullName().value() }}</dd>
                     </div>
                     <div>
                       <dt>Email</dt>
-                      <dd>{{ form.controls.applicant.controls.email.value }}</dd>
+                      <dd>{{ form.applicant.email().value() }}</dd>
                     </div>
                     <div>
                       <dt>Teléfono</dt>
-                      <dd>{{ form.controls.applicant.controls.phone.value }}</dd>
+                      <dd>{{ form.applicant.phone().value() }}</dd>
                     </div>
                   </dl>
                 </article>
@@ -686,43 +664,43 @@
                   <dl>
                     <div>
                       <dt>Otras mascotas</dt>
-                      <dd>{{ yesNoLabel(form.controls.home.controls.hasOtherPets.value) }}</dd>
+                      <dd>{{ yesNoLabel(form.home.hasOtherPets().value()) }}</dd>
                     </div>
                     @if (hasOtherPets) {
                       <div>
                         <dt>Veterinario/a</dt>
-                        <dd>{{ yesNoLabel(form.controls.home.controls.hasRegularVet.value) }}</dd>
+                        <dd>{{ yesNoLabel(form.home.hasRegularVet().value()) }}</dd>
                       </div>
                       <div>
                         <dt>Vacunas al día</dt>
                         <dd>
-                          {{ yesNoLabel(form.controls.home.controls.vaccinationsUpToDate.value) }}
+                          {{ yesNoLabel(form.home.vaccinationsUpToDate().value()) }}
                         </dd>
                       </div>
                       <div>
                         <dt>Castradas</dt>
-                        <dd>{{ yesNoLabel(form.controls.home.controls.petsNeutered.value) }}</dd>
+                        <dd>{{ yesNoLabel(form.home.petsNeutered().value()) }}</dd>
                       </div>
                     }
                     <div>
                       <dt>Hogar de acuerdo</dt>
-                      <dd>{{ yesNoLabel(form.controls.home.controls.householdAgrees.value) }}</dd>
+                      <dd>{{ yesNoLabel(form.home.householdAgrees().value()) }}</dd>
                     </div>
                     <div>
                       <dt>Vivienda</dt>
-                      <dd>{{ housingLabel(form.controls.home.controls.housingType.value) }}</dd>
+                      <dd>{{ housingLabel(form.home.housingType().value()) }}</dd>
                     </div>
                     @if (isRental) {
                       <div>
                         <dt>Permite animales</dt>
                         <dd>
-                          {{ yesNoLabel(form.controls.home.controls.rentalAllowsPets.value) }}
+                          {{ yesNoLabel(form.home.rentalAllowsPets().value()) }}
                         </dd>
                       </div>
                     }
                     <div>
                       <dt>Persona de confianza</dt>
-                      <dd>{{ yesNoLabel(form.controls.home.controls.trustedCaregiver.value) }}</dd>
+                      <dd>{{ yesNoLabel(form.home.trustedCaregiver().value()) }}</dd>
                     </div>
                   </dl>
                 </article>
@@ -735,11 +713,7 @@
                     <div>
                       <dt>Paciencia y compromiso</dt>
                       <dd>
-                        {{
-                          yesNoLabel(
-                            form.controls.adaptation.controls.willingToSupportAdaptation.value
-                          )
-                        }}
+                        {{ yesNoLabel(form.adaptation.willingToSupportAdaptation().value()) }}
                       </dd>
                     </div>
                   </dl>
@@ -752,17 +726,17 @@
                   <dl>
                     <div>
                       <dt>Ingreso fijo</dt>
-                      <dd>{{ yesNoLabel(form.controls.care.controls.hasStableIncome.value) }}</dd>
+                      <dd>{{ yesNoLabel(form.care.hasStableIncome().value()) }}</dd>
                     </div>
                     <div>
                       <dt>Emergencia veterinaria</dt>
                       <dd>
-                        {{ yesNoLabel(form.controls.care.controls.canCoverVetEmergency.value) }}
+                        {{ yesNoLabel(form.care.canCoverVetEmergency().value()) }}
                       </dd>
                     </div>
                     <div>
                       <dt>Experiencia anterior</dt>
-                      <dd>{{ form.controls.care.controls.previousPetsDeathContext.value }}</dd>
+                      <dd>{{ form.care.previousPetsDeathContext().value() }}</dd>
                     </div>
                   </dl>
                 </article>
@@ -775,26 +749,24 @@
                     <div>
                       <dt>Seguridad</dt>
                       <dd>
-                        {{ safetyLabel(form.controls.safety.controls.homeSafetyStatus.value) }}
+                        {{ safetyLabel(form.safety.homeSafetyStatus().value()) }}
                       </dd>
                     </div>
                     <div>
                       <dt>Castración</dt>
                       <dd>
-                        {{
-                          yesNoLabel(form.controls.safety.controls.acceptsMandatoryNeutering.value)
-                        }}
+                        {{ yesNoLabel(form.safety.acceptsMandatoryNeutering().value()) }}
                       </dd>
                     </div>
                     <div>
                       <dt>Comprobante</dt>
                       <dd>
-                        {{ yesNoLabel(form.controls.safety.controls.commitsNeuteringProof.value) }}
+                        {{ yesNoLabel(form.safety.commitsNeuteringProof().value()) }}
                       </dd>
                     </div>
                     <div>
                       <dt>Seguimiento</dt>
-                      <dd>{{ yesNoLabel(form.controls.safety.controls.acceptsFollowUp.value) }}</dd>
+                      <dd>{{ yesNoLabel(form.safety.acceptsFollowUp().value()) }}</dd>
                     </div>
                   </dl>
                 </article>

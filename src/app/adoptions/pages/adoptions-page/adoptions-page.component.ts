@@ -1,14 +1,18 @@
-import { Component, DestroyRef, inject, signal } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import {
-  AbstractControl,
-  FormBuilder,
-  ReactiveFormsModule,
-  ValidationErrors,
-  ValidatorFn,
-  Validators,
-} from '@angular/forms';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { finalize } from 'rxjs';
+  Field,
+  FormField,
+  FormRoot,
+  applyWhen,
+  email,
+  form,
+  maxLength,
+  required,
+  requiredError,
+  schema,
+  validate,
+} from '@angular/forms/signals';
+import { firstValueFrom } from 'rxjs';
 
 import { AppFooterComponent } from '../../../shared/components/app-footer/app-footer.component';
 import { AppHeaderComponent } from '../../../shared/components/app-header/app-header.component';
@@ -23,15 +27,128 @@ import {
   YesNo,
 } from '../../core/adoption.models';
 
-const trimmedRequired: ValidatorFn = (control: AbstractControl): ValidationErrors | null =>
-  typeof control.value === 'string' && control.value.trim().length === 0
-    ? { required: true }
-    : null;
+interface AdoptionFormModel {
+  applicant: {
+    fullName: string;
+    email: string;
+    phone: string;
+  };
+  home: {
+    hasOtherPets: YesNo | '';
+    hasRegularVet: YesNo | '';
+    vaccinationsUpToDate: YesNo | '';
+    petsNeutered: YesNo | '';
+    householdAgrees: YesNo | '';
+    housingType: HousingType | '';
+    rentalAllowsPets: YesNo | '';
+    trustedCaregiver: YesNo | '';
+  };
+  adaptation: {
+    willingToSupportAdaptation: YesNo | '';
+  };
+  care: {
+    hasStableIncome: YesNo | '';
+    canCoverVetEmergency: YesNo | '';
+    previousPetsDeathContext: string;
+  };
+  safety: {
+    homeSafetyStatus: HomeSafetyStatus | '';
+    acceptsMandatoryNeutering: YesNo | '';
+    commitsNeuteringProof: YesNo | '';
+    acceptsFollowUp: YesNo | '';
+  };
+  commitment: {
+    acceptsResponsibleReturnClause: boolean;
+    acceptsLongTermCommitment: boolean;
+  };
+  website: string;
+}
+
+function initialAdoptionModel(): AdoptionFormModel {
+  return {
+    applicant: { fullName: '', email: '', phone: '' },
+    home: {
+      hasOtherPets: '',
+      hasRegularVet: '',
+      vaccinationsUpToDate: '',
+      petsNeutered: '',
+      householdAgrees: '',
+      housingType: '',
+      rentalAllowsPets: '',
+      trustedCaregiver: '',
+    },
+    adaptation: { willingToSupportAdaptation: '' },
+    care: { hasStableIncome: '', canCoverVetEmergency: '', previousPetsDeathContext: '' },
+    safety: {
+      homeSafetyStatus: '',
+      acceptsMandatoryNeutering: '',
+      commitsNeuteringProof: '',
+      acceptsFollowUp: '',
+    },
+    commitment: { acceptsResponsibleReturnClause: false, acceptsLongTermCommitment: false },
+    website: '',
+  };
+}
+
+const nonBlank = (value: string) => (value.trim().length === 0 ? requiredError() : undefined);
+const isAccepted = (value: boolean) => (value ? undefined : requiredError());
+
+const adoptionSchema = schema<AdoptionFormModel>((p) => {
+  required(p.applicant.fullName);
+  validate(p.applicant.fullName, (ctx) => nonBlank(ctx.value()));
+  maxLength(p.applicant.fullName, 100);
+
+  required(p.applicant.email);
+  email(p.applicant.email);
+  maxLength(p.applicant.email, 160);
+
+  required(p.applicant.phone);
+  validate(p.applicant.phone, (ctx) => nonBlank(ctx.value()));
+  maxLength(p.applicant.phone, 40);
+
+  required(p.home.hasOtherPets);
+  applyWhen(
+    p.home,
+    (ctx) => ctx.value().hasOtherPets === 'yes',
+    (home) => {
+      required(home.hasRegularVet);
+      required(home.vaccinationsUpToDate);
+      required(home.petsNeutered);
+    },
+  );
+  required(p.home.householdAgrees);
+  required(p.home.housingType);
+  applyWhen(
+    p.home,
+    (ctx) => ctx.value().housingType === 'rented',
+    (home) => {
+      required(home.rentalAllowsPets);
+    },
+  );
+  required(p.home.trustedCaregiver);
+
+  required(p.adaptation.willingToSupportAdaptation);
+
+  required(p.care.hasStableIncome);
+  required(p.care.canCoverVetEmergency);
+  required(p.care.previousPetsDeathContext);
+  validate(p.care.previousPetsDeathContext, (ctx) => nonBlank(ctx.value()));
+  maxLength(p.care.previousPetsDeathContext, 1000);
+
+  required(p.safety.homeSafetyStatus);
+  required(p.safety.acceptsMandatoryNeutering);
+  required(p.safety.commitsNeuteringProof);
+  required(p.safety.acceptsFollowUp);
+
+  validate(p.commitment.acceptsResponsibleReturnClause, (ctx) => isAccepted(ctx.value()));
+  validate(p.commitment.acceptsLongTermCommitment, (ctx) => isAccepted(ctx.value()));
+});
 
 @Component({
   selector: 'app-adoptions-page',
   imports: [
-    ReactiveFormsModule,
+    FormField,
+    FormRoot,
     AppHeaderComponent,
     AppFooterComponent,
     BottomNavigationComponent,
@@ -41,9 +158,7 @@ const trimmedRequired: ValidatorFn = (control: AbstractControl): ValidationError
   styleUrl: './adoptions-page.component.css',
 })
 export class AdoptionsPageComponent {
-  private readonly fb = inject(FormBuilder);
   private readonly api = inject(AdoptionApiService);
-  private readonly destroyRef = inject(DestroyRef);
 
   readonly config = ADOPTION_CONFIG;
   readonly currentStep = signal(1);
@@ -52,77 +167,54 @@ export class AdoptionsPageComponent {
   readonly submitted = signal(false);
   readonly submitError = signal<string | null>(null);
 
-  readonly form = this.fb.nonNullable.group({
-    applicant: this.fb.nonNullable.group({
-      fullName: ['', [Validators.required, trimmedRequired, Validators.maxLength(100)]],
-      email: ['', [Validators.required, Validators.email, Validators.maxLength(160)]],
-      phone: ['', [Validators.required, trimmedRequired, Validators.maxLength(40)]],
-    }),
-    home: this.fb.nonNullable.group({
-      hasOtherPets: ['' as YesNo | '', Validators.required],
-      hasRegularVet: ['' as YesNo | ''],
-      vaccinationsUpToDate: ['' as YesNo | ''],
-      petsNeutered: ['' as YesNo | ''],
-      householdAgrees: ['' as YesNo | '', Validators.required],
-      housingType: ['' as HousingType | '', Validators.required],
-      rentalAllowsPets: ['' as YesNo | ''],
-      trustedCaregiver: ['' as YesNo | '', Validators.required],
-    }),
-    adaptation: this.fb.nonNullable.group({
-      willingToSupportAdaptation: ['' as YesNo | '', Validators.required],
-    }),
-    care: this.fb.nonNullable.group({
-      hasStableIncome: ['' as YesNo | '', Validators.required],
-      canCoverVetEmergency: ['' as YesNo | '', Validators.required],
-      previousPetsDeathContext: [
-        '',
-        [Validators.required, trimmedRequired, Validators.maxLength(1000)],
-      ],
-    }),
-    safety: this.fb.nonNullable.group({
-      homeSafetyStatus: ['' as HomeSafetyStatus | '', Validators.required],
-      acceptsMandatoryNeutering: ['' as YesNo | '', Validators.required],
-      commitsNeuteringProof: ['' as YesNo | '', Validators.required],
-      acceptsFollowUp: ['' as YesNo | '', Validators.required],
-    }),
-    commitment: this.fb.nonNullable.group({
-      acceptsResponsibleReturnClause: [false, Validators.requiredTrue],
-      acceptsLongTermCommitment: [false, Validators.requiredTrue],
-    }),
-    website: [''],
+  private readonly model = signal<AdoptionFormModel>(initialAdoptionModel());
+  readonly form = form(this.model, adoptionSchema, {
+    submission: {
+      action: async () => {
+        this.submitting.set(true);
+        this.submitError.set(null);
+        try {
+          await firstValueFrom(this.api.submit(this.toRequest()));
+          this.form().reset(initialAdoptionModel());
+          this.currentStep.set(1);
+          this.reviewing.set(false);
+          this.submitted.set(true);
+          this.scrollToQuestionnaire();
+        } catch {
+          this.submitError.set(
+            'No pudimos enviar tu solicitud en este momento. Tus respuestas siguen en pantalla para que puedas volver a intentar.',
+          );
+        } finally {
+          this.submitting.set(false);
+        }
+      },
+      onInvalid: () => {
+        const invalidStep = this.stepStates().findIndex((state) => state.invalid());
+        this.currentStep.set(Math.max(1, invalidStep + 1));
+        this.reviewing.set(false);
+        this.form().focusBoundControl();
+      },
+    },
   });
 
-  private readonly stepGroups: readonly AbstractControl[] = [
-    this.form.controls.applicant,
-    this.form.controls.home,
-    this.form.controls.adaptation,
-    this.form.controls.care,
-    this.form.controls.safety,
-    this.form.controls.commitment,
-  ];
-
-  constructor() {
-    this.form.controls.home.controls.hasOtherPets.valueChanges
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe((value) => this.configureOtherPets(value === 'yes'));
-    this.form.controls.home.controls.housingType.valueChanges
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe((value) => this.configureRental(value === 'rented'));
-  }
-
   get hasOtherPets(): boolean {
-    return this.form.controls.home.controls.hasOtherPets.value === 'yes';
+    return this.form.home.hasOtherPets().value() === 'yes';
   }
 
   get isRental(): boolean {
-    return this.form.controls.home.controls.housingType.value === 'rented';
+    return this.form.home.housingType().value() === 'rented';
+  }
+
+  showError(field: Field<unknown>): boolean {
+    const state = field();
+    return state.invalid() && (state.touched() || state.dirty());
   }
 
   nextStep(): void {
-    const group = this.stepGroups[this.currentStep() - 1];
-    if (group.invalid) {
-      group.markAllAsTouched();
-      this.focusFirstInvalid();
+    const state = this.stepStates()[this.currentStep() - 1];
+    if (state.invalid()) {
+      state.markAsTouched();
+      state.focusBoundControl();
       return;
     }
 
@@ -152,38 +244,6 @@ export class AdoptionsPageComponent {
     this.scrollToQuestionnaire();
   }
 
-  submit(): void {
-    if (this.submitting()) return;
-    if (this.form.invalid) {
-      this.form.markAllAsTouched();
-      const invalidStep = this.stepGroups.findIndex((group) => group.invalid);
-      this.currentStep.set(Math.max(1, invalidStep + 1));
-      this.reviewing.set(false);
-      this.focusFirstInvalid();
-      return;
-    }
-
-    this.submitting.set(true);
-    this.submitError.set(null);
-    this.api
-      .submit(this.toRequest())
-      .pipe(finalize(() => this.submitting.set(false)))
-      .subscribe({
-        next: () => {
-          this.form.reset();
-          this.currentStep.set(1);
-          this.reviewing.set(false);
-          this.submitted.set(true);
-          this.scrollToQuestionnaire();
-        },
-        error: () => {
-          this.submitError.set(
-            'No pudimos enviar tu solicitud en este momento. Tus respuestas siguen en pantalla para que puedas volver a intentar.',
-          );
-        },
-      });
-  }
-
   startAnother(): void {
     this.submitted.set(false);
     this.currentStep.set(1);
@@ -192,11 +252,6 @@ export class AdoptionsPageComponent {
 
   goToQuestionnaire(): void {
     this.scrollToQuestionnaire();
-  }
-
-  hasError(path: string): boolean {
-    const control = this.form.get(path);
-    return !!control && control.invalid && (control.touched || control.dirty);
   }
 
   yesNoLabel(value: YesNo | ''): string {
@@ -217,26 +272,19 @@ export class AdoptionsPageComponent {
     }[value];
   }
 
-  private configureOtherPets(required: boolean): void {
-    const controls = this.form.controls.home.controls;
-    [controls.hasRegularVet, controls.vaccinationsUpToDate, controls.petsNeutered].forEach(
-      (control) => {
-        control.setValidators(required ? Validators.required : null);
-        if (!required) control.setValue('');
-        control.updateValueAndValidity({ emitEvent: false });
-      },
-    );
-  }
-
-  private configureRental(required: boolean): void {
-    const control = this.form.controls.home.controls.rentalAllowsPets;
-    control.setValidators(required ? Validators.required : null);
-    if (!required) control.setValue('');
-    control.updateValueAndValidity({ emitEvent: false });
+  private stepStates() {
+    return [
+      this.form.applicant(),
+      this.form.home(),
+      this.form.adaptation(),
+      this.form.care(),
+      this.form.safety(),
+      this.form.commitment(),
+    ] as const;
   }
 
   private toRequest(): AdoptionApplicationRequest {
-    const value = this.form.getRawValue();
+    const value = this.model();
     return {
       applicant: {
         fullName: value.applicant.fullName.trim(),
@@ -277,15 +325,6 @@ export class AdoptionsPageComponent {
       },
       website: value.website,
     };
-  }
-
-  private focusFirstInvalid(): void {
-    queueMicrotask(() => {
-      const element = document.querySelector<HTMLElement>(
-        '#adoption-form input.ng-invalid, #adoption-form textarea.ng-invalid',
-      );
-      element?.focus();
-    });
   }
 
   private scrollToQuestionnaire(): void {
