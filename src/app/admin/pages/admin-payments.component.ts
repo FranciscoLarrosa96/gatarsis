@@ -114,7 +114,7 @@ import {
                   </dd>
                 </div>
                 <div>
-                  <dt>Provider refund</dt>
+                  <dt>Provider Refund ID</dt>
                   <dd><code>{{ refund.providerRefundId || 'Pendiente' }}</code></dd>
                 </div>
                 <div>
@@ -224,7 +224,9 @@ import {
               </div>
             </dl>
             <p class="warning-note">
-              El dinero se devuelve por Mercado Pago. El stock no se repone automáticamente.
+              El dinero se devuelve por Mercado Pago. Para compras de rifa, si el reembolso se completa
+              y la rifa continúa abierta, los números volverán a quedar disponibles.
+              Para pedidos que no son de rifa, el stock no se repone automáticamente.
             </p>
             <label>Motivo<textarea name="reason" [(ngModel)]="reason" required></textarea></label>
             <label>

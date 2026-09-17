@@ -50,6 +50,26 @@ describe('RafflePageComponent', () => {
     expect(numberButtons[65].getAttribute('aria-label')).toBe('Número 65 vendido');
   });
 
+  it('makes a previously sold number selectable when the normal refresh returns AVAILABLE', () => {
+    setup();
+    loadActive(numbers());
+    const button = () => fixture.nativeElement.querySelectorAll('.raffle-number')[65] as HTMLButtonElement;
+    expect(button().disabled).toBe(true);
+
+    component.onWindowFocus();
+    http.expectOne(`${PUBLIC_API_BASE_URL}/raffles/${raffleId}/numbers`).flush({
+      raffleId,
+      status: 'ACTIVE',
+      numbers: numbers().map((item) => item.number === 65 ? { ...item, status: 'AVAILABLE' } : item),
+    });
+    fixture.detectChanges();
+
+    expect(button().disabled).toBe(false);
+    expect(button().getAttribute('aria-label')).toBe('Número 65 disponible');
+    button().click();
+    expect(component.isSelected(65)).toBe(true);
+  });
+
   it('selects, deselects and enforces the maximum of ten numbers', () => {
     setup();
     loadActive(numbers());
