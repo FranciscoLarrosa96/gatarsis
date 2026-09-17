@@ -3,6 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { finalize } from 'rxjs';
 import { AdminDatePickerDirective } from '../shared/admin-date-picker.directive';
+import { AdminCopyIdComponent } from '../shared/admin-copy-id.component';
 import { formatAdminDate, formatArsFromCents, orderStatusLabel } from '../core/admin-formatters';
 import { adminErrorMessage } from '../core/admin-domain-error';
 import { AdminApiService } from '../core/admin-api.service';
@@ -10,7 +11,7 @@ import { AdminOrderDetail, AdminOrderListItem, AdminOrderStatus } from '../core/
 
 @Component({
   standalone: true,
-  imports: [FormsModule, AdminDatePickerDirective],
+  imports: [FormsModule, AdminDatePickerDirective, AdminCopyIdComponent],
   template: `
     <div class="page order-page">
       <header class="page-heading">
@@ -22,7 +23,9 @@ import { AdminOrderDetail, AdminOrderListItem, AdminOrderStatus } from '../core/
           </p>
         </div>
         @if (detail()) {
-          <button class="button button-secondary" type="button" (click)="backToList()">Volver a pedidos</button>
+          <button class="button button-secondary" type="button" (click)="backToList()">
+            Volver a pedidos
+          </button>
         }
       </header>
 
@@ -33,20 +36,27 @@ import { AdminOrderDetail, AdminOrderListItem, AdminOrderStatus } from '../core/
               {{ statusLabel(orderDetail.order.status) }}
             </span>
             <h2>{{ money(orderDetail.order.totalInCents) }}</h2>
-            <p>Creado {{ date(orderDetail.order.createdAt) }}</p>
+            <p>{{ orderContext(orderDetail) }}</p>
+            <small class="muted">{{
+              orderDetail.items.length || orderDetail.fulfillment ? 'Tienda' : 'Origen no informado'
+            }}</small>
           </div>
           <dl class="detail-facts">
             <div>
               <dt>ID pedido</dt>
-              <dd><code>{{ orderDetail.order.id }}</code></dd>
+              <dd><app-admin-copy-id [value]="orderDetail.order.id" label="ID del pedido" /></dd>
             </div>
             <div>
-              <dt>Pago</dt>
+              <dt>Pagado</dt>
               <dd>{{ date(orderDetail.order.paidAt) }}</dd>
             </div>
             <div>
-              <dt>Reserva</dt>
+              <dt>Vencimiento de reserva</dt>
               <dd>{{ date(orderDetail.order.reservationExpiresAt) }}</dd>
+            </div>
+            <div>
+              <dt>Creado</dt>
+              <dd>{{ date(orderDetail.order.createdAt) }}</dd>
             </div>
           </dl>
         </section>
@@ -59,7 +69,13 @@ import { AdminOrderDetail, AdminOrderListItem, AdminOrderStatus } from '../core/
             <div class="section-heading inline-heading">
               <div>
                 <h2>Items</h2>
-                <p>{{ orderDetail.items.length }} producto(s) dentro del pedido.</p>
+                <p>
+                  {{
+                    orderDetail.items.length
+                      ? orderDetail.items.length + ' producto(s) dentro del pedido.'
+                      : 'El contrato no informa productos ni una participación en rifa.'
+                  }}
+                </p>
               </div>
             </div>
             <div class="item-list">
@@ -75,7 +91,9 @@ import { AdminOrderDetail, AdminOrderListItem, AdminOrderStatus } from '../core/
                   </div>
                 </div>
               } @empty {
-                <p class="muted">Sin items registrados.</p>
+                <p class="muted">
+                  Sin items informados. Esto no permite determinar el origen del pedido.
+                </p>
               }
             </div>
           </article>
@@ -90,14 +108,19 @@ import { AdminOrderDetail, AdminOrderListItem, AdminOrderStatus } from '../core/
             @if (orderDetail.paymentPreference) {
               <div class="compact-fact">
                 <span>Preference ID</span>
-                <code>{{ orderDetail.paymentPreference.providerPreferenceId || 'Sin provider ID' }}</code>
+                <code>{{
+                  orderDetail.paymentPreference.providerPreferenceId || 'Sin provider ID'
+                }}</code>
               </div>
             }
             <div class="item-list">
               @for (payment of orderDetail.payments; track payment.id) {
                 <div class="item-row">
                   <div>
-                    <strong>{{ payment.providerPaymentId }}</strong>
+                    <app-admin-copy-id
+                      [value]="payment.providerPaymentId"
+                      label="Payment ID de Mercado Pago"
+                    />
                     <span>{{ payment.processingStatus }} · {{ date(payment.dateApproved) }}</span>
                   </div>
                   <div class="item-money">
@@ -105,7 +128,13 @@ import { AdminOrderDetail, AdminOrderListItem, AdminOrderStatus } from '../core/
                   </div>
                 </div>
               } @empty {
-                <p class="muted">Todavía no hay pagos asociados.</p>
+                <p class="muted">
+                  {{
+                    orderDetail.order.status === 'EXPIRED' && !orderDetail.order.paidAt
+                      ? 'Reserva vencida sin pago registrado.'
+                      : 'Sin pagos asociados informados.'
+                  }}
+                </p>
               }
             </div>
           </article>
@@ -122,27 +151,66 @@ import { AdminOrderDetail, AdminOrderListItem, AdminOrderStatus } from '../core/
                 <p class="feedback">Pedido reembolsado</p>
               }
               <div class="item-list">
-                <div class="compact-fact"><span>Método</span><strong>{{ fulfillmentMethodLabel(fulfillment.method) }}</strong></div>
-                <div class="compact-fact"><span>Estado</span><strong>{{ fulfillmentStatusLabel(fulfillment.status) }}</strong></div>
-                <div class="compact-fact"><span>Cliente</span><strong>{{ fulfillment.customer.name }}</strong></div>
-                <div class="compact-fact"><span>Contacto</span><strong>{{ fulfillment.customer.email }} · {{ fulfillment.customer.phone }}</strong></div>
-                <div class="compact-fact"><span>Nota del cliente</span><strong>{{ fulfillment.customerNote || '—' }}</strong></div>
-                <div class="compact-fact"><span>Nota interna</span><strong>{{ fulfillment.adminNote || '—' }}</strong></div>
+                <div class="compact-fact">
+                  <span>Método</span
+                  ><strong>{{ fulfillmentMethodLabel(fulfillment.method) }}</strong>
+                </div>
+                <div class="compact-fact">
+                  <span>Estado</span
+                  ><strong>{{ fulfillmentStatusLabel(fulfillment.status) }}</strong>
+                </div>
+                <div class="compact-fact">
+                  <span>Cliente</span><strong>{{ fulfillment.customer.name }}</strong>
+                </div>
+                <div class="compact-fact">
+                  <span>Contacto</span
+                  ><strong
+                    >{{ fulfillment.customer.email }} · {{ fulfillment.customer.phone }}</strong
+                  >
+                </div>
+                <div class="compact-fact">
+                  <span>Nota del cliente</span
+                  ><strong>{{ fulfillment.customerNote || '—' }}</strong>
+                </div>
+                <div class="compact-fact">
+                  <span>Nota interna</span><strong>{{ fulfillment.adminNote || '—' }}</strong>
+                </div>
                 @if (fulfillment.readyAt) {
-                  <div class="compact-fact"><span>Listo para retirar</span><strong>{{ date(fulfillment.readyAt) }}</strong></div>
+                  <div class="compact-fact">
+                    <span>Listo para retirar</span><strong>{{ date(fulfillment.readyAt) }}</strong>
+                  </div>
                 }
                 @if (fulfillment.completedAt) {
-                  <div class="compact-fact"><span>Entregado</span><strong>{{ date(fulfillment.completedAt) }}</strong></div>
+                  <div class="compact-fact">
+                    <span>Entregado</span><strong>{{ date(fulfillment.completedAt) }}</strong>
+                  </div>
                 }
               </div>
               @if (canMarkReady(orderDetail)) {
-                <button class="button button-primary" type="button" [disabled]="mutationLoading()" (click)="updateFulfillment('READY_FOR_PICKUP')">Marcar listo para retirar</button>
+                <button
+                  class="button button-primary"
+                  type="button"
+                  [disabled]="mutationLoading()"
+                  (click)="updateFulfillment('READY_FOR_PICKUP')"
+                >
+                  Marcar listo para retirar
+                </button>
               }
               @if (canMarkCompleted(orderDetail)) {
-                <button class="button button-primary" type="button" [disabled]="mutationLoading()" (click)="updateFulfillment('COMPLETED')">Marcar como entregado</button>
+                <button
+                  class="button button-primary"
+                  type="button"
+                  [disabled]="mutationLoading()"
+                  (click)="updateFulfillment('COMPLETED')"
+                >
+                  Marcar como entregado
+                </button>
               }
             } @else {
-              <p class="muted">Este pedido es anterior al sistema de entrega.</p>
+              <p class="muted">
+                No hay datos de entrega informados para este pedido. No se puede inferir si
+                corresponde a una compra de tienda o a una rifa.
+              </p>
             }
           </article>
         </section>
@@ -162,16 +230,38 @@ import { AdminOrderDetail, AdminOrderListItem, AdminOrderStatus } from '../core/
           </label>
           <label>
             Desde
-            <input appAdminDatePicker [dateValue]="dateFrom" (dateValueChange)="setDateFrom($event)" placeholder="Elegir fecha" />
+            <input
+              appAdminDatePicker
+              [dateValue]="dateFrom"
+              (dateValueChange)="setDateFrom($event)"
+              placeholder="Elegir fecha"
+            />
           </label>
           <label>
             Hasta
-            <input appAdminDatePicker [dateValue]="dateTo" (dateValueChange)="setDateTo($event)" placeholder="Elegir fecha" />
+            <input
+              appAdminDatePicker
+              [dateValue]="dateTo"
+              (dateValueChange)="setDateTo($event)"
+              placeholder="Elegir fecha"
+            />
           </label>
-          <label>Pedido<input [(ngModel)]="orderId" (ngModelChange)="load()" placeholder="UUID o prefijo" /></label>
-          <label>Pago MP<input [(ngModel)]="providerPaymentId" (ngModelChange)="load()" placeholder="Payment ID" /></label>
+          <label
+            >Pedido<input
+              [(ngModel)]="orderId"
+              (ngModelChange)="load()"
+              placeholder="UUID o prefijo"
+          /></label>
+          <label
+            >Pago MP<input
+              [(ngModel)]="providerPaymentId"
+              (ngModelChange)="load()"
+              placeholder="Payment ID"
+          /></label>
           @if (hasFilters()) {
-            <button class="button button-quiet" type="button" (click)="clearFilters()">Limpiar</button>
+            <button class="button button-quiet" type="button" (click)="clearFilters()">
+              Limpiar
+            </button>
           }
         </section>
 
@@ -201,7 +291,7 @@ import { AdminOrderDetail, AdminOrderListItem, AdminOrderStatus } from '../core/
                   <tr>
                     <td>
                       <button class="row-link" type="button" (click)="show(order.id)">
-                        #{{ short(order.id) }}
+                        <code [title]="order.id">#{{ short(order.id) }}</code>
                       </button>
                     </td>
                     <td>
@@ -211,12 +301,16 @@ import { AdminOrderDetail, AdminOrderListItem, AdminOrderStatus } from '../core/
                     </td>
                     <td class="numeric">{{ money(order.totalInCents) }}</td>
                     <td class="numeric">{{ order.itemsCount }}</td>
-                    <td>{{ date(order.createdAt) }}</td>
-                    <td>{{ date(order.paidAt) }}</td>
+                    <td class="date-cell">{{ date(order.createdAt) }}</td>
+                    <td class="date-cell">{{ date(order.paidAt) }}</td>
                     <td>
                       <div class="table-actions">
                         <button type="button" (click)="show(order.id)">Ver</button>
-                        <button type="button" (click)="copy(order.id)">Copiar ID</button>
+                        <app-admin-copy-id
+                          [value]="order.id"
+                          [showValue]="false"
+                          label="ID del pedido"
+                        />
                       </div>
                     </td>
                   </tr>
@@ -335,8 +429,14 @@ export class AdminOrdersComponent implements OnInit {
     return id.slice(0, 8);
   }
 
-  copy(id: string): void {
-    void navigator.clipboard?.writeText(id);
+  orderContext(detail: AdminOrderDetail): string {
+    if (detail.order.status === 'EXPIRED' && !detail.order.paidAt)
+      return 'Reserva vencida sin pago registrado.';
+    if (detail.order.status === 'REFUNDED')
+      return 'Pedido reembolsado. Consultá los pagos asociados para ver el detalle.';
+    if (detail.order.status === 'PAID')
+      return 'Pago confirmado · seguimiento operativo del pedido.';
+    return 'Seguimiento de la reserva y sus pagos asociados.';
   }
 
   money(value: number): string {
@@ -356,11 +456,13 @@ export class AdminOrdersComponent implements OnInit {
   }
 
   fulfillmentStatusLabel(status: string): string {
-    return {
-      PENDING: 'Pendiente de preparación',
-      READY_FOR_PICKUP: 'Listo para retirar',
-      COMPLETED: 'Entregado',
-    }[status] ?? status;
+    return (
+      {
+        PENDING: 'Pendiente de preparación',
+        READY_FOR_PICKUP: 'Listo para retirar',
+        COMPLETED: 'Entregado',
+      }[status] ?? status
+    );
   }
 
   canMarkReady(detail: AdminOrderDetail): boolean {
@@ -374,9 +476,10 @@ export class AdminOrdersComponent implements OnInit {
   updateFulfillment(status: 'READY_FOR_PICKUP' | 'COMPLETED'): void {
     const detail = this.detail();
     if (!detail || this.mutationLoading()) return;
-    const confirmation = status === 'READY_FOR_PICKUP'
-      ? '¿Marcar este pedido como listo para retirar?'
-      : '¿Confirmar que el pedido fue entregado?';
+    const confirmation =
+      status === 'READY_FOR_PICKUP'
+        ? '¿Marcar este pedido como listo para retirar?'
+        : '¿Confirmar que el pedido fue entregado?';
     if (!window.confirm(confirmation)) return;
 
     this.message.set('');
@@ -386,7 +489,8 @@ export class AdminOrdersComponent implements OnInit {
       .pipe(finalize(() => this.mutationLoading.set(false)))
       .subscribe({
         next: () => this.show(detail.order.id),
-        error: (error: unknown) => this.message.set(adminErrorMessage(error, 'No pudimos actualizar la entrega.')),
+        error: (error: unknown) =>
+          this.message.set(adminErrorMessage(error, 'No pudimos actualizar la entrega.')),
       });
   }
 }

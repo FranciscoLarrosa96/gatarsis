@@ -60,6 +60,11 @@ import { formatAdminDate, formatArsFromCents, raffleStatusLabel } from '../core/
             <option value="DRAWN">Sorteada</option>
           </select>
         </label>
+        @if (search || status) {
+          <button class="button button-quiet" type="button" (click)="search = ''; status = ''">
+            Limpiar
+          </button>
+        }
       </section>
 
       @if (loading()) {
@@ -70,33 +75,52 @@ import { formatAdminDate, formatArsFromCents, raffleStatusLabel } from '../core/
           <button class="button button-primary" type="button" (click)="load()">Reintentar</button>
         </div>
       } @else if (filteredRaffles().length) {
-        <div class="raffle-admin-list">
-          @for (raffle of filteredRaffles(); track raffle.id) {
-            <article class="raffle-list-card">
-              <div class="raffle-list-media">
-                @if (raffle.imageUrl) {
-                  <img [src]="raffle.imageUrl" [alt]="raffle.prizeName" />
-                } @else {
-                  <span aria-hidden="true">00–99</span>
-                }
-              </div>
-              <div class="raffle-list-copy">
-                <span class="badge status-{{ raffle.status.toLowerCase() }}">
-                  {{ statusLabel(raffle.status) }}
-                </span>
-                <h2>{{ raffle.title }}</h2>
-                <strong>{{ raffle.prizeName }}</strong>
-                <div class="raffle-list-meta">
-                  <span>{{ money(raffle.priceInCents) }} por número</span>
-                  <span>Sorteo previsto: {{ date(raffle.drawAt) }}</span>
-                  <span>Creada: {{ date(raffle.createdAt) }}</span>
-                </div>
-              </div>
-              <a class="button button-secondary" [routerLink]="['/admin/raffles', raffle.id]">
-                {{ raffle.status === 'DRAFT' ? 'Editar y preparar' : 'Gestionar' }}
-              </a>
-            </article>
-          }
+        <div class="table-wrap">
+          <table class="raffle-list-table">
+            <thead>
+              <tr>
+                <th>Rifa / premio</th>
+                <th>Estado</th>
+                <th class="numeric">Por número</th>
+                <th>Sorteo previsto</th>
+                <th>Creada</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (raffle of filteredRaffles(); track raffle.id) {
+                <tr>
+                  <td>
+                    <div class="raffle-table-title">
+                      @if (raffle.imageUrl) {
+                        <img [src]="raffle.imageUrl" [alt]="raffle.prizeName" />
+                      }
+                      <div>
+                        <strong>{{ raffle.title }}</strong
+                        ><span class="muted">{{ raffle.prizeName }}</span
+                        ><code [title]="raffle.id">{{ raffle.id.slice(0, 8) }}</code>
+                      </div>
+                    </div>
+                  </td>
+                  <td>
+                    <span class="badge status-{{ raffle.status.toLowerCase() }}">{{
+                      statusLabel(raffle.status)
+                    }}</span>
+                  </td>
+                  <td class="numeric">{{ money(raffle.priceInCents) }}</td>
+                  <td class="date-cell">{{ date(raffle.drawAt) }}</td>
+                  <td class="date-cell">{{ date(raffle.createdAt) }}</td>
+                  <td>
+                    <div class="table-actions">
+                      <a [routerLink]="['/admin/raffles', raffle.id]">
+                        {{ raffle.status === 'DRAFT' ? 'Editar y preparar' : 'Gestionar' }}
+                      </a>
+                    </div>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
         </div>
       } @else {
         <div class="state">

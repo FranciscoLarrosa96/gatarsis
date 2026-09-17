@@ -5,7 +5,12 @@ const moneyFormatter = new Intl.NumberFormat('es-AR', {
   maximumFractionDigits: 2,
 });
 const dateFormatter = new Intl.DateTimeFormat('es-AR', {
-  day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
+  day: '2-digit',
+  month: '2-digit',
+  year: 'numeric',
+  hour: '2-digit',
+  minute: '2-digit',
+  hourCycle: 'h23',
 });
 
 export function formatArsFromCents(value: number): string {
@@ -37,7 +42,19 @@ export function paymentProcessingStatusLabel(status: string): string {
   );
 }
 export function providerStatusLabel(status: string): string {
-  return { approved: 'Aprobado', pending: 'Pendiente', rejected: 'Rechazado' }[status] ?? status;
+  return (
+    {
+      approved: 'Aprobado',
+      pending: 'Pendiente',
+      rejected: 'Rechazado',
+      refunded: 'Reembolsado',
+      cancelled: 'Cancelado',
+      in_process: 'En proceso',
+      in_mediation: 'En mediación',
+      authorized: 'Autorizado',
+      charged_back: 'Contracargo',
+    }[status] ?? status
+  );
 }
 export function auditActionLabel(action: string): string {
   return (

@@ -20,8 +20,11 @@ import {
   formatArsFromCents,
   rafflePurchaseStatusLabel,
   raffleStatusLabel,
+  providerStatusLabel,
 } from '../core/admin-formatters';
 import { AdminDatePickerDirective } from '../shared/admin-date-picker.directive';
+import { AdminCopyIdComponent } from '../shared/admin-copy-id.component';
+import { AdminDialogDirective } from '../shared/admin-dialog.directive';
 
 interface RaffleFormModel {
   title: string;
@@ -37,7 +40,13 @@ type ConfirmationKind = 'close' | 'draw';
 
 @Component({
   standalone: true,
-  imports: [FormsModule, RouterLink, AdminDatePickerDirective],
+  imports: [
+    FormsModule,
+    RouterLink,
+    AdminDatePickerDirective,
+    AdminCopyIdComponent,
+    AdminDialogDirective,
+  ],
   template: `
     <div class="page raffle-admin-page">
       <nav class="breadcrumb">
@@ -251,6 +260,11 @@ type ConfirmationKind = 'close' | 'draw';
             <article>
               <span>Vendidos</span><strong>{{ current.stats.sold }}</strong
               ><small>de {{ current.stats.totalNumbers }} números</small>
+              <progress
+                [value]="current.stats.sold"
+                [max]="current.stats.totalNumbers"
+                aria-label="Números vendidos sobre el total"
+              ></progress>
             </article>
             <article>
               <span>Reservados</span><strong>{{ current.stats.reserved }}</strong
@@ -302,6 +316,10 @@ type ConfirmationKind = 'close' | 'draw';
                   type="button"
                   class="admin-number status-{{ item.status.toLowerCase() }}"
                   [class.is-winner]="current.winningNumber === item.number"
+                  [class.is-inspected]="
+                    inspectedNumber()?.number === item.number ||
+                    purchaseDetail()?.numbers?.includes(item.number)
+                  "
                   [attr.aria-label]="numberAriaLabel(item, current)"
                   [attr.aria-pressed]="selectedWinningNumber() === item.number"
                   (click)="inspectNumber(item)"
@@ -395,7 +413,7 @@ type ConfirmationKind = 'close' | 'draw';
                           }}</span>
                         </td>
                         <td class="numeric">{{ money(purchase.totalInCents) }}</td>
-                        <td>{{ date(purchase.createdAt) }}</td>
+                        <td class="date-cell">{{ date(purchase.createdAt) }}</td>
                         <td>
                           <button type="button" (click)="showPurchase(purchase)">
                             Ver detalle
@@ -433,6 +451,8 @@ type ConfirmationKind = 'close' | 'draw';
         <div class="dialog-backdrop" (click)="inspectedNumber.set(null)">
           <section
             class="dialog number-detail-dialog"
+            appAdminDialog
+            (dialogDismiss)="inspectedNumber.set(null)"
             role="dialog"
             aria-modal="true"
             aria-labelledby="number-dialog-title"
@@ -512,6 +532,8 @@ type ConfirmationKind = 'close' | 'draw';
         <div class="dialog-backdrop" (click)="purchaseDetail.set(null)">
           <section
             class="dialog wide-dialog"
+            appAdminDialog
+            (dialogDismiss)="purchaseDetail.set(null)"
             role="dialog"
             aria-modal="true"
             aria-labelledby="purchase-dialog-title"
@@ -520,7 +542,9 @@ type ConfirmationKind = 'close' | 'draw';
             <header>
               <div>
                 <h2 id="purchase-dialog-title">Compra {{ numbersLabel(purchase.numbers) }}</h2>
-                <p class="muted">{{ purchaseStatusLabel(purchase.status) }}</p>
+                <span class="badge status-{{ purchase.status.toLowerCase() }}">{{
+                  purchaseStatusLabel(purchase.status)
+                }}</span>
               </div>
               <button
                 class="close-button"
@@ -532,44 +556,190 @@ type ConfirmationKind = 'close' | 'draw';
               </button>
             </header>
             <div class="purchase-detail-grid">
-              <dl class="raffle-detail-list">
-                <div>
-                  <dt>Nombre</dt>
-                  <dd>{{ purchase.buyerName }}</dd>
-                </div>
-                <div>
-                  <dt>Email</dt>
-                  <dd>{{ purchase.buyerEmail }}</dd>
-                </div>
-                <div>
-                  <dt>WhatsApp</dt>
-                  <dd>{{ purchase.buyerPhone }}</dd>
-                </div>
-                <div>
-                  <dt>Total</dt>
-                  <dd>{{ money(purchase.totalInCents) }}</dd>
-                </div>
-              </dl>
-              <dl class="raffle-detail-list">
-                <div>
-                  <dt>Orden</dt>
-                  <dd>
-                    <code>{{ purchase.orderId }}</code>
-                  </dd>
-                </div>
-                <div>
-                  <dt>Reserva</dt>
-                  <dd>{{ date(purchase.reservationExpiresAt) }}</dd>
-                </div>
-                <div>
-                  <dt>Pago</dt>
-                  <dd>{{ purchase.payment?.providerStatus || '—' }}</dd>
-                </div>
-                <div>
-                  <dt>Reembolsos</dt>
-                  <dd>{{ purchase.refunds.length }}</dd>
-                </div>
-              </dl>
+              <section>
+                <h3>Comprador y contacto</h3>
+                <dl class="raffle-detail-list">
+                  <div>
+                    <dt>Nombre</dt>
+                    <dd>{{ purchase.buyerName }}</dd>
+                  </div>
+                  <div>
+                    <dt>Email</dt>
+                    <dd>
+                      <a [href]="'mailto:' + purchase.buyerEmail">{{ purchase.buyerEmail }}</a>
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>WhatsApp</dt>
+                    <dd>
+                      <a [href]="'tel:' + purchase.buyerPhone">{{ purchase.buyerPhone }}</a>
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>Total</dt>
+                    <dd>{{ money(purchase.totalInCents) }}</dd>
+                  </div>
+                </dl>
+              </section>
+              <section>
+                <h3>Compra y pago</h3>
+                <dl class="raffle-detail-list">
+                  <div>
+                    <dt>Compra ID</dt>
+                    <dd>
+                      <app-admin-copy-id
+                        [value]="purchase.rafflePurchaseId"
+                        label="ID de compra de rifa"
+                      />
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>Creada / pagada</dt>
+                    <dd>{{ date(purchase.createdAt) }} / {{ date(purchase.paidAt) }}</dd>
+                  </div>
+                  <div>
+                    <dt>Orden</dt>
+                    <dd>
+                      <app-admin-copy-id [value]="purchase.orderId" label="ID del pedido" />
+                      <small class="technical-enum">{{ purchase.orderStatus }}</small>
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>Reserva</dt>
+                    <dd>{{ date(purchase.reservationExpiresAt) }}</dd>
+                  </div>
+                  <div>
+                    <dt>Pago</dt>
+                    <dd>
+                      @if (purchase.payment; as payment) {
+                        <span
+                          class="badge status-{{ payment.providerStatus.toLowerCase() }}"
+                          [title]="payment.providerStatus"
+                          >{{ providerLabel(payment.providerStatus) }}</span
+                        >
+                      } @else {
+                        No informado
+                      }
+                    </dd>
+                  </div>
+                  @if (purchase.payment; as payment) {
+                    <div>
+                      <dt>Payment ID MP</dt>
+                      <dd>
+                        <app-admin-copy-id [value]="payment.providerPaymentId" label="Payment ID" />
+                      </dd>
+                    </div>
+                    <div>
+                      <dt>Pago ID local</dt>
+                      <dd><app-admin-copy-id [value]="payment.id" label="ID local del pago" /></dd>
+                    </div>
+                    <div>
+                      <dt>Procesamiento</dt>
+                      <dd>
+                        <code>{{ payment.processingStatus }}</code>
+                      </dd>
+                    </div>
+                    <div>
+                      <dt>Revisión</dt>
+                      <dd>{{ payment.reviewReason || 'Sin motivo informado' }}</dd>
+                    </div>
+                    <div>
+                      <dt>Importe / moneda</dt>
+                      <dd>
+                        {{ money(payment.transactionAmountInCents) }} · {{ payment.currencyId }}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt>Pago creado / aprobado / actualizado</dt>
+                      <dd>
+                        {{ date(payment.dateCreated) }} / {{ date(payment.dateApproved) }} /
+                        {{ date(payment.dateLastUpdated) }}
+                      </dd>
+                    </div>
+                  } @else {
+                    <div>
+                      <dt>Pago asociado</dt>
+                      <dd>No hay un pago informado para esta compra.</dd>
+                    </div>
+                  }
+                  @if (purchase.preference; as preference) {
+                    <div>
+                      <dt>Preferencia local</dt>
+                      <dd>
+                        <app-admin-copy-id
+                          [value]="preference.id"
+                          label="ID local de preferencia"
+                        />
+                      </dd>
+                    </div>
+                    @if (preference.providerPreferenceId) {
+                      <div>
+                        <dt>Preferencia MP</dt>
+                        <dd>
+                          <app-admin-copy-id
+                            [value]="preference.providerPreferenceId"
+                            label="Preference ID"
+                          />
+                        </dd>
+                      </div>
+                    }
+                    <div>
+                      <dt>Estado de preferencia</dt>
+                      <dd>
+                        <code>{{ preference.status }}</code>
+                      </dd>
+                    </div>
+                    <div>
+                      <dt>Preferencia creada / lista / actualizada</dt>
+                      <dd>
+                        {{ date(preference.createdAt) }} / {{ date(preference.readyAt) }} /
+                        {{ date(preference.updatedAt) }}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt>Último error</dt>
+                      <dd>
+                        <code>{{ preference.lastErrorCode || '—' }}</code> ·
+                        {{ date(preference.lastErrorAt) }}
+                      </dd>
+                    </div>
+                  }
+                  <div>
+                    <dt>Reembolsos</dt>
+                    <dd>{{ purchase.refunds.length }}</dd>
+                  </div>
+                </dl>
+              </section>
+              @for (refund of purchase.refunds; track refund.id) {
+                <section>
+                  <h3>Reembolso · {{ refund.status }}</h3>
+                  <dl class="raffle-detail-list">
+                    <div>
+                      <dt>ID local</dt>
+                      <dd><app-admin-copy-id [value]="refund.id" label="ID de reembolso" /></dd>
+                    </div>
+                    @if (refund.providerRefundId) {
+                      <div>
+                        <dt>Refund ID MP</dt>
+                        <dd>
+                          <app-admin-copy-id [value]="refund.providerRefundId" label="Refund ID" />
+                        </dd>
+                      </div>
+                    }
+                    <div>
+                      <dt>Importe</dt>
+                      <dd>{{ money(refund.amountInCents) }}</dd>
+                    </div>
+                    <div>
+                      <dt>Creado / completado / actualizado</dt>
+                      <dd>
+                        {{ date(refund.createdAt) }} / {{ date(refund.completedAt) }} /
+                        {{ date(refund.updatedAt) }}
+                      </dd>
+                    </div>
+                  </dl>
+                </section>
+              }
             </div>
           </section>
         </div>
@@ -580,6 +750,8 @@ type ConfirmationKind = 'close' | 'draw';
           <section
             class="dialog"
             role="alertdialog"
+            appAdminDialog
+            (dialogDismiss)="!mutating() && confirmation.set(null)"
             aria-modal="true"
             aria-labelledby="confirm-title"
           >
@@ -615,6 +787,7 @@ type ConfirmationKind = 'close' | 'draw';
   styleUrls: ['./admin-pages.css', './admin-raffles.css'],
 })
 export class AdminRaffleEditorComponent implements OnInit {
+  readonly providerLabel = providerStatusLabel;
   readonly raffle = signal<AdminRaffleDetail | null>(null);
   readonly numbers = signal<AdminRaffleNumber[]>([]);
   readonly purchases = signal<AdminRafflePurchase[]>([]);

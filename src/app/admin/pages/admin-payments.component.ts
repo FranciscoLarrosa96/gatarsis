@@ -1,5 +1,7 @@
 import { Component, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { AdminCopyIdComponent } from '../shared/admin-copy-id.component';
+import { AdminDialogDirective } from '../shared/admin-dialog.directive';
 import { ActivatedRoute, Router } from '@angular/router';
 import { finalize } from 'rxjs';
 import {
@@ -20,7 +22,7 @@ import {
 
 @Component({
   standalone: true,
-  imports: [FormsModule],
+  imports: [FormsModule, AdminCopyIdComponent, AdminDialogDirective],
   template: `
     <div class="page payment-page">
       <header class="page-heading">
@@ -32,7 +34,9 @@ import {
           </p>
         </div>
         @if (detail()) {
-          <button class="button button-secondary" type="button" (click)="backToList()">Volver a pagos</button>
+          <button class="button button-secondary" type="button" (click)="backToList()">
+            Volver a pagos
+          </button>
         }
       </header>
 
@@ -45,38 +49,60 @@ import {
           <div>
             <span
               class="badge status-{{
-                isRefunded(paymentDetail) ? 'refunded' : paymentDetail.payment.processingStatus.toLowerCase()
+                isRefunded(paymentDetail)
+                  ? 'refunded'
+                  : paymentDetail.payment.providerStatus.toLowerCase()
               }}"
             >
               {{
                 isRefunded(paymentDetail)
                   ? 'Reembolsado'
-                  : processingLabel(paymentDetail.payment.processingStatus)
+                  : providerLabel(paymentDetail.payment.providerStatus)
               }}
             </span>
             <h2>{{ money(paymentDetail.payment.transactionAmountInCents) }}</h2>
-            <p>{{ providerLabel(paymentDetail.payment.providerStatus) }} · {{ date(paymentDetail.payment.dateApproved) }}</p>
+            <p>Creado {{ date(paymentDetail.payment.createdAt) }}</p>
+            <p class="muted">
+              Procesamiento: {{ processingLabel(paymentDetail.payment.processingStatus) }}
+              <code>{{ paymentDetail.payment.processingStatus }}</code>
+            </p>
+            <small class="muted">Aprobado {{ date(paymentDetail.payment.dateApproved) }}</small>
           </div>
           <dl class="detail-facts">
             <div>
               <dt>ID local Gatarsis</dt>
-              <dd><code>{{ paymentDetail.payment.id }}</code></dd>
+              <dd>
+                <app-admin-copy-id [value]="paymentDetail.payment.id" label="ID local del pago" />
+              </dd>
             </div>
             <div>
               <dt>Mercado Pago Payment ID</dt>
-              <dd><code>{{ paymentDetail.payment.providerPaymentId }}</code></dd>
+              <dd>
+                <app-admin-copy-id
+                  [value]="paymentDetail.payment.providerPaymentId"
+                  label="Payment ID de Mercado Pago"
+                />
+              </dd>
             </div>
             <div>
               <dt>Pedido</dt>
-              <dd><code>{{ paymentDetail.payment.orderId }}</code></dd>
+              <dd>
+                <app-admin-copy-id [value]="paymentDetail.payment.orderId" label="ID del pedido" />
+              </dd>
             </div>
           </dl>
           @if (canRefund(paymentDetail)) {
-            <button class="button button-primary" type="button" (click)="openRefund(paymentDetail.payment)">
+            <button
+              class="button button-primary"
+              type="button"
+              (click)="openRefund(paymentDetail.payment)"
+            >
               Reembolsar
             </button>
           } @else if (isRefunded(paymentDetail)) {
-            <span class="refund-note refund-note--ok refund-note--standalone">Reembolso completado</span>
+            <span class="refund-note refund-note--ok refund-note--standalone"
+              >Reembolso completado</span
+            >
           }
         </section>
 
@@ -87,7 +113,10 @@ import {
               <div class="item-row">
                 <div>
                   <strong>#{{ paymentDetail.order.id.slice(0, 8) }}</strong>
-                  <span>{{ statusLabel(paymentDetail.order.status) }} · {{ date(paymentDetail.order.createdAt) }}</span>
+                  <span
+                    >{{ statusLabel(paymentDetail.order.status) }} ·
+                    {{ date(paymentDetail.order.createdAt) }}</span
+                  >
                 </div>
                 <strong>{{ money(paymentDetail.order.totalInCents) }}</strong>
               </div>
@@ -105,7 +134,9 @@ import {
                   <dd>
                     <code>{{ refund.status }}</code>
                     @if (refund.status === 'SUCCEEDED') {
-                      <span class="refund-note refund-note--ok">Reembolso completado correctamente</span>
+                      <span class="refund-note refund-note--ok"
+                        >Reembolso completado correctamente</span
+                      >
                     } @else if (refund.status === 'REQUIRES_REVIEW') {
                       <span class="refund-note refund-note--review">Requiere revisión manual</span>
                     } @else if (refund.status === 'FAILED') {
@@ -115,7 +146,28 @@ import {
                 </div>
                 <div>
                   <dt>Provider Refund ID</dt>
-                  <dd><code>{{ refund.providerRefundId || 'Pendiente' }}</code></dd>
+                  <dd>
+                    @if (refund.providerRefundId) {
+                      <app-admin-copy-id
+                        [value]="refund.providerRefundId"
+                        label="Refund ID de Mercado Pago"
+                      />
+                    } @else {
+                      No informado
+                    }
+                  </dd>
+                </div>
+                <div>
+                  <dt>ID local del reembolso</dt>
+                  <dd><app-admin-copy-id [value]="refund.id" label="ID del reembolso" /></dd>
+                </div>
+                <div>
+                  <dt>Importe</dt>
+                  <dd class="numeric">{{ money(refund.amountInCents) }}</dd>
+                </div>
+                <div>
+                  <dt>Solicitado</dt>
+                  <dd>{{ date(refund.createdAt) }}</dd>
                 </div>
                 <div>
                   <dt>Completado</dt>
@@ -126,6 +178,52 @@ import {
               <p class="muted">Sin reembolso registrado.</p>
             }
           </article>
+        </section>
+        <section class="panel">
+          <h2>Conciliación y revisión</h2>
+          <dl class="detail-facts">
+            <div>
+              <dt>Estado MP / detalle</dt>
+              <dd>
+                <code
+                  >{{ paymentDetail.payment.providerStatus }} /
+                  {{ paymentDetail.payment.providerStatusDetail || '—' }}</code
+                >
+              </dd>
+            </div>
+            <div>
+              <dt>Procesamiento interno</dt>
+              <dd>
+                <code>{{ paymentDetail.payment.processingStatus }}</code>
+              </dd>
+            </div>
+            <div>
+              <dt>Motivo de revisión</dt>
+              <dd>{{ paymentDetail.payment.reviewReason || 'Sin motivo informado' }}</dd>
+            </div>
+            <div>
+              <dt>Resolución</dt>
+              <dd>
+                <code>{{ paymentDetail.payment.reviewResolution || '—' }}</code> ·
+                {{ date(paymentDetail.payment.reviewResolvedAt) }}
+              </dd>
+            </div>
+            <div>
+              <dt>Nota interna</dt>
+              <dd>{{ paymentDetail.payment.reviewNote || 'Sin nota informada' }}</dd>
+            </div>
+            @if (paymentDetail.payment.reviewResolvedByAdminId) {
+              <div>
+                <dt>Resuelto por</dt>
+                <dd>
+                  <app-admin-copy-id
+                    [value]="paymentDetail.payment.reviewResolvedByAdminId"
+                    label="ID del administrador"
+                  />
+                </dd>
+              </div>
+            }
+          </dl>
         </section>
       } @else {
         @if (!reviewMode) {
@@ -140,8 +238,23 @@ import {
                 <option value="REQUIRES_REVIEW">Requiere revisión</option>
               </select>
             </label>
-            <label>Pedido<input [(ngModel)]="orderId" (ngModelChange)="load()" placeholder="UUID o prefijo" /></label>
-            <label>Pago MP<input [(ngModel)]="providerPaymentId" (ngModelChange)="load()" placeholder="Payment ID" /></label>
+            <label
+              >Pedido<input
+                [(ngModel)]="orderId"
+                (ngModelChange)="load()"
+                placeholder="UUID o prefijo"
+            /></label>
+            <label
+              >Pago MP<input
+                [(ngModel)]="providerPaymentId"
+                (ngModelChange)="load()"
+                placeholder="Payment ID"
+            /></label>
+            @if (processingStatus || orderId || providerPaymentId) {
+              <button class="button button-quiet" type="button" (click)="clearFilters()">
+                Limpiar
+              </button>
+            }
           </section>
         }
 
@@ -169,16 +282,28 @@ import {
               <tbody>
                 @for (payment of payments(); track payment.id) {
                   <tr>
-                    <td>{{ payment.providerPaymentId }}</td>
-                    <td><code>{{ payment.orderId.slice(0, 8) }}</code></td>
-                    <td>{{ providerLabel(payment.providerStatus) }}</td>
                     <td>
-                      <span class="badge status-{{ payment.processingStatus.toLowerCase() }}">
+                      <code>{{ payment.providerPaymentId }}</code>
+                    </td>
+                    <td>
+                      <code>{{ payment.orderId.slice(0, 8) }}</code>
+                    </td>
+                    <td>
+                      <span class="badge status-{{ payment.providerStatus.toLowerCase() }}">{{
+                        providerLabel(payment.providerStatus)
+                      }}</span>
+                    </td>
+                    <td>
+                      <span
+                        class="technical-status"
+                        [class.needs-review]="payment.processingStatus === 'REQUIRES_REVIEW'"
+                      >
                         {{ processingLabel(payment.processingStatus) }}
                       </span>
+                      <small class="technical-enum">{{ payment.processingStatus }}</small>
                     </td>
                     <td class="numeric">{{ money(payment.transactionAmountInCents) }}</td>
-                    <td>{{ date(payment.dateApproved) }}</td>
+                    <td class="date-cell">{{ date(payment.dateApproved) }}</td>
                     <td>
                       <div class="table-actions">
                         <button type="button" (click)="show(payment.id)">Ver</button>
@@ -194,20 +319,41 @@ import {
           </div>
         } @else {
           <div class="state">
-            <p>{{ reviewMode ? 'No hay pagos para revisar.' : 'No hay pagos.' }}</p>
+            <p>
+              {{
+                reviewMode
+                  ? 'No hay pagos que requieran revisión manual.'
+                  : 'No hay pagos para los filtros actuales.'
+              }}
+            </p>
           </div>
         }
       }
 
       @if (refund()) {
         <div class="dialog-backdrop">
-          <form class="dialog refund-dialog" (ngSubmit)="sendRefund()">
+          <form
+            appAdminDialog
+            (dialogDismiss)="!busy() && refund.set(null)"
+            class="dialog refund-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Reembolsar pago"
+            (ngSubmit)="sendRefund()"
+          >
             <header>
               <div>
                 <p class="eyebrow">Operación sensible</p>
                 <h2>Reembolsar pago</h2>
               </div>
-              <button class="close-button" type="button" (click)="refund.set(null)" aria-label="Cerrar">×</button>
+              <button
+                class="close-button"
+                type="button"
+                (click)="refund.set(null)"
+                aria-label="Cerrar"
+              >
+                ×
+              </button>
             </header>
             <dl class="compact-list">
               <div>
@@ -224,25 +370,36 @@ import {
               </div>
             </dl>
             <p class="warning-note">
-              El dinero se devuelve por Mercado Pago. Para compras de rifa, si el reembolso se completa
-              y la rifa continúa abierta, los números volverán a quedar disponibles.
-              Para pedidos que no son de rifa, el stock no se repone automáticamente.
+              El dinero se devuelve por Mercado Pago. Para compras de rifa, si el reembolso se
+              completa y la rifa continúa abierta, los números volverán a quedar disponibles. Para
+              pedidos que no son de rifa, el stock no se repone automáticamente.
             </p>
             <label>Motivo<textarea name="reason" [(ngModel)]="reason" required></textarea></label>
             <label>
               Confirmación
-              <input name="confirmation" [(ngModel)]="confirmation" required placeholder="Escribí REEMBOLSAR" />
+              <input
+                name="confirmation"
+                [(ngModel)]="confirmation"
+                required
+                placeholder="Escribí REEMBOLSAR"
+              />
             </label>
             @if (message()) {
               <p class="feedback error" aria-live="polite">{{ message() }}</p>
             }
             <div class="actions">
-              <button class="button button-quiet" type="button" (click)="refund.set(null)">Cancelar</button>
+              <button class="button button-quiet" type="button" (click)="refund.set(null)">
+                Cancelar
+              </button>
               <button
                 class="button button-primary"
                 [disabled]="confirmation !== 'REEMBOLSAR' || !reason.trim() || busy()"
               >
-                {{ busy() ? 'Procesando...' : 'Reembolsar ' + money(refund()!.transactionAmountInCents) }}
+                {{
+                  busy()
+                    ? 'Procesando...'
+                    : 'Reembolsar ' + money(refund()!.transactionAmountInCents)
+                }}
               </button>
             </div>
           </form>
@@ -379,14 +536,18 @@ export class AdminPaymentsComponent implements OnInit {
   }
 
   isRefunded(detail: AdminPaymentDetailResponse): boolean {
-    return detail.refund?.status === 'SUCCEEDED' || detail.order?.status === 'REFUNDED';
+    return (
+      detail.refund?.status === 'SUCCEEDED' ||
+      detail.order?.status === 'REFUNDED' ||
+      detail.payment.providerStatus === 'refunded'
+    );
   }
 
   canRefund(detail: AdminPaymentDetailResponse): boolean {
     return (
       detail.payment.processingStatus === 'APPLIED' &&
       detail.order?.status === 'PAID' &&
-      detail.refund?.status !== 'SUCCEEDED'
+      !this.isRefunded(detail)
     );
   }
 
@@ -395,8 +556,16 @@ export class AdminPaymentsComponent implements OnInit {
     if (result.status === 'REQUIRES_REVIEW') {
       return 'El reembolso quedó en revisión. Confirmá el estado antes de intentar otra acción.';
     }
-    if (result.status === 'FAILED') return 'El reembolso falló. Revisá el estado antes de reintentar.';
+    if (result.status === 'FAILED')
+      return 'El reembolso falló. Revisá el estado antes de reintentar.';
     return 'Refund solicitado. Revisá el estado antes de realizar otra acción.';
+  }
+
+  clearFilters(): void {
+    this.processingStatus = '';
+    this.orderId = '';
+    this.providerPaymentId = '';
+    this.load();
   }
 
   money(value: number): string {

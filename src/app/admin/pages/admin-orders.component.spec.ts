@@ -23,7 +23,22 @@ describe('AdminOrdersComponent fulfillment', () => {
     expect(fixture.nativeElement.textContent).toContain('Pendiente de preparación');
 
     setup(detail({ fulfillment: null }));
-    expect(fixture.nativeElement.textContent).toContain('Este pedido es anterior al sistema de entrega.');
+    expect(fixture.nativeElement.textContent).toContain('No hay datos de entrega informados');
+    expect(fixture.nativeElement.textContent).not.toContain('anterior al sistema');
+  });
+
+  it('does not infer a raffle from an empty expired order', () => {
+    setup(
+      detail({
+        items: [],
+        fulfillment: null,
+        order: { ...detail().order, status: 'EXPIRED', paidAt: null },
+      }),
+    );
+    const text = fixture.nativeElement.textContent;
+    expect(text).toContain('Origen no informado');
+    expect(text).toContain('Reserva vencida sin pago registrado');
+    expect(text).not.toContain('Participación de rifa');
   });
 
   it('shows only the applicable fulfillment CTA', () => {
@@ -39,7 +54,12 @@ describe('AdminOrdersComponent fulfillment', () => {
     setup(detail({ fulfillment: { ...detail().fulfillment!, status: 'COMPLETED' } }));
     expect(fixture.nativeElement.textContent).not.toContain('Marcar como entregado');
 
-    setup(detail({ order: { ...detail().order, status: 'REFUNDED' }, fulfillment: { ...detail().fulfillment!, status: 'READY_FOR_PICKUP' } }));
+    setup(
+      detail({
+        order: { ...detail().order, status: 'REFUNDED' },
+        fulfillment: { ...detail().fulfillment!, status: 'READY_FOR_PICKUP' },
+      }),
+    );
     expect(fixture.nativeElement.textContent).toContain('Pedido reembolsado');
     expect(fixture.nativeElement.textContent).not.toContain('Marcar como entregado');
   });
@@ -51,8 +71,16 @@ describe('AdminOrdersComponent fulfillment', () => {
     const request = http.expectOne(`${ADMIN_API_BASE_URL}/orders/${orderId}/fulfillment`);
     expect(request.request.method).toBe('PATCH');
     expect(request.request.body).toEqual({ status: 'READY_FOR_PICKUP' });
-    request.flush({ id: 'fulfillment-id', status: 'READY_FOR_PICKUP', adminNote: null, readyAt: '2026-08-19T12:00:00Z', completedAt: null });
-    http.expectOne(`${ADMIN_API_BASE_URL}/orders/${orderId}`).flush(detail({ fulfillment: { ...detail().fulfillment!, status: 'READY_FOR_PICKUP' } }));
+    request.flush({
+      id: 'fulfillment-id',
+      status: 'READY_FOR_PICKUP',
+      adminNote: null,
+      readyAt: '2026-08-19T12:00:00Z',
+      completedAt: null,
+    });
+    http
+      .expectOne(`${ADMIN_API_BASE_URL}/orders/${orderId}`)
+      .flush(detail({ fulfillment: { ...detail().fulfillment!, status: 'READY_FOR_PICKUP' } }));
   });
 
   it('sends the exact COMPLETED mutation and maps backend domain errors', () => {
@@ -73,7 +101,10 @@ describe('AdminOrdersComponent fulfillment', () => {
         provideRouter([]),
         provideHttpClient(),
         provideHttpClientTesting(),
-        { provide: ActivatedRoute, useValue: { snapshot: { paramMap: convertToParamMap({ orderId }) } } },
+        {
+          provide: ActivatedRoute,
+          useValue: { snapshot: { paramMap: convertToParamMap({ orderId }) } },
+        },
       ],
     });
     fixture = TestBed.createComponent(AdminOrdersComponent);
@@ -87,16 +118,29 @@ describe('AdminOrdersComponent fulfillment', () => {
 
 function detail(overrides: Partial<AdminOrderDetail> = {}): AdminOrderDetail {
   const result: AdminOrderDetail = {
-    order: { id: orderId, status: 'PAID', totalInCents: 1500, createdAt: '2026-08-19T10:00:00Z', reservationExpiresAt: '2026-08-19T10:10:00Z', paidAt: '2026-08-19T10:01:00Z' },
+    order: {
+      id: orderId,
+      status: 'PAID',
+      totalInCents: 1500,
+      createdAt: '2026-08-19T10:00:00Z',
+      reservationExpiresAt: '2026-08-19T10:10:00Z',
+      paidAt: '2026-08-19T10:01:00Z',
+    },
     items: [],
     paymentPreference: null,
     payments: [],
     inventoryMovements: [],
     fulfillment: {
-      id: 'fulfillment-id', method: 'PICKUP', status: 'PENDING',
+      id: 'fulfillment-id',
+      method: 'PICKUP',
+      status: 'PENDING',
       customer: { name: 'Ada Lovelace', email: 'ada@example.com', phone: '2494000000' },
-      customerNote: null, adminNote: null, readyAt: null, completedAt: null,
-      createdAt: '2026-08-19T10:00:00Z', updatedAt: '2026-08-19T10:00:00Z',
+      customerNote: null,
+      adminNote: null,
+      readyAt: null,
+      completedAt: null,
+      createdAt: '2026-08-19T10:00:00Z',
+      updatedAt: '2026-08-19T10:00:00Z',
     },
   };
   return { ...result, ...overrides };

@@ -31,13 +31,17 @@
   display: grid;
   grid-template-columns: 15.5rem minmax(0, 1fr);
   background:
-    radial-gradient(1100px 480px at 8% -10%, color-mix(in srgb, var(--adm-accent) 6%, transparent), transparent 60%),
+    radial-gradient(
+      1100px 480px at 8% -10%,
+      color-mix(in srgb, var(--adm-accent) 6%, transparent),
+      transparent 60%
+    ),
     var(--adm-bg);
   color: var(--adm-ink);
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
 }
 
-@media (prefers-color-scheme: dark) {
+@media all {
   .admin-shell {
     --adm-bg: #1b1912;
     --adm-bg-raised: #26231a;
@@ -128,12 +132,54 @@ nav.chart-rack a:hover {
 
 nav.chart-rack a.active {
   background: var(--adm-bg-raised);
-  color: var(--adm-accent);
+  color: var(--adm-ink);
   border-color: var(--adm-border);
   border-right-color: var(--adm-bg-raised);
   box-shadow: var(--adm-shadow-card);
   font-weight: 750;
   margin-right: -1px;
+  border-left: 3px solid var(--adm-low);
+}
+
+.nav-section {
+  color: var(--adm-ink-muted);
+  font: 0.6rem var(--adm-font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  padding: 0.9rem 0.9rem 0.2rem;
+}
+.admin-shell {
+  background: var(--adm-bg);
+}
+.admin-shell :is(a, button):focus-visible {
+  outline: 2px solid var(--adm-accent);
+  outline-offset: 3px;
+}
+.drawer-dismiss {
+  display: none;
+}
+@media (min-width: 761px) {
+  aside {
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+  }
+}
+@media (max-width: 760px) {
+  .drawer-dismiss {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 21;
+    border: 0;
+    background: rgba(0, 0, 0, 0.5);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .admin-shell aside {
+    transition: none;
+  }
 }
 
 .account {
@@ -233,12 +279,14 @@ main > header p {
     inset: 0 auto 0 0;
     width: 17.5rem;
     transform: translateX(-105%);
+    visibility: hidden;
     transition: transform 0.22s ease;
     box-shadow: var(--adm-shadow-pop);
   }
 
   .admin-shell.drawer-open aside {
     transform: translateX(0);
+    visibility: visible;
   }
 
   .admin-shell.drawer-open::after {

@@ -354,6 +354,8 @@ td a:hover,
 }
 
 .status-paid,
+.status-approved,
+.status-active,
 .status-applied {
   color: var(--adm-ok);
   background: var(--adm-ok-bg);
@@ -361,6 +363,11 @@ td a:hover,
 }
 
 .status-awaiting_payment,
+.status-pending,
+.status-reserved,
+.status-paused,
+.status-in_process,
+.status-authorized,
 .status-payment_pending,
 .status-received,
 .status-recorded {
@@ -369,18 +376,123 @@ td a:hover,
   border-color: color-mix(in srgb, var(--adm-low) 35%, var(--adm-border));
 }
 
-.status-requires_review,
-.status-expired,
+.status-failed,
+.status-rejected,
+.status-charged_back,
 .status-cancelled {
   color: var(--adm-critical);
   background: var(--adm-critical-bg);
   border-color: color-mix(in srgb, var(--adm-critical) 35%, var(--adm-border));
 }
 
-.status-refunded {
-  color: var(--adm-resolved);
-  background: var(--adm-resolved-bg);
-  border-color: color-mix(in srgb, var(--adm-resolved) 35%, var(--adm-border));
+.status-refunded,
+.status-expired,
+.status-closed,
+.status-drawn {
+  color: var(--adm-low);
+  background: var(--adm-bg-sunken);
+  border-color: var(--adm-border-strong);
+}
+
+.status-requires_review,
+.status-in_mediation {
+  color: #f1b17c;
+  background: #38281d;
+  border-color: #80512c;
+}
+.technical-status {
+  color: var(--adm-ink-muted);
+  font-size: 0.78rem;
+}
+.date-cell {
+  color: var(--adm-ink-muted);
+  font-size: 0.78rem;
+  font-variant-numeric: tabular-nums;
+}
+.technical-status.needs-review {
+  color: #f1b17c;
+  font-weight: 700;
+}
+.technical-enum {
+  display: block;
+  color: var(--adm-ink-muted);
+  font-family: var(--adm-font-mono);
+  font-size: 0.62rem;
+  margin-top: 0.2rem;
+}
+.page :is(button, a, input, select, textarea):focus-visible {
+  outline: 2px solid var(--adm-accent);
+  outline-offset: 3px;
+}
+.page button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.filters {
+  align-items: end;
+}
+.filters > label {
+  flex: 1 1 9rem;
+  min-width: 0;
+}
+.filters > label:has(input:not([appAdminDatePicker])) {
+  flex-grow: 2;
+}
+.filters input,
+.filters select {
+  width: 100%;
+  min-width: 0;
+}
+.table-wrap {
+  max-height: 65vh;
+  scrollbar-color: var(--adm-border-strong) var(--adm-bg-sunken);
+}
+.page th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--adm-bg-sunken);
+}
+.page th,
+.page td {
+  padding: 0.7rem 0.85rem;
+}
+.page td:has(.table-actions),
+.page th:last-child {
+  text-align: right;
+}
+.page .table-actions {
+  justify-content: flex-end;
+}
+.table-wrap td:has(code) {
+  font-variant-numeric: tabular-nums;
+}
+.table-wrap td:has(.technical-enum) {
+  white-space: normal;
+}
+.table-wrap tr {
+  transition: background-color 120ms ease;
+}
+.dialog {
+  animation: admin-dialog-in 120ms ease-out;
+}
+@keyframes admin-dialog-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .dialog {
+    animation: none;
+  }
+  .table-wrap tr {
+    transition: none;
+  }
 }
 
 .low,
@@ -605,7 +717,6 @@ td a:hover,
   place-items: center;
   padding: 1rem;
   background: color-mix(in srgb, #1a160e 68%, transparent);
-  backdrop-filter: blur(4px);
 }
 
 .dialog {
