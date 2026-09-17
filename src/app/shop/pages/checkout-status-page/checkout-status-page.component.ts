@@ -279,14 +279,17 @@ export class CheckoutStatusPageComponent implements OnInit {
     const query = this.route.snapshot.queryParamMap;
     const externalReference = query.get('external_reference');
     const raffleContext = this.raffleCheckout.context();
+    // LEGACY FALLBACK only for raffle preferences created with shop back_urls.
+    // New preferences must return directly to /rifa/checkout/... with an
+    // explicit rafflePurchaseId; sessionStorage does not determine their kind.
     if (
       raffleContext &&
-      (!externalReference ||
-        externalReference === raffleContext.orderId ||
-        externalReference === raffleContext.rafflePurchaseId)
+      isUuid(externalReference ?? '') &&
+      externalReference === raffleContext.orderId
     ) {
       void this.router.navigate([`/rifa/checkout/${routeKind(this.route)}`], {
-        queryParamsHandling: 'preserve',
+        queryParams: { rafflePurchaseId: raffleContext.rafflePurchaseId },
+        queryParamsHandling: 'merge',
         replaceUrl: true,
       });
       return;

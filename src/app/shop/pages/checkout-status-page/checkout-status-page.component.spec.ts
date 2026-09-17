@@ -1,16 +1,19 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/router';
+import { ActivatedRoute, Router, convertToParamMap, provideRouter } from '@angular/router';
 import { vi } from 'vitest';
 import { PUBLIC_API_BASE_URL } from '../../core/commerce.models';
 import { CartStore } from '../../core/cart.store';
+import { RaffleCheckoutStore } from '../../../raffle/core/raffle-checkout.store';
 import { CheckoutStatusPageComponent } from './checkout-status-page.component';
 
 const orderId = 'd7f5ff29-2c18-4e3b-b635-630eda25b5d8';
 const statusUrl = PUBLIC_API_BASE_URL + '/orders/' + orderId + '/status';
 const POLLING_INTERVAL_MS = 5_000;
 const POLLING_TIMEOUT_MS = 120_000;
+const rafflePurchaseId = '8d91f074-d466-4df0-9198-c11636786592';
+const raffleId = '49de99a5-a861-4fd0-a3c4-c0d53dca616d';
 
 describe('CheckoutStatusPageComponent payment safety', () => {
   let fixture: ComponentFixture<CheckoutStatusPageComponent>;
@@ -24,6 +27,7 @@ describe('CheckoutStatusPageComponent payment safety', () => {
     localStorage.clear();
     sessionStorage.clear();
     vi.useRealTimers();
+    vi.restoreAllMocks();
   });
 
   it.each(['awaiting_payment', 'payment_pending'] as const)(
@@ -170,7 +174,54 @@ describe('CheckoutStatusPageComponent payment safety', () => {
     http.expectNone(statusUrl);
   });
 
-  function setup(path: string, query: Record<string, string>): void {
+  it.each(['success', 'pending', 'failure'] as const)(
+    'redirects an old raffle %s return only when its order matches legacy context',
+    (kind) => {
+      const navigate = vi.spyOn(Router.prototype, 'navigate').mockResolvedValue(true);
+      setup(`checkout/${kind}`, { external_reference: orderId, payment_id: '123' }, orderId);
+
+      expect(navigate).toHaveBeenCalledWith([`/rifa/checkout/${kind}`], {
+        queryParams: { rafflePurchaseId },
+        queryParamsHandling: 'merge',
+        replaceUrl: true,
+      });
+      http.expectNone((request) => request.url.includes('/orders/'));
+    },
+  );
+
+  it('keeps shop returns in the shop flow when unrelated raffle context exists', () => {
+    const navigate = vi.spyOn(Router.prototype, 'navigate').mockResolvedValue(true);
+    setup(
+      'checkout/success',
+      { external_reference: orderId },
+      '6392488e-8ad6-469a-8e0b-3a51c41592bd',
+    );
+    flushStatus('paid');
+
+    expect(navigate).not.toHaveBeenCalled();
+    expect(component.orderId()).toBe(orderId);
+    expect(component.title()).toBe('Pago confirmado');
+  });
+
+  it('does not redirect a generic return without an order reference just because raffle storage exists', () => {
+    const navigate = vi.spyOn(Router.prototype, 'navigate').mockResolvedValue(true);
+    setup('checkout/success', {}, orderId);
+
+    expect(navigate).not.toHaveBeenCalled();
+    http.expectNone((request) => request.url.includes('/orders/'));
+  });
+
+  it('does not match external_reference against the stored raffle purchase ID', () => {
+    const navigate = vi.spyOn(Router.prototype, 'navigate').mockResolvedValue(true);
+    setup('checkout/success', { external_reference: rafflePurchaseId }, orderId);
+    http.expectOne(`${PUBLIC_API_BASE_URL}/orders/${rafflePurchaseId}/status`).flush({
+      orderId: rafflePurchaseId,
+      status: 'paid',
+    });
+    expect(navigate).not.toHaveBeenCalled();
+  });
+
+  function setup(path: string, query: Record<string, string>, legacyRaffleOrderId?: string): void {
     localStorage.clear();
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
@@ -188,6 +239,20 @@ describe('CheckoutStatusPageComponent payment safety', () => {
       ],
     });
 
+    if (legacyRaffleOrderId) {
+      sessionStorage.setItem(
+        'gatarsis.raffle.checkout.v1',
+        JSON.stringify({
+          rafflePurchaseId,
+          orderId: legacyRaffleOrderId,
+          raffleId,
+          numbers: [7],
+          status: 'RESERVED',
+          updatedAt: new Date().toISOString(),
+        }),
+      );
+    }
+    TestBed.inject(RaffleCheckoutStore);
     fixture = TestBed.createComponent(CheckoutStatusPageComponent);
     component = fixture.componentInstance;
     http = TestBed.inject(HttpTestingController);

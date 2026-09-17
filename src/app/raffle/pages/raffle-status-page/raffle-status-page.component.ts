@@ -121,7 +121,7 @@ type StepState = 'done' | 'active' | 'attention';
             </div>
           }
 
-          @if (isPending() || !status()) {
+          @if ((isPending() || !status()) && purchaseId()) {
             <ol class="relative mt-6 flex flex-col gap-3" aria-label="Progreso de tu compra">
               @for (step of steps(); track step.label) {
                 <li
@@ -147,7 +147,9 @@ type StepState = 'done' | 'active' | 'attention';
                 </li>
               }
             </ol>
-            <p class="relative mt-3 text-left text-xs font-semibold leading-5 text-[var(--color-text-muted)]">
+            <p
+              class="relative mt-3 text-left text-xs font-semibold leading-5 text-[var(--color-text-muted)]"
+            >
               No necesitás volver a realizar el pago. Podés cerrar esta pantalla: cuando vuelvas a
               /rifa vas a ver el estado de tu compra.
             </p>
@@ -155,17 +157,19 @@ type StepState = 'done' | 'active' | 'attention';
 
           <div class="relative mt-7 flex flex-col gap-3">
             @if (isPending() || !status()) {
-              <button
-                type="button"
-                class="button-primary inline-flex min-h-12 items-center justify-center gap-2 rounded-xl px-5 font-extrabold disabled:opacity-60"
-                [disabled]="loading()"
-                (click)="consult()"
-              >
-                @if (loading()) {
-                  <span class="step-spinner step-spinner--inverted" aria-hidden="true"></span>
-                }
-                Actualizar estado
-              </button>
+              @if (purchaseId()) {
+                <button
+                  type="button"
+                  class="button-primary inline-flex min-h-12 items-center justify-center gap-2 rounded-xl px-5 font-extrabold disabled:opacity-60"
+                  [disabled]="loading()"
+                  (click)="consult()"
+                >
+                  @if (loading()) {
+                    <span class="step-spinner step-spinner--inverted" aria-hidden="true"></span>
+                  }
+                  Actualizar estado
+                </button>
+              }
               <a
                 class="inline-flex min-h-11 items-center justify-center rounded-xl border border-[var(--color-border)] px-5 font-extrabold transition hover:border-[var(--color-accent)]"
                 routerLink="/rifa"
@@ -346,7 +350,11 @@ export class RaffleStatusPageComponent implements OnInit {
   readonly isPending = computed(
     () => this.status() === 'RESERVED' || this.status() === 'PAYMENT_PENDING',
   );
-  readonly sortedNumbers = computed(() => this.numbers().slice().sort((left, right) => left - right));
+  readonly sortedNumbers = computed(() =>
+    this.numbers()
+      .slice()
+      .sort((left, right) => left - right),
+  );
   readonly steps = computed<{ label: string; state: StepState }[]>(() => {
     const status = this.status();
     const finalStep =
@@ -377,25 +385,21 @@ export class RaffleStatusPageComponent implements OnInit {
     const explicitPurchaseId =
       query.get('rafflePurchaseId') ?? query.get('raffle_purchase_id') ?? query.get('purchase_id');
     const externalReference = query.get('external_reference');
+    // LEGACY FALLBACK: old preferences may omit rafflePurchaseId. Mercado
+    // Pago's external_reference is always an orderId, never a purchase ID.
     const contextMatchesReturn =
-      !!context &&
-      (!externalReference ||
-        externalReference === context.orderId ||
-        externalReference === context.rafflePurchaseId);
+      !!context && (!externalReference || externalReference === context.orderId);
     const purchaseId = isUuid(explicitPurchaseId ?? '')
       ? explicitPurchaseId
       : contextMatchesReturn
         ? context.rafflePurchaseId
-        : isUuid(externalReference ?? '')
-          ? externalReference
-          : null;
+        : null;
 
     this.purchaseId.set(purchaseId);
-    if (contextMatchesReturn || explicitPurchaseId === context?.rafflePurchaseId) {
-      this.numbers.set(context!.numbers);
+    if (context && purchaseId === context.rafflePurchaseId) {
+      this.numbers.set(context.numbers);
     }
     if (!purchaseId) {
-      this.error.set('No encontramos una compra de rifa válida para consultar.');
       return;
     }
     this.startPolling(purchaseId);
@@ -414,6 +418,7 @@ export class RaffleStatusPageComponent implements OnInit {
   }
 
   title(): string {
+    if (!this.purchaseId()) return 'Estamos verificando tu compra.';
     if (this.loading() && !this.status()) return 'Confirmando tu pago...';
     switch (this.status()) {
       case 'PAID':
@@ -435,6 +440,9 @@ export class RaffleStatusPageComponent implements OnInit {
   }
 
   description(): string {
+    if (!this.purchaseId()) {
+      return 'No pudimos identificar tu participación desde este enlace. Volvé a la rifa para recuperar el estado disponible o contactanos con tu comprobante de pago. No vuelvas a pagar por ahora.';
+    }
     switch (this.status()) {
       case 'PAID':
         return 'Gracias por ser parte de esta ayuda. Tus números quedaron confirmados.';
