@@ -614,7 +614,7 @@ const dateTimeFormatter = new Intl.DateTimeFormat('es-AR', {
               !showForm() &&
               !reservation()
             ) {
-              <div class="raffle-mobile-cta lg:hidden">
+              <div class="raffle-mobile-cta">
                 <div class="raffle-mobile-cta-info">
                   <span>{{ selectedCount() }} {{ selectedCount() === 1 ? 'número' : 'números' }}</span>
                   <strong>{{ totalPrice() }}</strong>
