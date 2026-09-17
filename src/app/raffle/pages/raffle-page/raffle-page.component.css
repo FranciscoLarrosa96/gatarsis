@@ -34,16 +34,54 @@
 
 .raffle-prize {
   position: relative;
+  isolation: isolate;
   display: grid;
-  place-items: center;
+  place-items: stretch;
   box-sizing: border-box;
-  overflow: visible;
+  overflow: hidden;
   padding: 1.5rem;
-  min-height: 18rem;
+  min-height: clamp(11rem, 62vw, 18rem);
   aspect-ratio: 4 / 3;
   background: linear-gradient(145deg, var(--color-surface), var(--color-card));
   border-color: color-mix(in srgb, var(--color-accent) 25%, var(--color-border));
   box-shadow: 0 22px 55px color-mix(in srgb, var(--color-accent) 13%, transparent);
+}
+
+.raffle-prize::before {
+  position: absolute;
+  z-index: -1;
+  inset: 10%;
+  content: '';
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--color-accent-soft) 55%, transparent) 0%,
+    transparent 70%
+  );
+  filter: blur(2.5rem);
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+.raffle-prize-badge {
+  position: absolute;
+  top: 1rem;
+  left: 1rem;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border: 1px solid color-mix(in srgb, var(--color-accent) 30%, var(--color-border));
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-card) 88%, transparent);
+  box-shadow: 0 6px 16px color-mix(in srgb, var(--color-accent) 18%, transparent);
+  padding: 0.35rem 0.75rem;
+  color: var(--color-accent);
+  font-size: 0.7rem;
+  font-weight: 850;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  backdrop-filter: blur(6px);
 }
 
 .raffle-prize-image {
@@ -53,6 +91,7 @@
   object-fit: contain;
   object-position: center;
   border-radius: 1rem;
+  filter: drop-shadow(0 14px 22px color-mix(in srgb, var(--color-text) 16%, transparent));
 }
 
 .raffle-prize-skeleton {
@@ -128,7 +167,36 @@
   bottom: -4rem;
 }
 
+.raffle-numbers-decor {
+  position: absolute;
+  z-index: 0;
+  opacity: 0.16;
+  pointer-events: none;
+  user-select: none;
+}
+
+.raffle-numbers-decor--paw {
+  top: -1.25rem;
+  left: -1rem;
+  width: clamp(3.5rem, 6vw, 5.5rem);
+  transform: rotate(-14deg);
+}
+
+.raffle-numbers-decor--heart {
+  right: -0.5rem;
+  bottom: 1.5rem;
+  width: clamp(2.4rem, 4vw, 3.6rem);
+  opacity: 0.14;
+  transform: rotate(10deg);
+}
+
+:host-context(.dark) .raffle-numbers-decor {
+  opacity: 0.1;
+}
+
 .number-grid {
+  position: relative;
+  z-index: 1;
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 0.55rem;
@@ -153,11 +221,20 @@
     box-shadow 150ms ease;
 }
 
-.raffle-number:not(:disabled):hover {
-  z-index: 1;
-  border-color: var(--color-accent);
-  background: var(--color-recovering-bg);
-  transform: translateY(-2px);
+/* Gated behind (hover: hover) so touch devices never enter a :hover state —
+   otherwise WebKit/Chrome treat the first tap as "hover" and require a second
+   tap to fire the actual click, i.e. a number needs two taps to select. */
+@media (hover: hover) {
+  .raffle-number:not(:disabled):hover {
+    z-index: 1;
+    border-color: var(--color-accent);
+    background: var(--color-recovering-bg);
+    transform: translateY(-2px);
+  }
+}
+
+.raffle-number:not(:disabled):active {
+  transform: scale(0.96);
 }
 
 .raffle-number--selected {
@@ -422,10 +499,74 @@
   }
 }
 
+.raffle-mobile-cta {
+  position: fixed;
+  z-index: 45;
+  right: 0.75rem;
+  bottom: calc(4.5rem + env(safe-area-inset-bottom));
+  left: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  border: 1px solid color-mix(in srgb, var(--color-accent) 30%, var(--color-border));
+  border-radius: 1.25rem;
+  background: color-mix(in srgb, var(--color-card) 96%, transparent);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.32);
+  padding: 0.75rem 0.9rem;
+  backdrop-filter: blur(10px);
+  animation: raffle-mobile-cta-in 220ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.raffle-mobile-cta-info {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.15;
+}
+
+.raffle-mobile-cta-info span {
+  color: var(--color-text-muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.raffle-mobile-cta-info strong {
+  color: var(--color-accent);
+  font-size: 1.15rem;
+  font-weight: 900;
+}
+
+.raffle-mobile-cta-button {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 2.85rem;
+  border-radius: 0.9rem;
+  padding: 0 1.1rem;
+  font-weight: 850;
+  white-space: nowrap;
+}
+
+@keyframes raffle-mobile-cta-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .raffle-number,
   .raffle-number--conflict {
     animation: none;
     transition: none;
+  }
+
+  .raffle-mobile-cta {
+    animation: none;
   }
 }

@@ -114,6 +114,39 @@
   width: min(100%, 38rem);
 }
 
+.refund-note {
+  display: block;
+  margin-top: 0.3rem;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+.refund-note--ok {
+  color: var(--adm-ok);
+}
+
+.refund-note--review {
+  color: var(--adm-low);
+}
+
+.refund-note--fail {
+  color: var(--adm-critical);
+}
+
+.refund-note--standalone {
+  display: inline-flex;
+  align-items: center;
+  align-self: start;
+  margin-top: 0;
+  padding: 0.55rem 0.9rem;
+  border: 1px solid color-mix(in srgb, var(--adm-ok) 35%, var(--adm-border));
+  border-radius: 0.55rem;
+  background: var(--adm-ok-bg);
+}
+
 @media (max-width: 900px) {
   .detail-hero,
   .two-columns,

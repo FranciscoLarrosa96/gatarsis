@@ -216,6 +216,10 @@ const dateTimeFormatter = new Intl.DateTimeFormat('es-AR', {
               <figure
                 class="raffle-prize order-1 m-0 rounded-[2rem] border lg:order-2"
               >
+                <span class="raffle-prize-badge">
+                  <app-icon name="gift" class="size-3.5" />
+                  Premio
+                </span>
                 @if (!imageFailed() && currentRaffle.imageUrl) {
                   @if (!imageLoaded()) {
                     <div
@@ -327,12 +331,24 @@ const dateTimeFormatter = new Intl.DateTimeFormat('es-AR', {
           }
 
           @if (numbersLoaded()) {
-            <section class="mx-auto max-w-6xl px-5 py-10 sm:px-6 lg:px-8">
+            <section class="raffle-numbers-section relative isolate mx-auto max-w-6xl px-5 py-10 sm:px-6 lg:px-8">
+              <img
+                src="images/extra/paw.png"
+                alt=""
+                aria-hidden="true"
+                class="raffle-numbers-decor raffle-numbers-decor--paw hidden sm:block"
+              />
+              <img
+                src="images/extra/corazon-lleno.png"
+                alt=""
+                aria-hidden="true"
+                class="raffle-numbers-decor raffle-numbers-decor--heart hidden sm:block"
+              />
               <div
                 class="grid items-start gap-7"
                 [class]="currentRaffle.status === 'ACTIVE' ? 'lg:grid-cols-[minmax(0,1fr)_21rem]' : ''"
               >
-                <div class="surface-card dark-neon-card rounded-[1.75rem] border p-4 sm:p-6">
+                <div class="surface-card dark-neon-card relative z-10 rounded-[1.75rem] border p-4 sm:p-6">
                   <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
                     <div>
                       <p
@@ -426,6 +442,7 @@ const dateTimeFormatter = new Intl.DateTimeFormat('es-AR', {
 
                 @if (currentRaffle.status === 'ACTIVE') {
                 <aside
+                  id="raffle-selection"
                   class="selection-card surface-elevated rounded-[1.75rem] border p-5 lg:sticky lg:top-24"
                   aria-labelledby="selection-title"
                 >
@@ -590,6 +607,28 @@ const dateTimeFormatter = new Intl.DateTimeFormat('es-AR', {
                 }
               </div>
             </section>
+
+            @if (
+              currentRaffle.status === 'ACTIVE' &&
+              selectedCount() > 0 &&
+              !showForm() &&
+              !reservation()
+            ) {
+              <div class="raffle-mobile-cta lg:hidden">
+                <div class="raffle-mobile-cta-info">
+                  <span>{{ selectedCount() }} {{ selectedCount() === 1 ? 'número' : 'números' }}</span>
+                  <strong>{{ totalPrice() }}</strong>
+                </div>
+                <button
+                  type="button"
+                  class="button-primary raffle-mobile-cta-button"
+                  (click)="goToCheckout()"
+                >
+                  Completar compra
+                  <app-icon name="arrow" class="size-4" />
+                </button>
+              </div>
+            }
           }
         }
       </main>
@@ -786,6 +825,10 @@ export class RafflePageComponent implements OnInit {
     if (!this.selectedCount()) return;
     this.showForm.set(true);
     window.setTimeout(() => this.buyerNameInput?.nativeElement.focus(), 0);
+  }
+
+  goToCheckout(): void {
+    document.getElementById('raffle-selection')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
   pay(): void {

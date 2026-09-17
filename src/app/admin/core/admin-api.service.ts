@@ -36,6 +36,7 @@ import {
   AdminProductListQuery,
   AdminProductMedia,
   AdminProductVariant,
+  AdminRefundOperation,
   CreateAdminProductMediaRequest,
   CreateAdminProductRequest,
   CreateAdminRefundRequest,
@@ -203,9 +204,11 @@ export class AdminApiService {
   }
 
   refund(paymentId: string, body: CreateAdminRefundRequest, idempotencyKey: string) {
-    return this.http.post(`${ADMIN_API_BASE_URL}/payments/${paymentId}/refund`, body, {
-      headers: { 'Idempotency-Key': idempotencyKey },
-    });
+    return this.http.post<AdminRefundOperation>(
+      `${ADMIN_API_BASE_URL}/payments/${paymentId}/refund`,
+      body,
+      { headers: { 'Idempotency-Key': idempotencyKey } },
+    );
   }
 
   audit(query: AdminAuditQuery = {}): Observable<AdminPaginatedResponse<AdminAuditLog>> {

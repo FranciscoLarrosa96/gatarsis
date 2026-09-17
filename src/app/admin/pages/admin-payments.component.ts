@@ -15,6 +15,7 @@ import {
   AdminPaymentDetailResponse,
   AdminPaymentListItem,
   AdminPaymentProcessingStatus,
+  AdminRefundOperation,
 } from '../core/admin.models';
 
 @Component({
@@ -42,8 +43,16 @@ import {
       @if (detail(); as paymentDetail) {
         <section class="detail-hero">
           <div>
-            <span class="badge status-{{ paymentDetail.payment.processingStatus.toLowerCase() }}">
-              {{ processingLabel(paymentDetail.payment.processingStatus) }}
+            <span
+              class="badge status-{{
+                isRefunded(paymentDetail) ? 'refunded' : paymentDetail.payment.processingStatus.toLowerCase()
+              }}"
+            >
+              {{
+                isRefunded(paymentDetail)
+                  ? 'Reembolsado'
+                  : processingLabel(paymentDetail.payment.processingStatus)
+              }}
             </span>
             <h2>{{ money(paymentDetail.payment.transactionAmountInCents) }}</h2>
             <p>{{ providerLabel(paymentDetail.payment.providerStatus) }} · {{ date(paymentDetail.payment.dateApproved) }}</p>
@@ -62,9 +71,13 @@ import {
               <dd><code>{{ paymentDetail.payment.orderId }}</code></dd>
             </div>
           </dl>
-          <button class="button button-primary" type="button" (click)="openRefund(paymentDetail.payment)">
-            Reembolsar
-          </button>
+          @if (canRefund(paymentDetail)) {
+            <button class="button button-primary" type="button" (click)="openRefund(paymentDetail.payment)">
+              Reembolsar
+            </button>
+          } @else if (isRefunded(paymentDetail)) {
+            <span class="refund-note refund-note--ok refund-note--standalone">Reembolso completado</span>
+          }
         </section>
 
         <section class="content-grid two-columns">
@@ -85,19 +98,28 @@ import {
 
           <article class="panel">
             <h2>Reembolso</h2>
-            @if (paymentDetail.refund) {
+            @if (paymentDetail.refund; as refund) {
               <dl class="compact-list">
                 <div>
                   <dt>Estado</dt>
-                  <dd>{{ paymentDetail.refund.status }}</dd>
+                  <dd>
+                    <code>{{ refund.status }}</code>
+                    @if (refund.status === 'SUCCEEDED') {
+                      <span class="refund-note refund-note--ok">Reembolso completado correctamente</span>
+                    } @else if (refund.status === 'REQUIRES_REVIEW') {
+                      <span class="refund-note refund-note--review">Requiere revisión manual</span>
+                    } @else if (refund.status === 'FAILED') {
+                      <span class="refund-note refund-note--fail">El reembolso falló</span>
+                    }
+                  </dd>
                 </div>
                 <div>
                   <dt>Provider refund</dt>
-                  <dd>{{ paymentDetail.refund.providerRefundId || 'Pendiente' }}</dd>
+                  <dd><code>{{ refund.providerRefundId || 'Pendiente' }}</code></dd>
                 </div>
                 <div>
                   <dt>Completado</dt>
-                  <dd>{{ date(paymentDetail.refund.completedAt) }}</dd>
+                  <dd>{{ date(refund.completedAt) }}</dd>
                 </div>
               </dl>
             } @else {
@@ -163,7 +185,6 @@ import {
                         @if (reviewMode) {
                           <button type="button" (click)="resolve(payment)">Resolver</button>
                         }
-                        <button type="button" (click)="openRefund(payment)">Reembolsar</button>
                       </div>
                     </td>
                   </tr>
@@ -339,9 +360,11 @@ export class AdminPaymentsComponent implements OnInit {
       .refund(payment.id, { reason: this.reason, confirmation: 'REEMBOLSAR' }, crypto.randomUUID())
       .pipe(finalize(() => this.busy.set(false)))
       .subscribe({
-        next: () => {
+        next: (result) => {
           this.refund.set(null);
-          this.message.set('Refund solicitado. Revisá el estado antes de realizar otra acción.');
+          this.message.set(this.refundResultMessage(result));
+          if (this.detail()?.payment.id === payment.id) this.show(payment.id);
+          else this.load();
         },
         error: (error: unknown) =>
           this.message.set(
@@ -351,6 +374,27 @@ export class AdminPaymentsComponent implements OnInit {
             ),
           ),
       });
+  }
+
+  isRefunded(detail: AdminPaymentDetailResponse): boolean {
+    return detail.refund?.status === 'SUCCEEDED' || detail.order?.status === 'REFUNDED';
+  }
+
+  canRefund(detail: AdminPaymentDetailResponse): boolean {
+    return (
+      detail.payment.processingStatus === 'APPLIED' &&
+      detail.order?.status === 'PAID' &&
+      detail.refund?.status !== 'SUCCEEDED'
+    );
+  }
+
+  private refundResultMessage(result: AdminRefundOperation): string {
+    if (result.status === 'SUCCEEDED') return 'Reembolso completado correctamente.';
+    if (result.status === 'REQUIRES_REVIEW') {
+      return 'El reembolso quedó en revisión. Confirmá el estado antes de intentar otra acción.';
+    }
+    if (result.status === 'FAILED') return 'El reembolso falló. Revisá el estado antes de reintentar.';
+    return 'Refund solicitado. Revisá el estado antes de realizar otra acción.';
   }
 
   money(value: number): string {

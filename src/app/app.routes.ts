@@ -44,23 +44,19 @@ export const routes: Routes = [
   {
     path: 'tienda',
     loadComponent: () =>
-      import('./shop/pages/store-coming-soon-page/store-coming-soon-page.component').then(
-        (m) => m.StoreComingSoonPageComponent,
-      ),
+      import('./shop/pages/shop-page/shop-page.component').then((m) => m.ShopPageComponent),
   },
   {
     path: 'tienda/:slug',
     loadComponent: () =>
-      import('./shop/pages/store-coming-soon-page/store-coming-soon-page.component').then(
-        (m) => m.StoreComingSoonPageComponent,
+      import('./shop/pages/product-detail-page/product-detail-page.component').then(
+        (m) => m.ProductDetailPageComponent,
       ),
   },
   {
     path: 'carrito',
     loadComponent: () =>
-      import('./shop/pages/store-coming-soon-page/store-coming-soon-page.component').then(
-        (m) => m.StoreComingSoonPageComponent,
-      ),
+      import('./shop/pages/cart-page/cart-page.component').then((m) => m.CartPageComponent),
   },
   {
     path: 'rifa',
