@@ -1,0 +1,78 @@
+.raffle-prize-zoom-trigger {
+  display: none;
+}
+@media (max-width: 767px) {
+  .raffle-prize-zoom-trigger {
+    display: flex;
+    position: absolute;
+    inset: 0;
+    z-index: 3;
+    align-items: flex-end;
+    justify-content: flex-end;
+    padding: 0.65rem;
+    border: 0;
+    background: transparent;
+    cursor: zoom-in;
+  }
+  .raffle-prize-zoom-trigger:disabled {
+    display: none;
+  }
+  .raffle-prize-zoom-trigger span {
+    border: 1px solid var(--color-border);
+    border-radius: 999px;
+    padding: 0.3rem 0.6rem;
+    background: var(--color-card);
+    color: var(--color-accent);
+    font-size: 0.7rem;
+    font-weight: 750;
+  }
+  .raffle-prize-zoom-trigger:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: -5px;
+    border-radius: inherit;
+  }
+}
+.raffle-prize-zoom {
+  width: calc(100vw - 1rem);
+  max-width: 60rem;
+  max-height: calc(100dvh - 2rem);
+  margin: auto;
+  padding: 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: 1.25rem;
+  background: var(--color-card);
+  color: var(--color-text);
+}
+.raffle-prize-zoom::backdrop {
+  background: rgba(12, 8, 22, 0.9);
+}
+.raffle-prize-zoom-content header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+.raffle-prize-zoom-content h2 {
+  font-size: 1rem;
+  font-weight: 800;
+}
+.raffle-prize-zoom-content button {
+  flex-shrink: 0;
+  width: 2.75rem;
+  height: 2.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: 50%;
+  font-size: 1.6rem;
+}
+.raffle-prize-zoom-content button:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 3px;
+}
+.raffle-prize-zoom-content img {
+  display: block;
+  width: 100%;
+  max-height: calc(100dvh - 8rem);
+  object-fit: contain;
+  border-radius: 0.75rem;
+}

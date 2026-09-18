@@ -1,0 +1,299 @@
+.raffle-page {
+  --raffle-motion-ease: cubic-bezier(0.22, 1, 0.36, 1);
+}
+.raffle-hero::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 0 40%;
+  z-index: -1;
+  pointer-events: none;
+  background: radial-gradient(
+    ellipse at 65% 40%,
+    color-mix(in srgb, var(--color-accent) 10%, transparent),
+    transparent 65%
+  );
+  transform: translate3d(calc(var(--hero-x, 0px) * 0.35), calc(var(--hero-y, 0px) * 0.35), 0);
+  animation:
+    raffle-halo-in 700ms ease-out backwards,
+    raffle-glow 9s ease-in-out 1500ms infinite;
+}
+.raffle-hero-layout > div > p:first-child {
+  animation: raffle-copy-in 500ms var(--raffle-motion-ease) 150ms backwards;
+}
+.raffle-hero h1 {
+  animation: raffle-title-in 650ms var(--raffle-motion-ease) 250ms backwards;
+}
+.raffle-hero-copy {
+  animation: raffle-copy-in 600ms var(--raffle-motion-ease) 350ms backwards;
+}
+.raffle-highlights span {
+  animation: raffle-copy-in 500ms var(--raffle-motion-ease) 450ms backwards;
+}
+.raffle-highlights span:nth-child(2) {
+  animation-delay: 520ms;
+}
+.raffle-highlights + div {
+  animation: raffle-copy-in 500ms var(--raffle-motion-ease) 550ms backwards;
+}
+.raffle-progress {
+  animation: raffle-copy-in 500ms var(--raffle-motion-ease) 600ms backwards;
+}
+.raffle-hero-actions {
+  animation: raffle-copy-in 500ms var(--raffle-motion-ease) 700ms backwards;
+}
+.raffle-prize {
+  transform: translate3d(
+    calc(var(--hero-x, 0px) * 0.714),
+    calc(var(--hero-y, 0px) * 0.714 + var(--hero-scroll, 0px) * 0.2),
+    0
+  );
+  animation:
+    raffle-prize-in 800ms var(--raffle-motion-ease) 500ms backwards,
+    raffle-float 7s ease-in-out 1600ms infinite;
+}
+.raffle-prize::before {
+  animation: raffle-glow 8s ease-in-out 1600ms infinite;
+}
+.raffle-hero .raffle-dots,
+.raffle-hero .raffle-paw {
+  translate: calc(var(--hero-x, 0px) * 0.4) calc(var(--hero-y, 0px) * 0.4);
+  animation: raffle-decor-drift 10s ease-in-out 1500ms infinite;
+}
+.raffle-hero .raffle-dots--two {
+  animation-duration: 12s;
+  animation-delay: 2300ms;
+}
+.raffle-hero .raffle-paw {
+  animation-duration: 8s;
+  animation-delay: 1900ms;
+}
+.raffle-progress-fill {
+  transform-origin: left;
+  animation: raffle-progress-in 900ms var(--raffle-motion-ease) 850ms backwards;
+}
+.raffle-number {
+  --row: 0;
+}
+.raffle-number:nth-child(n + 11) {
+  --row: 1;
+}
+.raffle-number:nth-child(n + 21) {
+  --row: 2;
+}
+.raffle-number:nth-child(n + 31) {
+  --row: 3;
+}
+.raffle-number:nth-child(n + 41) {
+  --row: 4;
+}
+.raffle-number:nth-child(n + 51) {
+  --row: 5;
+}
+.raffle-number:nth-child(n + 61) {
+  --row: 6;
+}
+.raffle-number:nth-child(n + 71) {
+  --row: 7;
+}
+.raffle-number:nth-child(n + 81) {
+  --row: 8;
+}
+.raffle-number:nth-child(n + 91) {
+  --row: 9;
+}
+.raffle-grid-reveal .raffle-number:not(.raffle-number--conflict) {
+  animation: raffle-row-in 650ms var(--raffle-motion-ease) calc(var(--row) * 90ms) backwards;
+}
+.raffle-grid-reveal.reveal:not(.is-visible) .raffle-number {
+  animation: none;
+}
+.raffle-grid-reveal .raffle-number--selected:not(.raffle-number--conflict) {
+  animation:
+    raffle-row-in 650ms var(--raffle-motion-ease) calc(var(--row) * 90ms) backwards,
+    raffle-selected 160ms ease-out;
+}
+.raffle-number--selected:focus-visible {
+  outline-offset: 3px;
+}
+@media (hover: hover) {
+  .raffle-number:not(:disabled):hover {
+    transform: translateY(-1px);
+  }
+}
+.selection-card {
+  position: relative;
+}
+@media (min-width: 1024px) {
+  .selection-card {
+    position: sticky;
+  }
+}
+.selection-card.selection-has-numbers::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border: 1px solid var(--color-accent);
+  border-radius: inherit;
+  pointer-events: none;
+  animation: raffle-selection-light 650ms ease-out forwards;
+}
+.raffle-prize-details[open] .raffle-details-content {
+  animation: raffle-copy-in 260ms var(--raffle-motion-ease);
+}
+.hero-motion-paused::before,
+.hero-motion-paused .raffle-prize,
+.hero-motion-paused .raffle-prize::before,
+.hero-motion-paused .raffle-dots,
+.hero-motion-paused .raffle-paw {
+  animation-play-state: paused;
+}
+@keyframes raffle-copy-in {
+  from {
+    opacity: 0;
+    translate: 0 8px;
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
+  }
+}
+@keyframes raffle-title-in {
+  from {
+    opacity: 0;
+    translate: 0 16px;
+    clip-path: inset(0 0 100%);
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
+    clip-path: inset(-10%);
+  }
+}
+@keyframes raffle-prize-in {
+  from {
+    opacity: 0;
+    translate: 0 20px;
+    scale: 0.96;
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
+    scale: 1;
+  }
+}
+@keyframes raffle-halo-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 0.9;
+  }
+}
+@keyframes raffle-glow {
+  0%,
+  100% {
+    opacity: 0.65;
+    scale: 1;
+  }
+  50% {
+    opacity: 0.9;
+    scale: 1.02;
+  }
+}
+@keyframes raffle-float {
+  0%,
+  100% {
+    translate: 0 0;
+  }
+  50% {
+    translate: 0 -4px;
+  }
+}
+@keyframes raffle-decor-drift {
+  0%,
+  100% {
+    scale: 1;
+  }
+  50% {
+    scale: 1.025;
+  }
+}
+@keyframes raffle-progress-in {
+  from {
+    scale: 0 1;
+  }
+  to {
+    scale: 1 1;
+  }
+}
+@keyframes raffle-row-in {
+  from {
+    opacity: 0;
+    translate: 0 5px;
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
+  }
+}
+@keyframes raffle-selected {
+  0%,
+  100% {
+    scale: 1;
+  }
+  50% {
+    scale: 1.035;
+  }
+}
+@keyframes raffle-selection-light {
+  from {
+    opacity: 0.6;
+  }
+  to {
+    opacity: 0;
+  }
+}
+@media (max-width: 767px) {
+  .raffle-prize {
+    animation: raffle-prize-in 550ms var(--raffle-motion-ease) 150ms backwards;
+  }
+  .raffle-hero::before {
+    animation: raffle-halo-in 500ms ease-out backwards;
+  }
+  .raffle-prize::before,
+  .raffle-hero .raffle-dots,
+  .raffle-hero .raffle-paw {
+    animation: none;
+  }
+  .raffle-grid-reveal .raffle-number:not(.raffle-number--conflict) {
+    animation-delay: calc(var(--row) * 70ms);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .raffle-page .reveal {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+  }
+  .raffle-hero::before,
+  .raffle-hero .raffle-prize::before,
+  .raffle-hero *,
+  .raffle-grid-reveal .raffle-number,
+  .raffle-grid-reveal .raffle-number--selected:not(.raffle-number--conflict),
+  .selection-card.selection-has-numbers::after,
+  .raffle-prize-details[open] .raffle-details-content {
+    animation: none !important;
+    transition: none !important;
+  }
+  .raffle-hero .raffle-prize,
+  .raffle-hero::before {
+    transform: none;
+  }
+  .raffle-hero .raffle-dots,
+  .raffle-hero .raffle-paw {
+    translate: none;
+  }
+  .selection-card.selection-has-numbers::after {
+    display: none;
+  }
+}

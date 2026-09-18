@@ -1,0 +1,266 @@
+/* Independent transform channels preserve the approved offsets and rotations. */
+.home-hero {
+  --hero-ease: cubic-bezier(0.22, 1, 0.36, 1);
+}
+.home-hero::after {
+  transform: translate3d(
+    calc(var(--hero-x, 0px) * 0.2),
+    calc(var(--hero-y, 0px) * 0.2 + var(--hero-scroll, 0px) * 0.3),
+    0
+  );
+  animation:
+    hero-halo-in 600ms var(--hero-ease) 100ms backwards,
+    hero-halo-breathe 7s ease-in-out 1450ms infinite;
+}
+.hero-art-layer {
+  transform: translate3d(var(--hero-x, 0px), calc(var(--hero-y, 0px) + var(--hero-scroll, 0px)), 0);
+  animation: hero-art-in 850ms var(--hero-ease) 250ms backwards;
+}
+.home-hero .home-hero-art {
+  animation: hero-float 6.5s ease-in-out 1450ms infinite;
+}
+.home-hero .home-hero-art::before {
+  animation: hero-light-breathe 8s ease-in-out 1600ms infinite;
+}
+.hero-eyebrow {
+  animation: hero-copy-in 650ms var(--hero-ease) 600ms backwards;
+}
+.hero-title-clip {
+  overflow: clip;
+  overflow-clip-margin: 0.12em;
+}
+.hero-title-line {
+  display: block;
+  animation: hero-line-in 750ms var(--hero-ease) 700ms backwards;
+}
+.hero-title-clip:nth-child(2) .hero-title-line {
+  animation-delay: 810ms;
+}
+.hero-title-clip:nth-child(3) .hero-title-line {
+  animation-delay: 920ms;
+}
+.hero-lives {
+  animation: hero-lives-light 1100ms ease-out 1050ms backwards;
+}
+.hero-description {
+  animation: hero-copy-in 650ms var(--hero-ease) 950ms backwards;
+}
+.home-hero .home-title-heart {
+  animation: hero-heart-light 7s ease-in-out 2400ms infinite;
+}
+.home-hero > .home-decor-paw {
+  transform: translate3d(
+    calc(var(--hero-x, 0px) * 0.7),
+    calc(var(--hero-y, 0px) * 0.7 + var(--hero-scroll, 0px) * 0.5),
+    0
+  );
+  animation:
+    hero-decor-in 700ms var(--hero-ease) 400ms backwards,
+    hero-decor-drift 8s ease-in-out 1500ms infinite;
+}
+.home-hero > .home-decor-paw:nth-of-type(4) {
+  animation-delay: 540ms, 1900ms;
+  animation-duration: 700ms, 10s;
+}
+.home-hero > .home-decor-paw:nth-of-type(5) {
+  animation-delay: 680ms, 2200ms;
+  animation-duration: 700ms, 12s;
+}
+.home-hero > .home-decor-dots {
+  transform: translate3d(
+    calc(var(--hero-x, 0px) * 0.4),
+    calc(var(--hero-y, 0px) * 0.4 + var(--hero-scroll, 0px) * 0.3),
+    0
+  );
+  animation:
+    hero-decor-in 700ms var(--hero-ease) 580ms backwards,
+    hero-dots-breathe 12s ease-in-out 2100ms infinite;
+}
+.home-hero > .home-mobile-decor {
+  animation: hero-decor-in 600ms var(--hero-ease) 450ms backwards;
+}
+.home-hero > .home-mobile-decor--paw-bottom {
+  animation-delay: 570ms;
+}
+.home-hero > .home-mobile-decor--dots {
+  animation-delay: 690ms;
+}
+
+@keyframes hero-art-in {
+  from {
+    opacity: 0;
+    translate: 0 20px;
+    scale: 0.96;
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
+    scale: 1;
+  }
+}
+@keyframes hero-copy-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes hero-line-in {
+  from {
+    opacity: 0;
+    transform: translateY(105%);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes hero-decor-in {
+  from {
+    opacity: 0;
+    scale: 0.96;
+  }
+}
+@keyframes hero-halo-in {
+  from {
+    opacity: 0;
+    scale: 0.97;
+  }
+  to {
+    opacity: 1;
+    scale: 1;
+  }
+}
+@keyframes hero-float {
+  0%,
+  100% {
+    translate: 0 0;
+  }
+  50% {
+    translate: 0 -5px;
+  }
+}
+@keyframes hero-decor-drift {
+  0%,
+  100% {
+    translate: 0 0;
+  }
+  50% {
+    translate: 0 -4px;
+  }
+}
+@keyframes hero-halo-breathe {
+  0%,
+  100% {
+    opacity: 0.75;
+    scale: 1;
+  }
+  50% {
+    opacity: 1;
+    scale: 1.03;
+  }
+}
+@keyframes hero-light-breathe {
+  0%,
+  100% {
+    scale: 1;
+  }
+  50% {
+    scale: 1.03;
+  }
+}
+@keyframes hero-dots-breathe {
+  0%,
+  100% {
+    scale: 0.98;
+  }
+  50% {
+    scale: 1.03;
+  }
+}
+@keyframes hero-lives-light {
+  from {
+    text-shadow: 0 0 16px color-mix(in srgb, var(--color-accent) 22%, transparent);
+  }
+  to {
+    text-shadow: none;
+  }
+}
+/* The existing title heart is the only separable heart; don't invent stars. */
+@keyframes hero-heart-light {
+  0%,
+  78%,
+  100% {
+    scale: 1;
+    opacity: 1;
+  }
+  86% {
+    scale: 1.025;
+    opacity: 0.8;
+  }
+  92% {
+    scale: 1;
+    opacity: 1;
+  }
+}
+.hero-motion-paused::after,
+.hero-motion-paused .hero-art-layer,
+.hero-motion-paused .home-hero-art,
+.hero-motion-paused .home-hero-art::before,
+.hero-motion-paused .home-decor-paw,
+.hero-motion-paused .home-decor-dots,
+.hero-motion-paused .home-title-heart {
+  animation-play-state: paused;
+}
+
+@media (max-width: 767px) {
+  .hero-eyebrow {
+    animation-delay: 150ms;
+    animation-duration: 450ms;
+  }
+  .hero-title-line {
+    animation-delay: 250ms;
+    animation-duration: 550ms;
+  }
+  .hero-title-clip:nth-child(2) .hero-title-line {
+    animation-delay: 330ms;
+  }
+  .hero-title-clip:nth-child(3) .hero-title-line {
+    animation-delay: 410ms;
+  }
+  .hero-description {
+    animation-delay: 500ms;
+    animation-duration: 500ms;
+  }
+  .home-hero::after {
+    animation: hero-halo-in 600ms var(--hero-ease) 100ms backwards;
+  }
+  .home-hero .home-title-heart {
+    animation: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .home-hero::after,
+  .home-hero .hero-art-layer,
+  .home-hero .home-hero-art,
+  .home-hero .home-hero-art::before,
+  .home-hero .hero-eyebrow,
+  .home-hero .hero-title-line,
+  .home-hero .hero-description,
+  .home-hero .hero-lives,
+  .home-hero .home-title-heart,
+  .home-hero > .home-decor-paw,
+  .home-hero > .home-decor-dots,
+  .home-hero > .home-mobile-decor {
+    animation: none;
+  }
+  .home-hero .hero-art-layer,
+  .home-hero > .home-decor-paw,
+  .home-hero > .home-decor-dots,
+  .home-hero::after {
+    transform: none;
+  }
+}

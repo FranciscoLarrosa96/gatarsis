@@ -5,6 +5,11 @@
 
 .two-columns {
   grid-template-columns: 1.15fr 0.85fr;
+  align-items: start;
+}
+
+.content-grid > .panel {
+  align-content: start;
 }
 
 .detail-hero {
@@ -79,6 +84,20 @@
   gap: 1rem;
   padding: 0.9rem 0;
   border-bottom: 1px solid var(--adm-border);
+}
+
+.compact-list dd.numeric {
+  text-align: left;
+}
+
+.compact-list > div {
+  padding-bottom: 0.8rem;
+  border-bottom: 1px solid var(--adm-border);
+}
+
+.compact-list > div:last-child {
+  padding-bottom: 0;
+  border-bottom: 0;
 }
 
 .item-row:last-child {

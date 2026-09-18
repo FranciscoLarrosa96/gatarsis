@@ -13,6 +13,7 @@ import { BottomNavigationComponent } from '../../shared/components/bottom-naviga
 import { CopyAliasButtonComponent } from '../../shared/components/copy-alias-button/copy-alias-button.component';
 import { IconComponent } from '../../shared/components/icon/icon.component';
 import { RevealOnScrollDirective } from '../../shared/directives/reveal-on-scroll.directive';
+import { HeroMotionDirective } from './hero-motion.directive';
 
 @Component({
   selector: 'app-home-page',
@@ -25,7 +26,9 @@ import { RevealOnScrollDirective } from '../../shared/directives/reveal-on-scrol
     CopyAliasButtonComponent,
     IconComponent,
     RevealOnScrollDirective,
+    HeroMotionDirective,
   ],
+  styleUrl: './home-hero-motion.css',
   styles: `
     .home-page {
       overflow-x: clip;
@@ -431,7 +434,7 @@ import { RevealOnScrollDirective } from '../../shared/directives/reveal-on-scrol
     <app-header />
 
     <main id="contenido" class="home-page">
-      <section class="home-hero relative">
+      <section appHeroMotion class="home-hero relative">
         <img
           src="images/extra/paw.png"
           alt=""
@@ -469,33 +472,38 @@ import { RevealOnScrollDirective } from '../../shared/directives/reveal-on-scrol
         >
           <div class="home-hero-copy relative z-10">
             <p
-              class="text-xs font-extrabold uppercase tracking-[0.11em] text-[var(--color-accent)] sm:text-sm"
+              class="hero-eyebrow text-xs font-extrabold uppercase tracking-[0.11em] text-[var(--color-accent)] sm:text-sm"
             >
               Cada historia merece continuar
             </p>
             <h1
               class="mt-5 max-w-3xl text-[2.75rem] font-black leading-[0.96] sm:text-6xl lg:text-[4.85rem] xl:text-[5.35rem]"
             >
-              <span class="block">Ayudanos a</span>
-              <span class="block sm:whitespace-nowrap">seguir salvando</span>
-              <span class="mt-[0.5rem] block text-[var(--color-accent)]"
-                >vidas
-                <span class="home-title-heart"
-                  ><img
-                    class="w-[4.2rem]"
-                    src="images/extra/corazoncito-empty.png"
-                    alt="corazon" /></span
+              <span class="hero-title-clip block"
+                ><span class="hero-title-line">Ayudanos a</span></span
+              >
+              <span class="hero-title-clip block sm:whitespace-nowrap"
+                ><span class="hero-title-line">seguir salvando</span></span
+              >
+              <span class="hero-title-clip mt-[0.5rem] block text-[var(--color-accent)]"
+                ><span class="hero-title-line"
+                  ><span class="hero-lives">vidas</span>
+                  <span class="home-title-heart"
+                    ><img
+                      class="w-[4.2rem]"
+                      src="images/extra/corazoncito-empty.png"
+                      alt="corazon" /></span></span
               ></span>
             </h1>
             <p
-              class="mt-7 max-w-xl text-left text-base leading-7 text-[var(--color-text-muted)] sm:text-lg lg:text-[1.2rem] lg:leading-8"
+              class="hero-description mt-7 max-w-xl text-left text-base leading-7 text-[var(--color-text-muted)] sm:text-lg lg:text-[1.2rem] lg:leading-8"
             >
               Rescatar es apenas el comienzo. Cada paso que sigue los acerca más a la oportunidad de
               volver a empezar.
             </p>
           </div>
 
-          <div appReveal="right" class="relative hidden min-w-0 md:block">
+          <div class="hero-art-layer relative hidden min-w-0 md:block">
             <figure class="home-hero-art relative m-0">
               <img
                 ngSrc="images/ui/hero-concepto-1.jpg"

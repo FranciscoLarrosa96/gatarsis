@@ -32,6 +32,7 @@
 .page h1 {
   font-size: clamp(1.7rem, 3vw, 2.15rem);
   font-weight: 700;
+  text-wrap: balance;
 }
 
 /* The category label ("Catálogo", "Inventario"...) is redundant with the
@@ -68,6 +69,15 @@ code {
   font-weight: 700;
   font-size: 0.88rem;
   text-decoration: none;
+  transition:
+    background-color 150ms var(--adm-ease),
+    border-color 150ms var(--adm-ease),
+    color 150ms var(--adm-ease),
+    transform 150ms var(--adm-ease);
+}
+
+.button:active:not(:disabled) {
+  transform: translateY(1px) scale(0.985);
 }
 
 .button-primary {
@@ -87,7 +97,7 @@ code {
 }
 
 .button-danger {
-  color: #fff;
+  color: var(--adm-bg-raised);
   background: var(--adm-critical);
   border-color: var(--adm-critical);
 }
@@ -101,6 +111,11 @@ code {
 .button-secondary:hover {
   border-color: var(--adm-accent);
   color: var(--adm-accent);
+  background: var(--adm-bg-hover);
+}
+
+.button-danger:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--adm-critical) 85%, var(--adm-ink));
 }
 
 .button-quiet {
@@ -145,8 +160,29 @@ textarea {
   background: var(--adm-bg-raised);
   color: var(--adm-ink);
   font: inherit;
-  border-radius: 0.4rem;
+  border-radius: 0.45rem;
   padding: 0.6rem 0.7rem;
+  transition:
+    border-color 150ms var(--adm-ease),
+    box-shadow 150ms var(--adm-ease);
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: color-mix(in srgb, var(--adm-ink-muted) 75%, transparent);
+}
+
+input:hover:not(:focus-visible):not(:disabled),
+select:hover:not(:focus-visible):not(:disabled),
+textarea:hover:not(:focus-visible):not(:disabled) {
+  border-color: var(--adm-ink-muted);
+}
+
+input:disabled,
+select:disabled,
+textarea:disabled {
+  background: var(--adm-bg-sunken);
+  color: var(--adm-ink-muted);
 }
 
 input:focus-visible,
@@ -155,6 +191,7 @@ textarea:focus-visible {
   outline: 2px solid var(--adm-accent);
   outline-offset: 1px;
   border-color: var(--adm-accent);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--adm-accent) 16%, transparent);
 }
 
 textarea {
@@ -267,7 +304,11 @@ tbody tr:last-child td {
 }
 
 tbody tr:hover {
-  background: color-mix(in srgb, var(--adm-accent) 5%, transparent);
+  background: var(--adm-bg-hover);
+}
+
+tbody td {
+  font-variant-numeric: tabular-nums;
 }
 
 .numeric {
@@ -396,9 +437,9 @@ td a:hover,
 
 .status-requires_review,
 .status-in_mediation {
-  color: #f1b17c;
-  background: #38281d;
-  border-color: #80512c;
+  color: var(--adm-review);
+  background: var(--adm-review-bg);
+  border-color: color-mix(in srgb, var(--adm-review) 40%, var(--adm-border));
 }
 .technical-status {
   color: var(--adm-ink-muted);
@@ -410,7 +451,7 @@ td a:hover,
   font-variant-numeric: tabular-nums;
 }
 .technical-status.needs-review {
-  color: #f1b17c;
+  color: var(--adm-review);
   font-weight: 700;
 }
 .technical-enum {
@@ -474,12 +515,12 @@ td a:hover,
   transition: background-color 120ms ease;
 }
 .dialog {
-  animation: admin-dialog-in 120ms ease-out;
+  animation: admin-dialog-in 200ms var(--adm-ease);
 }
 @keyframes admin-dialog-in {
   from {
     opacity: 0;
-    transform: translateY(4px);
+    transform: translateY(8px) scale(0.985);
   }
   to {
     opacity: 1;
@@ -487,10 +528,13 @@ td a:hover,
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .dialog {
+  .dialog,
+  .skeleton {
     animation: none;
   }
-  .table-wrap tr {
+  .table-wrap tr,
+  .summary-band a,
+  .button {
     transition: none;
   }
 }
@@ -510,6 +554,33 @@ td a:hover,
   border-radius: 0.85rem;
   padding: 2.25rem;
   text-align: center;
+}
+
+.skeleton {
+  border-style: solid;
+  border-color: var(--adm-border);
+  background: linear-gradient(
+      100deg,
+      transparent 30%,
+      color-mix(in srgb, var(--adm-ink) 6%, transparent) 50%,
+      transparent 70%
+    )
+    var(--adm-bg-raised);
+  background-size: 220% 100%;
+  animation: admin-shimmer 1.6s linear infinite;
+}
+
+@keyframes admin-shimmer {
+  from {
+    background-position: 130% 0;
+  }
+  to {
+    background-position: -90% 0;
+  }
+}
+
+.empty {
+  background: color-mix(in srgb, var(--adm-bg-sunken) 40%, transparent);
 }
 
 .feedback {
@@ -579,6 +650,25 @@ td a:hover,
   color: var(--adm-ink);
   text-decoration: none;
   box-shadow: var(--adm-shadow-card);
+}
+
+.summary-band a {
+  transition:
+    transform 200ms var(--adm-ease),
+    border-color 200ms var(--adm-ease);
+}
+
+.summary-band a:hover {
+  transform: translateY(-2px);
+  border-color: var(--adm-border-strong);
+}
+
+.summary-groups a {
+  transition: color 150ms var(--adm-ease);
+}
+
+.summary-groups a:hover {
+  color: var(--adm-accent);
 }
 
 .summary-band a::before {
@@ -716,7 +806,8 @@ td a:hover,
   display: grid;
   place-items: center;
   padding: 1rem;
-  background: color-mix(in srgb, #1a160e 68%, transparent);
+  background: var(--adm-scrim);
+  backdrop-filter: blur(3px);
 }
 
 .dialog {
@@ -727,6 +818,8 @@ td a:hover,
   background: var(--adm-bg-raised);
   border-radius: 0.4rem 1rem 1rem 1rem;
   padding: 1.4rem;
+  scrollbar-color: var(--adm-border-strong) transparent;
+  scrollbar-width: thin;
   display: grid;
   gap: 1.15rem;
   box-shadow: var(--adm-shadow-pop);
@@ -743,7 +836,12 @@ td a:hover,
 }
 
 .close-button {
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
   border: 0;
+  border-radius: 0.45rem;
   background: none;
   color: var(--adm-ink-muted);
   cursor: pointer;
@@ -753,6 +851,7 @@ td a:hover,
 
 .close-button:hover {
   color: var(--adm-ink);
+  background: var(--adm-bg-hover);
 }
 
 .media-form {

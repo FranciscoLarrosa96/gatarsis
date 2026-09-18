@@ -1,32 +1,4 @@
 .admin-shell {
-  --adm-bg: #f3ecdb;
-  --adm-bg-raised: #fffcf4;
-  --adm-bg-sunken: #ece2c8;
-  --adm-ink: #2a2317;
-  --adm-ink-muted: #766c56;
-  --adm-border: #ddd0a9;
-  --adm-border-strong: #c7b47f;
-  --adm-accent: #dd0e7c;
-  --adm-accent-hover: #b30c65;
-  --adm-accent-soft: #fbdcec;
-  --adm-accent-ink: #fff8fb;
-  --adm-ok: #2f6b4f;
-  --adm-ok-bg: #e2efe3;
-  --adm-low: #8f5f13;
-  --adm-low-bg: #f6ead0;
-  --adm-critical: #a13a32;
-  --adm-critical-bg: #f5e2de;
-  --adm-pending: #47566d;
-  --adm-pending-bg: #e4e8ef;
-  --adm-resolved: #5b6a4c;
-  --adm-resolved-bg: #e9ecdd;
-  --adm-shadow-card: 0 1px 0 rgba(42, 35, 23, 0.04), 0 10px 24px -12px rgba(42, 35, 23, 0.28);
-  --adm-shadow-pop: 0 4px 10px -4px rgba(42, 35, 23, 0.3), 0 16px 40px -16px rgba(42, 35, 23, 0.35);
-  --adm-font-display: 'Zilla Slab', 'Iowan Old Style', Georgia, serif;
-  --adm-font-mono: 'IBM Plex Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
-  --adm-radius-card: 0.6rem;
-  --adm-radius-tab: 0.55rem;
-
   min-height: 100vh;
   display: grid;
   grid-template-columns: 15.5rem minmax(0, 1fr);
@@ -39,34 +11,13 @@
     var(--adm-bg);
   color: var(--adm-ink);
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  accent-color: var(--adm-accent);
+  scrollbar-color: var(--adm-border-strong) transparent;
 }
 
-@media all {
-  .admin-shell {
-    --adm-bg: #1b1912;
-    --adm-bg-raised: #26231a;
-    --adm-bg-sunken: #15130d;
-    --adm-ink: #f1ead9;
-    --adm-ink-muted: #a99e84;
-    --adm-border: #40391f;
-    --adm-border-strong: #5b4f28;
-    --adm-accent: #ff5fa8;
-    --adm-accent-hover: #ff85bc;
-    --adm-accent-soft: #3a1a2a;
-    --adm-accent-ink: #2a0f1a;
-    --adm-ok: #7bc39e;
-    --adm-ok-bg: #1e2f24;
-    --adm-low: #d4a655;
-    --adm-low-bg: #362a15;
-    --adm-critical: #e08b7f;
-    --adm-critical-bg: #3a211d;
-    --adm-pending: #a7b6cc;
-    --adm-pending-bg: #262c37;
-    --adm-resolved: #b7c19f;
-    --adm-resolved-bg: #2b3022;
-    --adm-shadow-card: 0 1px 0 rgba(0, 0, 0, 0.3), 0 10px 24px -12px rgba(0, 0, 0, 0.6);
-    --adm-shadow-pop: 0 4px 10px -4px rgba(0, 0, 0, 0.55), 0 16px 40px -16px rgba(0, 0, 0, 0.7);
-  }
+.admin-shell ::selection {
+  background: color-mix(in srgb, var(--adm-accent) 32%, transparent);
+  color: var(--adm-ink);
 }
 
 aside {
@@ -122,6 +73,10 @@ nav.chart-rack a {
   font-size: 0.88rem;
   font-weight: 600;
   cursor: pointer;
+  transition:
+    background-color 150ms var(--adm-ease),
+    color 150ms var(--adm-ease),
+    border-color 150ms var(--adm-ease);
 }
 
 nav.chart-rack a:hover {
@@ -138,7 +93,33 @@ nav.chart-rack a.active {
   box-shadow: var(--adm-shadow-card);
   font-weight: 750;
   margin-right: -1px;
-  border-left: 3px solid var(--adm-low);
+}
+
+nav.chart-rack a.active .nav-icon {
+  color: var(--adm-accent);
+}
+
+nav.chart-rack a.active::before {
+  content: '';
+  position: absolute;
+  left: 0.3rem;
+  top: 50%;
+  width: 0.2rem;
+  height: 1.1rem;
+  translate: 0 -50%;
+  border-radius: 999px;
+  background: var(--adm-accent);
+}
+
+.nav-icon {
+  flex: none;
+  width: 1.05rem;
+  height: 1.05rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 .nav-section {
@@ -147,9 +128,6 @@ nav.chart-rack a.active {
   text-transform: uppercase;
   letter-spacing: 0.12em;
   padding: 0.9rem 0.9rem 0.2rem;
-}
-.admin-shell {
-  background: var(--adm-bg);
 }
 .admin-shell :is(a, button):focus-visible {
   outline: 2px solid var(--adm-accent);
@@ -173,7 +151,7 @@ nav.chart-rack a.active {
     inset: 0;
     z-index: 21;
     border: 0;
-    background: rgba(0, 0, 0, 0.5);
+    background: var(--adm-scrim);
   }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -230,13 +208,17 @@ main {
 }
 
 main > header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  backdrop-filter: blur(10px);
   display: flex;
   min-height: 3.25rem;
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
   border-bottom: 1px solid var(--adm-border);
-  background: color-mix(in srgb, var(--adm-bg-raised) 60%, transparent);
+  background: color-mix(in srgb, var(--adm-bg) 82%, transparent);
   padding: 0 1rem 0 1.5rem;
 }
 
@@ -294,7 +276,7 @@ main > header p {
     position: fixed;
     inset: 0;
     z-index: 20;
-    background: rgba(20, 17, 10, 0.35);
+    background: var(--adm-scrim);
   }
 
   .menu-button {

@@ -21,6 +21,9 @@ import { AppHeaderComponent } from '../../../shared/components/app-header/app-he
 import { BottomNavigationComponent } from '../../../shared/components/bottom-navigation/bottom-navigation.component';
 import { IconComponent, IconName } from '../../../shared/components/icon/icon.component';
 import { PublicRaffleApiService } from '../../core/public-raffle-api.service';
+import { ClampedDescriptionDirective } from './clamped-description.directive';
+import { HeroMotionDirective } from '../../../features/home/hero-motion.directive';
+import { RevealOnScrollDirective } from '../../../shared/directives/reveal-on-scroll.directive';
 import { RaffleCheckoutContext, RaffleCheckoutStore } from '../../core/raffle-checkout.store';
 import {
   PublicRaffle,
@@ -55,6 +58,9 @@ const dateTimeFormatter = new Intl.DateTimeFormat('es-AR', {
     AppFooterComponent,
     BottomNavigationComponent,
     IconComponent,
+    ClampedDescriptionDirective,
+    HeroMotionDirective,
+    RevealOnScrollDirective,
   ],
   template: `
     <div class="flex min-h-dvh flex-col">
@@ -123,14 +129,12 @@ const dateTimeFormatter = new Intl.DateTimeFormat('es-AR', {
             </div>
           </section>
         } @else if (raffle(); as currentRaffle) {
-          <section class="raffle-hero relative isolate overflow-hidden">
+          <section appHeroMotion class="raffle-hero relative isolate overflow-hidden">
             <span class="raffle-dots raffle-dots--one" aria-hidden="true"></span>
             <span class="raffle-dots raffle-dots--two" aria-hidden="true"></span>
             <app-icon name="paw" class="raffle-paw raffle-paw--one" />
-            <div
-              class="mx-auto grid max-w-6xl gap-8 px-5 py-10 sm:px-6 sm:py-14 lg:grid-cols-[1fr_0.9fr] lg:items-center lg:gap-14 lg:px-8 lg:py-16"
-            >
-              <div class="order-2 lg:order-1">
+            <div class="raffle-hero-layout mx-auto grid gap-6 px-5 py-8 sm:px-6 sm:py-10">
+              <div class="raffle-hero-content order-2 lg:order-1">
                 <p
                   class="text-left text-xs font-extrabold uppercase tracking-[0.15em] text-[var(--color-accent)]"
                 >
@@ -140,6 +144,7 @@ const dateTimeFormatter = new Intl.DateTimeFormat('es-AR', {
                   {{ currentRaffle.prizeName }}
                 </h1>
                 <p
+                  appClampedDescription
                   class="raffle-hero-copy mt-5 max-w-lg text-left text-base leading-7 text-[var(--color-text-muted)] sm:text-lg"
                 >
                   {{
@@ -147,6 +152,12 @@ const dateTimeFormatter = new Intl.DateTimeFormat('es-AR', {
                       'Cada número que elegís nos ayuda a seguir sosteniendo rescates.'
                   }}
                 </p>
+                <div class="raffle-highlights" aria-label="Datos rápidos de la rifa">
+                  <span>{{ currentStats().total }} números en total</span>
+                  @if (currentRaffle.status === 'ACTIVE' || currentRaffle.status === 'PAUSED') {
+                    <span>Hasta {{ maxNumbers }} por compra</span>
+                  }
+                </div>
 
                 @if (currentRaffle.status === 'DRAWN' && currentRaffle.winningNumber != null) {
                   <div
@@ -170,7 +181,9 @@ const dateTimeFormatter = new Intl.DateTimeFormat('es-AR', {
                   <p class="mt-4 text-left font-bold">
                     ¡Gracias a todas las personas que participaron!
                   </p>
-                } @else if (currentRaffle.status === 'ACTIVE' || currentRaffle.status === 'PAUSED') {
+                } @else if (
+                  currentRaffle.status === 'ACTIVE' || currentRaffle.status === 'PAUSED'
+                ) {
                   <div class="mt-7 flex flex-wrap items-end gap-x-7 gap-y-3">
                     <div>
                       <p
@@ -185,37 +198,67 @@ const dateTimeFormatter = new Intl.DateTimeFormat('es-AR', {
                         >
                       </p>
                     </div>
-                    <p class="pb-1 text-left text-sm font-semibold text-[var(--color-text-muted)]">
-                      Podés elegir hasta {{ maxNumbers }} números por compra.
-                    </p>
                   </div>
                 }
 
-                <div class="mt-7 max-w-xl" aria-label="Avance de la rifa">
+                <div class="raffle-progress mt-5 max-w-xl" aria-label="Avance de la rifa">
                   <div class="mb-2 flex items-center justify-between gap-3 text-sm font-bold">
                     <span>{{ currentStats().sold }} de {{ currentStats().total }} vendidos</span>
                     <span class="text-[var(--color-text-muted)]"
                       >{{ currentStats().available }} {{ availableLabel() }}</span
                     >
                   </div>
-                  <div class="h-2.5 overflow-hidden rounded-full bg-[var(--color-surface-strong)]">
+                  <div
+                    role="progressbar"
+                    aria-label="Números vendidos"
+                    [attr.aria-valuenow]="currentStats().sold"
+                    aria-valuemin="0"
+                    [attr.aria-valuemax]="currentStats().total"
+                    class="h-2.5 overflow-hidden rounded-full bg-[var(--color-surface-strong)]"
+                  >
                     <div
-                      class="h-full rounded-full bg-[var(--color-accent)] transition-[width] duration-500"
-                      [style.width.%]="soldPercentage()"
+                      class="raffle-progress-fill h-full rounded-full bg-[var(--color-accent)] transition-[width] duration-500"
+                      [style.width.%]="
+                        currentStats().total
+                          ? (currentStats().sold / currentStats().total) * 100
+                          : 0
+                      "
                     ></div>
                   </div>
                   @if (currentRaffle.status === 'ACTIVE' || currentRaffle.status === 'PAUSED') {
-                    <div class="mt-2 flex gap-4 text-xs font-semibold text-[var(--color-text-muted)]">
+                    <div
+                      class="mt-2 flex gap-4 text-xs font-semibold text-[var(--color-text-muted)]"
+                    >
                       <span>{{ currentStats().reserved }} reservados</span>
                       <span>{{ currentStats().available }} {{ availableLabel() }}</span>
                     </div>
                   }
                 </div>
+                <div class="raffle-hero-actions">
+                  @if (currentRaffle.status === 'ACTIVE') {
+                    <button
+                      type="button"
+                      class="button-primary raffle-choose-button"
+                      (click)="goToCheckout()"
+                    >
+                      Elegir números <app-icon name="arrow" class="size-4" />
+                    </button>
+                  }
+                  @if (currentRaffle.description && currentRaffle.description.trim()) {
+                    <button
+                      type="button"
+                      class="raffle-details-link"
+                      aria-controls="raffle-prize-details"
+                      [attr.aria-expanded]="detailsExpanded()"
+                      (click)="openPrizeDetails()"
+                    >
+                      Ver descripción completa
+                    </button>
+                  }
+                </div>
               </div>
 
-              <figure
-                class="raffle-prize order-1 m-0 rounded-[2rem] border lg:order-2"
-              >
+              <figure class="raffle-prize order-1 m-0 rounded-[2rem] border lg:order-2">
                 <span class="raffle-prize-badge">
                   <app-icon name="gift" class="size-3.5" />
                   Premio
@@ -235,6 +278,15 @@ const dateTimeFormatter = new Intl.DateTimeFormat('es-AR', {
                     (load)="imageLoaded.set(true)"
                     (error)="imageFailed.set(true)"
                   />
+                  <button
+                    type="button"
+                    class="raffle-prize-zoom-trigger"
+                    [disabled]="!imageLoaded()"
+                    [attr.aria-label]="'Ampliar foto del premio: ' + currentRaffle.prizeName"
+                    (click)="openPrizeZoom()"
+                  >
+                    <span>＋ Tocar para ampliar</span>
+                  </button>
                 } @else {
                   <div class="grid h-full min-h-64 place-items-center p-8 text-center">
                     <div>
@@ -247,13 +299,64 @@ const dateTimeFormatter = new Intl.DateTimeFormat('es-AR', {
             </div>
           </section>
 
+          <dialog
+            #prizeZoom
+            class="raffle-prize-zoom"
+            [attr.aria-label]="'Foto ampliada: ' + currentRaffle.prizeName"
+            (click)="$event.target === prizeZoom && prizeZoom.close()"
+          >
+            <div class="raffle-prize-zoom-content">
+              <header>
+                <h2>{{ currentRaffle.prizeName }}</h2>
+                <button type="button" aria-label="Cerrar foto ampliada" (click)="prizeZoom.close()">
+                  ×
+                </button>
+              </header>
+              @if (currentRaffle.imageUrl) {
+                <img
+                  [src]="currentRaffle.imageUrl"
+                  [alt]="'Foto ampliada del premio: ' + currentRaffle.prizeName"
+                />
+              }
+            </div>
+          </dialog>
+
+          @if (currentRaffle.description && currentRaffle.description.trim()) {
+            <section
+              class="raffle-details-section mx-auto max-w-6xl px-5 sm:px-6 lg:px-8"
+              appReveal="fade"
+              aria-label="Información del premio"
+            >
+              <details
+                #prizeDetails
+                id="raffle-prize-details"
+                class="raffle-prize-details"
+                (toggle)="detailsExpanded.set(prizeDetails.open)"
+              >
+                <summary>
+                  <span
+                    >Detalles del premio<small
+                      >Descripción completa y especificaciones informadas</small
+                    ></span
+                  ><span class="raffle-details-chevron" aria-hidden="true">＋</span>
+                </summary>
+                <div class="raffle-details-content">
+                  <h2>{{ currentRaffle.prizeName }}</h2>
+                  <p>{{ currentRaffle.description }}</p>
+                </div>
+              </details>
+            </section>
+          }
+
           @if (currentRaffle.status === 'PAUSED' || currentRaffle.status === 'CLOSED') {
             <section class="mx-auto max-w-3xl px-5 py-8 sm:px-6 lg:px-8">
               <div
                 class="inactive-raffle-card flex items-start gap-4 rounded-2xl border p-5 sm:p-6"
                 role="status"
               >
-                <span class="inactive-raffle-icon grid size-11 shrink-0 place-items-center rounded-xl">
+                <span
+                  class="inactive-raffle-icon grid size-11 shrink-0 place-items-center rounded-xl"
+                >
                   <app-icon
                     [name]="inactiveIcon(currentRaffle.status)"
                     class="inactive-raffle-icon-glyph"
@@ -275,7 +378,10 @@ const dateTimeFormatter = new Intl.DateTimeFormat('es-AR', {
                 class="draw-result-bar flex flex-wrap items-center justify-center gap-x-2 gap-y-1 rounded-full border px-4 py-2 text-center text-xs font-semibold text-[var(--color-text-muted)]"
                 role="status"
               >
-                <app-icon name="shield" class="draw-result-icon shrink-0 text-[var(--color-accent)]" />
+                <app-icon
+                  name="shield"
+                  class="draw-result-icon shrink-0 text-[var(--color-accent)]"
+                />
                 @if (currentRaffle.drawnAt) {
                   <span>Sorteado el {{ formatDateTime(currentRaffle.drawnAt) }} ·</span>
                 }
@@ -331,7 +437,9 @@ const dateTimeFormatter = new Intl.DateTimeFormat('es-AR', {
           }
 
           @if (numbersLoaded()) {
-            <section class="raffle-numbers-section relative isolate mx-auto max-w-6xl px-5 py-10 sm:px-6 lg:px-8">
+            <section
+              class="raffle-numbers-section relative isolate mx-auto max-w-6xl px-5 py-10 sm:px-6 lg:px-8"
+            >
               <img
                 src="images/extra/paw.png"
                 alt=""
@@ -346,9 +454,14 @@ const dateTimeFormatter = new Intl.DateTimeFormat('es-AR', {
               />
               <div
                 class="grid items-start gap-7"
-                [class]="currentRaffle.status === 'ACTIVE' ? 'lg:grid-cols-[minmax(0,1fr)_21rem]' : ''"
+                [class]="
+                  currentRaffle.status === 'ACTIVE' ? 'lg:grid-cols-[minmax(0,1fr)_21rem]' : ''
+                "
               >
-                <div class="surface-card dark-neon-card relative z-10 rounded-[1.75rem] border p-4 sm:p-6">
+                <div
+                  class="raffle-grid-reveal surface-card dark-neon-card relative z-10 rounded-[1.75rem] border p-4 sm:p-6"
+                  appReveal="fade"
+                >
                   <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
                     <div>
                       <p
@@ -441,169 +554,174 @@ const dateTimeFormatter = new Intl.DateTimeFormat('es-AR', {
                 </div>
 
                 @if (currentRaffle.status === 'ACTIVE') {
-                <aside
-                  id="raffle-selection"
-                  class="selection-card surface-elevated rounded-[1.75rem] border p-5 lg:sticky lg:top-24"
-                  aria-labelledby="selection-title"
-                >
-                  <div class="flex items-center justify-between gap-3">
-                    <h2 id="selection-title" class="text-xl font-black">Tu selección</h2>
-                    <span
-                      class="rounded-full bg-[var(--color-recovering-bg)] px-3 py-1 text-xs font-extrabold text-[var(--color-accent)]"
-                      >{{ selectedCount() }}/{{ maxNumbers }}</span
-                    >
-                  </div>
-
-                  @if (selectedCount()) {
-                    <p
-                      class="mt-4 text-left text-lg font-black tracking-wide text-[var(--color-accent)]"
-                    >
-                      {{ selectedLabels() }}
-                    </p>
-                    <div class="mt-5 space-y-2 border-t border-[var(--color-border)] pt-4 text-sm">
-                      <div class="flex justify-between gap-3 text-[var(--color-text-muted)]">
-                        <span
-                          >{{ selectedCount() }}
-                          {{ selectedCount() === 1 ? 'número' : 'números' }} ×
-                          {{ money(currentRaffle.priceInCents) }}</span
-                        >
-                      </div>
-                      <div class="flex items-end justify-between gap-3">
-                        <span class="font-bold">Total</span
-                        ><strong class="text-2xl text-[var(--color-accent)]">{{
-                          totalPrice()
-                        }}</strong>
-                      </div>
+                  <aside
+                    id="raffle-selection"
+                    appReveal
+                    [appRevealDelay]="180"
+                    [class.selection-has-numbers]="selectedCount() > 0"
+                    class="selection-card surface-elevated rounded-[1.75rem] border p-5 lg:sticky lg:top-24"
+                    aria-labelledby="selection-title"
+                  >
+                    <div class="flex items-center justify-between gap-3">
+                      <h2 id="selection-title" class="text-xl font-black">Tu selección</h2>
+                      <span
+                        class="rounded-full bg-[var(--color-recovering-bg)] px-3 py-1 text-xs font-extrabold text-[var(--color-accent)]"
+                        >{{ selectedCount() }}/{{ maxNumbers }}</span
+                      >
                     </div>
 
-                    @if (!showForm() && !reservation()) {
-                      <button
-                        type="button"
-                        class="button-primary mt-5 min-h-12 w-full rounded-xl px-5 font-extrabold"
-                        [disabled]="currentRaffle.status !== 'ACTIVE'"
-                        (click)="continueToForm()"
+                    @if (selectedCount()) {
+                      <p
+                        class="mt-4 text-left text-lg font-black tracking-wide text-[var(--color-accent)]"
                       >
-                        Continuar
-                      </button>
-                    }
-                  } @else {
-                    <p class="mt-4 text-left text-sm leading-6 text-[var(--color-text-muted)]">
-                      Elegí uno o más números disponibles para continuar.
-                    </p>
-                  }
-
-                  @if (showForm() || reservation()) {
-                    <form
-                      class="mt-6 border-t border-[var(--color-border)] pt-5"
-                      [formGroup]="buyerForm"
-                      (ngSubmit)="pay()"
-                      novalidate
-                    >
-                      <h3 class="text-lg font-black">Tus datos</h3>
-                      <p class="mt-1 text-left text-xs leading-5 text-[var(--color-text-muted)]">
-                        Los usamos únicamente para identificar tu compra y poder contactarte si hace
-                        falta.
+                        {{ selectedLabels() }}
                       </p>
-
-                      <label class="field-label mt-4" for="raffle-buyer-name"
-                        >Nombre y apellido *</label
+                      <div
+                        class="mt-5 space-y-2 border-t border-[var(--color-border)] pt-4 text-sm"
                       >
-                      <input
-                        #buyerNameInput
-                        id="raffle-buyer-name"
-                        class="field-input"
-                        type="text"
-                        formControlName="name"
-                        autocomplete="name"
-                        [attr.aria-invalid]="hasError('name')"
-                        [attr.aria-describedby]="
-                          hasError('name') ? 'raffle-buyer-name-error' : null
-                        "
-                      />
-                      @if (hasError('name')) {
-                        <p id="raffle-buyer-name-error" class="field-error">
-                          Ingresá tu nombre y apellido.
-                        </p>
-                      }
-
-                      <label class="field-label" for="raffle-buyer-email">Email *</label>
-                      <input
-                        id="raffle-buyer-email"
-                        class="field-input"
-                        type="email"
-                        formControlName="email"
-                        autocomplete="email"
-                        inputmode="email"
-                        [attr.aria-invalid]="hasError('email')"
-                        [attr.aria-describedby]="
-                          hasError('email') ? 'raffle-buyer-email-error' : null
-                        "
-                      />
-                      @if (hasError('email')) {
-                        <p id="raffle-buyer-email-error" class="field-error">
-                          Ingresá un email válido.
-                        </p>
-                      }
-
-                      <label class="field-label" for="raffle-buyer-phone">WhatsApp *</label>
-                      <input
-                        id="raffle-buyer-phone"
-                        class="field-input"
-                        type="tel"
-                        formControlName="phone"
-                        autocomplete="tel"
-                        inputmode="tel"
-                        [attr.aria-invalid]="hasError('phone')"
-                        [attr.aria-describedby]="
-                          hasError('phone') ? 'raffle-buyer-phone-error' : null
-                        "
-                      />
-                      @if (hasError('phone')) {
-                        <p id="raffle-buyer-phone-error" class="field-error">
-                          Ingresá un teléfono o WhatsApp válido.
-                        </p>
-                      }
-
-                      @if (paymentMessage()) {
-                        <div
-                          class="mt-4 rounded-xl border border-[var(--color-border)] bg-[var(--color-danger-bg)] px-4 py-3 text-sm font-bold"
-                          role="alert"
-                        >
-                          {{ paymentMessage() }}
-                        </div>
-                      }
-                      @if (reservation()) {
-                        <p
-                          class="mt-4 text-left text-xs font-semibold leading-5 text-[var(--color-text-muted)]"
-                        >
-                          Tus números quedaron reservados por unos minutos mientras completás el
-                          pago.
-                        </p>
-                      }
-
-                      <button
-                        type="submit"
-                        class="mercado-pago-button mt-5 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl px-4 font-black transition disabled:cursor-not-allowed disabled:opacity-55"
-                        [disabled]="paymentDisabled()"
-                      >
-                        @if (isBusy()) {
+                        <div class="flex justify-between gap-3 text-[var(--color-text-muted)]">
                           <span
-                            class="size-4 animate-spin rounded-full border-2 border-current border-r-transparent"
-                            aria-hidden="true"
-                          ></span>
-                        } @else {
-                          <img
-                            src="images/mp%20icon.svg"
-                            alt=""
-                            class="size-6 shrink-0 object-contain"
-                            loading="lazy"
-                          />
+                            >{{ selectedCount() }}
+                            {{ selectedCount() === 1 ? 'número' : 'números' }} ×
+                            {{ money(currentRaffle.priceInCents) }}</span
+                          >
+                        </div>
+                        <div class="flex items-end justify-between gap-3">
+                          <span class="font-bold">Total</span
+                          ><strong class="text-2xl text-[var(--color-accent)]">{{
+                            totalPrice()
+                          }}</strong>
+                        </div>
+                      </div>
+
+                      @if (!showForm() && !reservation()) {
+                        <button
+                          type="button"
+                          class="button-primary mt-5 min-h-12 w-full rounded-xl px-5 font-extrabold"
+                          [disabled]="currentRaffle.status !== 'ACTIVE'"
+                          (click)="continueToForm()"
+                        >
+                          Continuar
+                        </button>
+                      }
+                    } @else {
+                      <p class="mt-4 text-left text-sm leading-6 text-[var(--color-text-muted)]">
+                        Elegí uno o más números disponibles para continuar.
+                      </p>
+                    }
+
+                    @if (showForm() || reservation()) {
+                      <form
+                        class="mt-6 border-t border-[var(--color-border)] pt-5"
+                        [formGroup]="buyerForm"
+                        (ngSubmit)="pay()"
+                        novalidate
+                      >
+                        <h3 class="text-lg font-black">Tus datos</h3>
+                        <p class="mt-1 text-left text-xs leading-5 text-[var(--color-text-muted)]">
+                          Los usamos únicamente para identificar tu compra y poder contactarte si
+                          hace falta.
+                        </p>
+
+                        <label class="field-label mt-4" for="raffle-buyer-name"
+                          >Nombre y apellido *</label
+                        >
+                        <input
+                          #buyerNameInput
+                          id="raffle-buyer-name"
+                          class="field-input"
+                          type="text"
+                          formControlName="name"
+                          autocomplete="name"
+                          [attr.aria-invalid]="hasError('name')"
+                          [attr.aria-describedby]="
+                            hasError('name') ? 'raffle-buyer-name-error' : null
+                          "
+                        />
+                        @if (hasError('name')) {
+                          <p id="raffle-buyer-name-error" class="field-error">
+                            Ingresá tu nombre y apellido.
+                          </p>
                         }
-                        {{ paymentButtonLabel() }}
-                      </button>
-                    </form>
-                  }
-                </aside>
+
+                        <label class="field-label" for="raffle-buyer-email">Email *</label>
+                        <input
+                          id="raffle-buyer-email"
+                          class="field-input"
+                          type="email"
+                          formControlName="email"
+                          autocomplete="email"
+                          inputmode="email"
+                          [attr.aria-invalid]="hasError('email')"
+                          [attr.aria-describedby]="
+                            hasError('email') ? 'raffle-buyer-email-error' : null
+                          "
+                        />
+                        @if (hasError('email')) {
+                          <p id="raffle-buyer-email-error" class="field-error">
+                            Ingresá un email válido.
+                          </p>
+                        }
+
+                        <label class="field-label" for="raffle-buyer-phone">WhatsApp *</label>
+                        <input
+                          id="raffle-buyer-phone"
+                          class="field-input"
+                          type="tel"
+                          formControlName="phone"
+                          autocomplete="tel"
+                          inputmode="tel"
+                          [attr.aria-invalid]="hasError('phone')"
+                          [attr.aria-describedby]="
+                            hasError('phone') ? 'raffle-buyer-phone-error' : null
+                          "
+                        />
+                        @if (hasError('phone')) {
+                          <p id="raffle-buyer-phone-error" class="field-error">
+                            Ingresá un teléfono o WhatsApp válido.
+                          </p>
+                        }
+
+                        @if (paymentMessage()) {
+                          <div
+                            class="mt-4 rounded-xl border border-[var(--color-border)] bg-[var(--color-danger-bg)] px-4 py-3 text-sm font-bold"
+                            role="alert"
+                          >
+                            {{ paymentMessage() }}
+                          </div>
+                        }
+                        @if (reservation()) {
+                          <p
+                            class="mt-4 text-left text-xs font-semibold leading-5 text-[var(--color-text-muted)]"
+                          >
+                            Tus números quedaron reservados por unos minutos mientras completás el
+                            pago.
+                          </p>
+                        }
+
+                        <button
+                          type="submit"
+                          class="mercado-pago-button mt-5 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl px-4 font-black transition disabled:cursor-not-allowed disabled:opacity-55"
+                          [disabled]="paymentDisabled()"
+                        >
+                          @if (isBusy()) {
+                            <span
+                              class="size-4 animate-spin rounded-full border-2 border-current border-r-transparent"
+                              aria-hidden="true"
+                            ></span>
+                          } @else {
+                            <img
+                              src="images/mp%20icon.svg"
+                              alt=""
+                              class="size-6 shrink-0 object-contain"
+                              loading="lazy"
+                            />
+                          }
+                          {{ paymentButtonLabel() }}
+                        </button>
+                      </form>
+                    }
+                  </aside>
                 }
               </div>
             </section>
@@ -616,7 +734,9 @@ const dateTimeFormatter = new Intl.DateTimeFormat('es-AR', {
             ) {
               <div class="raffle-mobile-cta">
                 <div class="raffle-mobile-cta-info">
-                  <span>{{ selectedCount() }} {{ selectedCount() === 1 ? 'número' : 'números' }}</span>
+                  <span
+                    >{{ selectedCount() }} {{ selectedCount() === 1 ? 'número' : 'números' }}</span
+                  >
                   <strong>{{ totalPrice() }}</strong>
                 </div>
                 <button
@@ -637,9 +757,11 @@ const dateTimeFormatter = new Intl.DateTimeFormat('es-AR', {
     </div>
     <app-bottom-navigation />
   `,
-  styleUrl: './raffle-page.component.css',
+  styleUrls: ['./raffle-page.component.css', './raffle-motion.css', './raffle-prize-zoom.css'],
 })
 export class RafflePageComponent implements OnInit {
+  @ViewChild('prizeZoom') private prizeZoom?: ElementRef<HTMLDialogElement>;
+  @ViewChild('prizeDetails') private prizeDetails?: ElementRef<HTMLDetailsElement>;
   @ViewChild('buyerNameInput') private buyerNameInput?: ElementRef<HTMLInputElement>;
 
   private readonly api = inject(PublicRaffleApiService);
@@ -647,6 +769,7 @@ export class RafflePageComponent implements OnInit {
   private readonly destroyRef = inject(DestroyRef);
 
   readonly maxNumbers = MAX_NUMBERS;
+  readonly detailsExpanded = signal(false);
   readonly loading = signal(true);
   readonly loadError = signal(false);
   readonly noActiveRaffle = signal(false);
@@ -811,7 +934,9 @@ export class RafflePageComponent implements OnInit {
       next.delete(item.number);
       this.selectionMessage.set('');
     } else if (next.size >= MAX_NUMBERS) {
-      this.selectionMessage.set(`Ya elegiste tus ${MAX_NUMBERS} números. Ese es el máximo por compra.`);
+      this.selectionMessage.set(
+        `Ya elegiste tus ${MAX_NUMBERS} números. Ese es el máximo por compra.`,
+      );
       return;
     } else {
       next.add(item.number);
@@ -828,7 +953,27 @@ export class RafflePageComponent implements OnInit {
   }
 
   goToCheckout(): void {
-    document.getElementById('raffle-selection')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    document
+      .getElementById('raffle-selection')
+      ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  openPrizeDetails(): void {
+    const details = this.prizeDetails?.nativeElement;
+    if (!details) return;
+    details.open = true;
+    this.detailsExpanded.set(true);
+    details.querySelector('summary')?.focus({ preventScroll: true });
+    details.scrollIntoView({
+      behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
+      block: 'start',
+    });
+  }
+
+  openPrizeZoom(): void {
+    if (!this.imageLoaded() || this.imageFailed() || !this.raffle()?.imageUrl) return;
+    const dialog = this.prizeZoom?.nativeElement;
+    if (dialog && !dialog.open) dialog.showModal();
   }
 
   pay(): void {
@@ -1016,7 +1161,11 @@ export class RafflePageComponent implements OnInit {
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (response) => {
-          this.checkoutStore.updateStatus(response.rafflePurchaseId, response.status, response.numbers);
+          this.checkoutStore.updateStatus(
+            response.rafflePurchaseId,
+            response.status,
+            response.numbers,
+          );
           this.checkoutBanner.set(this.checkoutStore.context());
         },
         error: () => undefined,

@@ -12,6 +12,20 @@ import {
 import flatpickr from 'flatpickr';
 import { Spanish } from 'flatpickr/dist/l10n/es.js';
 import type { Instance } from 'flatpickr/dist/types/instance';
+const THEME_TOKENS = [
+  'color-scheme',
+  '--adm-bg-raised',
+  '--adm-bg-sunken',
+  '--adm-bg-hover',
+  '--adm-ink',
+  '--adm-ink-muted',
+  '--adm-border',
+  '--adm-border-strong',
+  '--adm-accent',
+  '--adm-accent-ink',
+  '--adm-shadow-pop',
+];
+
 @Directive({ selector: 'input[appAdminDatePicker]', standalone: true })
 export class AdminDatePickerDirective implements AfterViewInit, OnChanges, OnDestroy {
   @Input() dateValue = '';
@@ -33,6 +47,7 @@ export class AdminDatePickerDirective implements AfterViewInit, OnChanges, OnDes
       allowInput: false,
       disableMobile: true,
       defaultDate: this.dateValue || undefined,
+      onOpen: (_dates, _str, instance) => this.applyTheme(instance),
       onChange: (dates) =>
         this.dateValueChange.emit(
           dates[0]
@@ -40,6 +55,17 @@ export class AdminDatePickerDirective implements AfterViewInit, OnChanges, OnDes
             : '',
         ),
     });
+  }
+
+  /** The calendar is appended to <body>, outside the admin shell, so it
+   *  does not inherit the theme tokens; copy the resolved values over. */
+  private applyTheme(instance: Instance): void {
+    const source = getComputedStyle(this.element.nativeElement);
+    const calendar = instance.calendarContainer;
+    calendar.classList.add('adm-calendar');
+    for (const token of THEME_TOKENS) {
+      calendar.style.setProperty(token, source.getPropertyValue(token));
+    }
   }
 
   ngOnChanges(changes: SimpleChanges): void {

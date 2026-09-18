@@ -531,7 +531,7 @@ type ConfirmationKind = 'close' | 'draw';
       @if (purchaseDetail(); as purchase) {
         <div class="dialog-backdrop" (click)="purchaseDetail.set(null)">
           <section
-            class="dialog wide-dialog"
+            class="dialog wide-dialog purchase-dialog"
             appAdminDialog
             (dialogDismiss)="purchaseDetail.set(null)"
             role="dialog"
@@ -583,7 +583,7 @@ type ConfirmationKind = 'close' | 'draw';
               </section>
               <section>
                 <h3>Compra y pago</h3>
-                <dl class="raffle-detail-list">
+                <dl class="raffle-detail-list payment-facts">
                   <div>
                     <dt>Compra ID</dt>
                     <dd>
@@ -593,7 +593,7 @@ type ConfirmationKind = 'close' | 'draw';
                       />
                     </dd>
                   </div>
-                  <div>
+                  <div class="wide">
                     <dt>Creada / pagada</dt>
                     <dd>{{ date(purchase.createdAt) }} / {{ date(purchase.paidAt) }}</dd>
                   </div>
@@ -649,7 +649,7 @@ type ConfirmationKind = 'close' | 'draw';
                         {{ money(payment.transactionAmountInCents) }} · {{ payment.currencyId }}
                       </dd>
                     </div>
-                    <div>
+                    <div class="wide">
                       <dt>Pago creado / aprobado / actualizado</dt>
                       <dd>
                         {{ date(payment.dateCreated) }} / {{ date(payment.dateApproved) }} /

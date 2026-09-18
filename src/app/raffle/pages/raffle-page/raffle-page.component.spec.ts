@@ -28,12 +28,19 @@ describe('RafflePageComponent', () => {
   let fixture: ComponentFixture<RafflePageComponent>;
   let component: RafflePageComponent;
   let http: HttpTestingController;
+  beforeEach(() => {
+    vi.stubGlobal(
+      'matchMedia',
+      vi.fn(() => ({ matches: false, addEventListener: vi.fn(), removeEventListener: vi.fn() })),
+    );
+  });
 
   afterEach(() => {
     fixture?.destroy();
     http?.verify();
     localStorage.clear();
     sessionStorage.clear();
+    vi.unstubAllGlobals();
   });
 
   it('renders 00–99 and exposes accessible availability states', () => {
@@ -42,6 +49,7 @@ describe('RafflePageComponent', () => {
 
     const numberButtons = fixture.nativeElement.querySelectorAll('.raffle-number');
     expect(numberButtons).toHaveLength(100);
+    expect(fixture.nativeElement.querySelector('.raffle-progress-fill').style.width).toBe('1%');
     expect(numberButtons[0].textContent.trim()).toBe('00');
     expect(numberButtons[99].textContent.trim()).toBe('99');
     expect(numberButtons[23].disabled).toBe(true);
@@ -50,17 +58,77 @@ describe('RafflePageComponent', () => {
     expect(numberButtons[65].getAttribute('aria-label')).toBe('Número 65 vendido');
   });
 
+  it('opens a loaded prize photo in a modal without altering number selection', () => {
+    setup();
+    loadActive(numbers(), { ...raffle, imageUrl: 'https://example.test/prize.jpg' });
+    const dialog = fixture.nativeElement.querySelector('.raffle-prize-zoom') as HTMLDialogElement;
+    const show = vi.fn();
+    dialog.showModal = show;
+    component.openPrizeZoom();
+    expect(show).not.toHaveBeenCalled();
+    component.imageLoaded.set(true);
+    fixture.detectChanges();
+    fixture.nativeElement.querySelector('.raffle-prize-zoom-trigger').click();
+    expect(show).toHaveBeenCalledOnce();
+    expect(component.selectedCount()).toBe(0);
+    component.imageFailed.set(true);
+    component.openPrizeZoom();
+    expect(show).toHaveBeenCalledOnce();
+  });
+
+  it('keeps the original long description in a collapsed details block and opens it without changing selection', () => {
+    setup();
+    const description =
+      'Un premio para disfrutar.\n- Potencia: 1500 W\n- Capacidad: 6 litros\n' +
+      'Descripción extensa del premio. '.repeat(80);
+    loadActive(numbers(), { ...raffle, description });
+    const details = fixture.nativeElement.querySelector(
+      '#raffle-prize-details',
+    ) as HTMLDetailsElement;
+    expect(details.open).toBe(false);
+    expect(details.querySelector('.raffle-details-content p')?.textContent).toBe(description);
+    expect(fixture.nativeElement.querySelector('.raffle-hero-copy').textContent.trim()).toBe(
+      description.trim(),
+    );
+    const scroll = vi.fn();
+    details.scrollIntoView = scroll;
+    vi.stubGlobal(
+      'matchMedia',
+      vi.fn(() => ({ matches: true })),
+    );
+    const selectedBefore = component.selected();
+    component.openPrizeDetails();
+    expect(details.open).toBe(true);
+    expect(document.activeElement).toBe(details.querySelector('summary'));
+    expect(scroll).toHaveBeenCalledWith({ behavior: 'auto', block: 'start' });
+    expect(component.selected()).toBe(selectedBefore);
+    details.open = false;
+    expect(details.open).toBe(false);
+  });
+
+  it('uses the existing fallback and omits empty prize details when the description is blank', () => {
+    setup();
+    loadActive(numbers(), { ...raffle, description: '' });
+    expect(fixture.nativeElement.querySelector('#raffle-prize-details')).toBeNull();
+    expect(fixture.nativeElement.querySelector('.raffle-hero-copy').textContent).toContain(
+      'Cada número que elegís nos ayuda',
+    );
+  });
+
   it('makes a previously sold number selectable when the normal refresh returns AVAILABLE', () => {
     setup();
     loadActive(numbers());
-    const button = () => fixture.nativeElement.querySelectorAll('.raffle-number')[65] as HTMLButtonElement;
+    const button = () =>
+      fixture.nativeElement.querySelectorAll('.raffle-number')[65] as HTMLButtonElement;
     expect(button().disabled).toBe(true);
 
     component.onWindowFocus();
     http.expectOne(`${PUBLIC_API_BASE_URL}/raffles/${raffleId}/numbers`).flush({
       raffleId,
       status: 'ACTIVE',
-      numbers: numbers().map((item) => item.number === 65 ? { ...item, status: 'AVAILABLE' } : item),
+      numbers: numbers().map((item) =>
+        item.number === 65 ? { ...item, status: 'AVAILABLE' } : item,
+      ),
     });
     fixture.detectChanges();
 
@@ -86,7 +154,7 @@ describe('RafflePageComponent', () => {
 
     expect(component.selectedCount()).toBe(10);
     expect(component.isSelected(10)).toBe(false);
-    expect(component.selectionMessage()).toContain('Máximo alcanzado');
+    expect(component.selectionMessage()).toContain('Ya elegiste tus 10 números');
   });
 
   it('calculates the summary and keeps buyer PII out of localStorage', () => {
@@ -185,10 +253,12 @@ describe('RafflePageComponent', () => {
       winningNumber: 42,
       drawnAt: '2026-09-01T18:00:00.000Z',
     };
-    http.expectOne(`${PUBLIC_API_BASE_URL}/raffles/active`).flush(
-      { code: 'RAFFLE_ACTIVE_NOT_FOUND', message: 'No hay una rifa activa.' },
-      { status: 404, statusText: 'Not Found' },
-    );
+    http
+      .expectOne(`${PUBLIC_API_BASE_URL}/raffles/active`)
+      .flush(
+        { code: 'RAFFLE_ACTIVE_NOT_FOUND', message: 'No hay una rifa activa.' },
+        { status: 404, statusText: 'Not Found' },
+      );
     http.expectOne(`${PUBLIC_API_BASE_URL}/raffles/latest`).flush(drawnRaffle);
     http.expectOne(`${PUBLIC_API_BASE_URL}/raffles/${raffleId}`).flush(drawnRaffle);
     http.expectOne(`${PUBLIC_API_BASE_URL}/raffles/${raffleId}/numbers`).flush({
@@ -213,7 +283,7 @@ describe('RafflePageComponent', () => {
     expect(winnerButton.classList.contains('raffle-number--winner')).toBe(true);
     expect(winnerButton.disabled).toBe(true);
     expect(winnerButton.getAttribute('aria-label')).toBe('Número 65, ganador');
-    expect(winnerButton.querySelector('.winner-trophy')).toBeTruthy();
+    expect(winnerButton.querySelector('.number-badge--winner app-icon')).toBeTruthy();
   });
 
   it('hides the purchase form once the raffle is no longer active', () => {
@@ -233,7 +303,7 @@ describe('RafflePageComponent', () => {
     }
     component.toggleNumber({ number: 10, status: 'AVAILABLE' });
 
-    expect(component.selectionMessage()).toContain('Máximo alcanzado');
+    expect(component.selectionMessage()).toContain('Ya elegiste tus 10 números');
   });
 
   it('shows a persistent banner for a pending checkout and lets the user jump back to its status', () => {
@@ -272,7 +342,10 @@ describe('RafflePageComponent', () => {
     fixture.detectChanges();
   }
 
-  function loadActive(numberItems: PublicRaffleNumber[], overrideRaffle: PublicRaffle = raffle): void {
+  function loadActive(
+    numberItems: PublicRaffleNumber[],
+    overrideRaffle: PublicRaffle = raffle,
+  ): void {
     http.expectOne(`${PUBLIC_API_BASE_URL}/raffles/active`).flush(overrideRaffle);
     http.expectOne(`${PUBLIC_API_BASE_URL}/raffles/${raffleId}`).flush(overrideRaffle);
     http.expectOne(`${PUBLIC_API_BASE_URL}/raffles/${raffleId}/numbers`).flush({

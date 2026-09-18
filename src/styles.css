@@ -770,3 +770,71 @@ a:focus-visible {
     scroll-snap-align: start;
   }
 }
+
+/* Admin date picker: themed through tokens copied by AdminDatePickerDirective. */
+.flatpickr-calendar.adm-calendar {
+  border: 1px solid var(--adm-border);
+  border-radius: 0.6rem;
+  background: var(--adm-bg-raised);
+  box-shadow: var(--adm-shadow-pop);
+  color: var(--adm-ink);
+}
+
+.flatpickr-calendar.adm-calendar.hasTime .flatpickr-time {
+  border-top-color: var(--adm-border);
+  background: var(--adm-bg-sunken);
+}
+
+.adm-calendar .flatpickr-current-month,
+.adm-calendar .flatpickr-monthDropdown-months,
+.adm-calendar .flatpickr-weekday,
+.adm-calendar .flatpickr-day,
+.adm-calendar .numInputWrapper input,
+.adm-calendar .flatpickr-time input,
+.adm-calendar .flatpickr-time .flatpickr-am-pm {
+  color: var(--adm-ink);
+}
+
+.adm-calendar .flatpickr-monthDropdown-months {
+  background: var(--adm-bg-raised);
+}
+
+.adm-calendar .flatpickr-day.prevMonthDay,
+.adm-calendar .flatpickr-day.nextMonthDay,
+.adm-calendar .flatpickr-day.flatpickr-disabled {
+  color: var(--adm-ink-muted);
+  opacity: 0.55;
+}
+
+.adm-calendar .flatpickr-day:hover,
+.adm-calendar .flatpickr-day:focus {
+  background: var(--adm-bg-hover);
+  border-color: var(--adm-border-strong);
+}
+
+.adm-calendar .flatpickr-day.selected,
+.adm-calendar .flatpickr-day.startRange,
+.adm-calendar .flatpickr-day.endRange {
+  background: var(--adm-accent);
+  border-color: var(--adm-accent);
+  color: var(--adm-accent-ink);
+}
+
+.adm-calendar .flatpickr-day.today:not(.selected) {
+  border-color: var(--adm-accent);
+}
+
+.adm-calendar .flatpickr-months .flatpickr-prev-month svg,
+.adm-calendar .flatpickr-months .flatpickr-next-month svg {
+  fill: var(--adm-ink-muted);
+}
+
+.adm-calendar .flatpickr-months .flatpickr-prev-month:hover svg,
+.adm-calendar .flatpickr-months .flatpickr-next-month:hover svg {
+  fill: var(--adm-accent);
+}
+
+.flatpickr-calendar.adm-calendar .flatpickr-confirm {
+  background: var(--adm-accent);
+  color: var(--adm-accent-ink);
+}

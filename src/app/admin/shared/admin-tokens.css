@@ -1,0 +1,106 @@
+/* Gatarsis admin design tokens — one source for the shell and the login.
+   Theme is chosen through [data-theme]: "light", "dark" or "system"
+   (follows prefers-color-scheme). Light is the base; dark overrides it. */
+
+.admin-shell,
+.login {
+  color-scheme: light;
+  --adm-bg: #f4eddc;
+  --adm-bg-raised: #fffcf4;
+  --adm-bg-sunken: #ebe1c7;
+  --adm-bg-hover: #f8f1df;
+  --adm-ink: #2a2317;
+  --adm-ink-muted: #6f6550;
+  --adm-border: #ddd0a9;
+  --adm-border-strong: #c7b47f;
+  --adm-accent: #d10c74;
+  --adm-accent-hover: #a90a5c;
+  --adm-accent-soft: #fbdcec;
+  --adm-accent-ink: #fff8fb;
+  --adm-ok: #2b6548;
+  --adm-ok-bg: #e2efe3;
+  --adm-low: #8a5a10;
+  --adm-low-bg: #f6ead0;
+  --adm-critical: #a13a32;
+  --adm-critical-bg: #f5e2de;
+  --adm-review: #9a4d12;
+  --adm-review-bg: #f8e4d0;
+  --adm-pending: #47566d;
+  --adm-pending-bg: #e4e8ef;
+  --adm-resolved: #5b6a4c;
+  --adm-resolved-bg: #e9ecdd;
+  --adm-scrim: rgba(26, 22, 14, 0.55);
+  --adm-shadow-card: 0 1px 0 rgba(42, 35, 23, 0.04), 0 10px 24px -14px rgba(42, 35, 23, 0.28);
+  --adm-shadow-pop: 0 4px 10px -4px rgba(42, 35, 23, 0.3), 0 20px 46px -18px rgba(42, 35, 23, 0.4);
+  --adm-font-display: 'Zilla Slab', 'Iowan Old Style', Georgia, serif;
+  --adm-font-mono: 'IBM Plex Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+  --adm-radius-card: 0.6rem;
+  --adm-radius-tab: 0.55rem;
+  --adm-ease: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.admin-shell[data-theme='dark'],
+.login[data-theme='dark'] {
+  color-scheme: dark;
+  --adm-bg: #14120d;
+  --adm-bg-raised: #1e1b14;
+  --adm-bg-sunken: #100e0a;
+  --adm-bg-hover: #26221a;
+  --adm-ink: #f3ecdc;
+  --adm-ink-muted: #ada38b;
+  --adm-border: #322d1f;
+  --adm-border-strong: #4d4329;
+  --adm-accent: #ff5fa8;
+  --adm-accent-hover: #ff86bd;
+  --adm-accent-soft: #3a1a2a;
+  --adm-accent-ink: #2a0f1a;
+  --adm-ok: #7fc8a2;
+  --adm-ok-bg: #1a2c21;
+  --adm-low: #dcae5c;
+  --adm-low-bg: #33270f;
+  --adm-critical: #ec9488;
+  --adm-critical-bg: #3a1f1b;
+  --adm-review: #f1b17c;
+  --adm-review-bg: #38281d;
+  --adm-pending: #a7b6cc;
+  --adm-pending-bg: #232935;
+  --adm-resolved: #b7c19f;
+  --adm-resolved-bg: #272c1f;
+  --adm-scrim: rgba(6, 5, 3, 0.7);
+  --adm-shadow-card: 0 1px 0 rgba(255, 255, 255, 0.03) inset, 0 12px 26px -14px rgba(0, 0, 0, 0.7);
+  --adm-shadow-pop: 0 4px 10px -4px rgba(0, 0, 0, 0.6), 0 20px 46px -16px rgba(0, 0, 0, 0.8);
+}
+
+@media (prefers-color-scheme: dark) {
+  .admin-shell[data-theme='system'],
+  .login[data-theme='system'] {
+    color-scheme: dark;
+    --adm-bg: #14120d;
+    --adm-bg-raised: #1e1b14;
+    --adm-bg-sunken: #100e0a;
+    --adm-bg-hover: #26221a;
+    --adm-ink: #f3ecdc;
+    --adm-ink-muted: #ada38b;
+    --adm-border: #322d1f;
+    --adm-border-strong: #4d4329;
+    --adm-accent: #ff5fa8;
+    --adm-accent-hover: #ff86bd;
+    --adm-accent-soft: #3a1a2a;
+    --adm-accent-ink: #2a0f1a;
+    --adm-ok: #7fc8a2;
+    --adm-ok-bg: #1a2c21;
+    --adm-low: #dcae5c;
+    --adm-low-bg: #33270f;
+    --adm-critical: #ec9488;
+    --adm-critical-bg: #3a1f1b;
+    --adm-review: #f1b17c;
+    --adm-review-bg: #38281d;
+    --adm-pending: #a7b6cc;
+    --adm-pending-bg: #232935;
+    --adm-resolved: #b7c19f;
+    --adm-resolved-bg: #272c1f;
+    --adm-scrim: rgba(6, 5, 3, 0.7);
+    --adm-shadow-card: 0 1px 0 rgba(255, 255, 255, 0.03) inset, 0 12px 26px -14px rgba(0, 0, 0, 0.7);
+    --adm-shadow-pop: 0 4px 10px -4px rgba(0, 0, 0, 0.6), 0 20px 46px -16px rgba(0, 0, 0, 0.8);
+  }
+}

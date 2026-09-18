@@ -90,8 +90,8 @@
 
 .raffle-image-preview img {
   box-sizing: border-box;
-  background: #f8f7f4;
-  box-shadow: 0 10px 24px rgba(10, 8, 18, 0.18);
+  background: var(--adm-bg-sunken);
+  box-shadow: var(--adm-shadow-card);
 }
 
 .raffle-fixed-rules,
@@ -321,16 +321,29 @@
   right: 0.25rem;
 }
 .purchase-detail-grid {
+  grid-template-columns: minmax(0, 0.75fr) minmax(0, 1.5fr);
+  gap: 1.5rem 2rem;
+  align-items: start;
+}
+.purchase-dialog {
+  width: min(100%, 58rem);
+}
+.purchase-detail-grid .payment-facts {
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 1.25rem;
+  column-gap: 1.5rem;
+}
+.purchase-detail-grid .payment-facts > .wide {
+  grid-column: 1 / -1;
 }
 .purchase-detail-grid > section {
   min-width: 0;
 }
 .purchase-detail-grid h3 {
-  margin: 0 0 0.5rem;
-  color: var(--adm-low);
-  font-size: 1.1rem;
+  margin: 0 0 0.35rem;
+  padding-bottom: 0.6rem;
+  border-bottom: 1px solid var(--adm-border-strong);
+  color: var(--adm-ink);
+  font-size: 1.05rem;
 }
 .purchase-detail-grid .raffle-detail-list {
   margin: 0;
@@ -341,7 +354,14 @@
 }
 .purchase-detail-grid dd {
   min-width: 0;
-  font-size: 0.85rem;
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+.purchase-detail-grid .raffle-detail-list dt {
+  font-family: var(--adm-font-mono);
+  font-size: 0.64rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
 .raffle-table-title {
   display: flex;
@@ -401,5 +421,16 @@
   .raffle-history article {
     grid-template-columns: 1fr;
     gap: 0.2rem;
+  }
+}
+
+@media (width <= 900px) {
+  .purchase-detail-grid {
+    grid-template-columns: 1fr;
+  }
+}
+@media (width <= 560px) {
+  .purchase-detail-grid .payment-facts {
+    grid-template-columns: 1fr;
   }
 }

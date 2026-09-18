@@ -25,19 +25,27 @@ import { Component, input, signal } from '@angular/core';
     code {
       font-family: var(--adm-font-mono);
       font-size: 0.78rem;
-      overflow: auto;
+      flex: 0 1 auto;
+      overflow: hidden;
+      text-overflow: ellipsis;
       white-space: nowrap;
       min-width: 0;
+      padding: 0.2rem 0.4rem;
+      border-radius: 0.3rem;
+      background: var(--adm-bg-sunken);
     }
     button {
       flex: none;
       border: 1px solid var(--adm-border);
-      border-radius: 0.25rem;
+      border-radius: 0.3rem;
       background: transparent;
+      transition:
+        color 150ms var(--adm-ease),
+        border-color 150ms var(--adm-ease);
       color: var(--adm-ink-muted);
       font: inherit;
       font-size: 0.68rem;
-      padding: 0.2rem 0.35rem;
+      padding: 0.25rem 0.5rem;
       cursor: pointer;
     }
     button:hover {

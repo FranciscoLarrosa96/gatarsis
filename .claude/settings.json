@@ -10,10 +10,20 @@
       "Bash(node -e \"console.log\\(require\\('./package.json'\\).dependencies['@angular/core']\\)\")",
       "Bash(node -e \"console.log\\(require\\('./package.json'\\).dependencies['@angular/core'], require\\('./package.json'\\).dependencies['@angular/forms']\\)\")",
       "Bash(node -e \"let d='';process.stdin.on\\('data',c=>d+=c\\);process.stdin.on\\('end',\\(\\)=>{const p=JSON.parse\\(d\\);console.log\\(p.exports ? Object.keys\\(p.exports\\) : 'no exports field'\\); console.log\\(p.version\\)}\\)\")",
-      "Bash(node -e ' *)"
+      "Bash(node -e ' *)",
+      "Bash(C:/Users/franc/.claude/skills/impeccable/scripts/impeccable.cmd context *)",
+      "Read(//c/Users/franc/.claude/skills/impeccable/reference/**)",
+      "Bash(grep -rn \"#[0-9a-fA-F]\\\\{3,6\\\\}\\\\b\\\\|rgba\\\\?\\(\" pages/admin-raffles.css pages/admin-audit.component.css pages/admin-commerce.component.css)",
+      "Bash(grep -n \"f1b17c\\\\|#[0-9a-f]\\\\{3,6\\\\}\" pages/admin-audit.component.css pages/admin-commerce.component.css pages/admin-raffles.css)",
+      "Bash(python -)",
+      "Bash(python \"C:/Users/franc/AppData/Local/Temp/claude/d--PRojects-2026-rescatadosTandil-rescatadosTandil/0c12ed58-4f26-4c8f-8b81-e1b5e93e9b13/scratchpad/edit.py\")",
+      "Bash(where node *)",
+      "Bash(node \"C:/Users/franc/AppData/Local/Temp/claude/d--PRojects-2026-rescatadosTandil-rescatadosTandil/0c12ed58-4f26-4c8f-8b81-e1b5e93e9b13/scratchpad/edit.js\")",
+      "Bash(cd \"D:/PRojects-2026/rescatadosTandil/rescatadosTandil/src/app/admin\" && sed -n '/export class/,$p' pages/admin-login.component.ts)"
     ],
     "additionalDirectories": [
-      "\\tmp"
+      "\\tmp",
+      "D:\\PRojects-2026\\rescatadosTandil\\rescatadosTandil\\src\\app\\admin\\pages"
     ]
   }
 }

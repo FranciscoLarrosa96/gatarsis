@@ -2,11 +2,14 @@ import { Component, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AdminAuthStore } from '../core/admin-auth.store';
+import { AdminThemeService } from '../core/admin-theme.service';
+import { AdminThemeToggleComponent } from '../shared/admin-theme-toggle.component';
 
 @Component({
   standalone: true,
-  imports: [FormsModule],
-  template: `<main class="login">
+  imports: [FormsModule, AdminThemeToggleComponent],
+  template: `<main class="login" [attr.data-theme]="theme.preference()">
+    <div class="theme-corner"><app-admin-theme-toggle /></div>
     <form (ngSubmit)="submit()" #form="ngForm" class="chart-card">
       <div class="chart-card-tab">Ficha de acceso</div>
       <p class="brand">Gatarsis</p>
@@ -39,22 +42,9 @@ import { AdminAuthStore } from '../core/admin-auth.store';
       </button>
     </form>
   </main>`,
+  styleUrls: ['../shared/admin-tokens.css'],
   styles: `
     .login {
-      --adm-bg: #f3ecdb;
-      --adm-bg-raised: #fffcf4;
-      --adm-ink: #2a2317;
-      --adm-ink-muted: #766c56;
-      --adm-border: #ddd0a9;
-      --adm-border-strong: #c7b47f;
-      --adm-accent: #dd0e7c;
-      --adm-accent-hover: #b30c65;
-      --adm-critical: #a13a32;
-      --adm-critical-bg: #f5e2de;
-      --adm-font-display: 'Zilla Slab', 'Iowan Old Style', Georgia, serif;
-      --adm-font-mono: 'IBM Plex Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
-      --adm-shadow-pop: 0 4px 10px -4px rgba(42, 35, 23, 0.3), 0 20px 46px -18px rgba(42, 35, 23, 0.4);
-
       min-height: 100vh;
       display: grid;
       place-items: center;
@@ -66,19 +56,10 @@ import { AdminAuthStore } from '../core/admin-auth.store';
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
     }
 
-    @media (prefers-color-scheme: dark) {
-      .login {
-        --adm-bg: #1b1912;
-        --adm-bg-raised: #26231a;
-        --adm-ink: #f1ead9;
-        --adm-ink-muted: #a99e84;
-        --adm-border: #40391f;
-        --adm-border-strong: #5b4f28;
-        --adm-accent: #ff5fa8;
-        --adm-accent-hover: #ff85bc;
-        --adm-critical: #e08b7f;
-        --adm-critical-bg: #3a211d;
-      }
+    .theme-corner {
+      position: fixed;
+      top: 1rem;
+      right: 1rem;
     }
 
     .chart-card {
@@ -194,6 +175,7 @@ export class AdminLoginComponent {
   constructor(
     readonly auth: AdminAuthStore,
     private readonly router: Router,
+    readonly theme: AdminThemeService,
   ) {}
   submit() {
     this.error.set('');
