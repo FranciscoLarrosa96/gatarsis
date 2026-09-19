@@ -3,6 +3,13 @@ import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { ADMIN_API_BASE_URL } from './admin-api.config';
 import {
+  AdminAdoptableCat,
+  AdminAdoptableCatAction,
+  AdminAdoptionApplication,
+  CreateAdminAdoptableCatRequest,
+  UpdateAdminAdoptableCatRequest,
+} from './admin-adoption.models';
+import {
   AdminRaffleDetail,
   AdminRaffleListItem,
   AdminRaffleListQuery,
@@ -63,6 +70,37 @@ export class AdminApiService {
 
   dashboard(): Observable<AdminDashboard> {
     return this.http.get<AdminDashboard>(`${ADMIN_API_BASE_URL}/dashboard`);
+  }
+
+  adoptionCats(): Observable<AdminAdoptableCat[]> {
+    return this.http.get<AdminAdoptableCat[]>(`${ADMIN_API_BASE_URL}/adoptions/cats`);
+  }
+
+  createAdoptionCat(body: CreateAdminAdoptableCatRequest): Observable<AdminAdoptableCat> {
+    return this.http.post<AdminAdoptableCat>(`${ADMIN_API_BASE_URL}/adoptions/cats`, body);
+  }
+
+  updateAdoptionCat(
+    catId: string,
+    body: UpdateAdminAdoptableCatRequest,
+  ): Observable<AdminAdoptableCat> {
+    return this.http.patch<AdminAdoptableCat>(`${ADMIN_API_BASE_URL}/adoptions/cats/${catId}`, body);
+  }
+
+  setAdoptionCatState(
+    catId: string,
+    action: AdminAdoptableCatAction,
+  ): Observable<AdminAdoptableCat> {
+    return this.http.post<AdminAdoptableCat>(
+      `${ADMIN_API_BASE_URL}/adoptions/cats/${catId}/${action}`,
+      {},
+    );
+  }
+
+  adoptionApplications(): Observable<AdminAdoptionApplication[]> {
+    return this.http.get<AdminAdoptionApplication[]>(
+      `${ADMIN_API_BASE_URL}/adoptions/applications`,
+    );
   }
 
   products(query: AdminProductListQuery = {}): Observable<AdminFlatPage<AdminProductListItem>> {

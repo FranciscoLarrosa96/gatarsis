@@ -95,6 +95,11 @@ export const ADMIN_ROUTES: Routes = [
         canDeactivate: [(component: AdminRaffleEditorComponent) => component.canLeave()],
       },
       {
+        path: 'adoptions',
+        loadComponent: () =>
+          import('./pages/admin-adoptions.component').then((m) => m.AdminAdoptionsComponent),
+      },
+      {
         path: 'audit',
         loadComponent: () =>
           import('./pages/admin-audit.component').then((m) => m.AdminAuditComponent),

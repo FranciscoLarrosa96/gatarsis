@@ -204,6 +204,48 @@ describe('AdminApiService contracts', () => {
     request.flush({ products: { active: 2, inactive: 1 }, inventory: { lowStockVariants: 1, outOfStockVariants: 0, reservedUnits: 3 }, orders: { awaitingPayment: 1, paymentPending: 1, paidToday: 2, expiredToday: 0 }, payments: { openReviews: 1 } });
   });
 
+  it('uses the complete admin adoption contract without invented endpoints', () => {
+    api.adoptionCats().subscribe();
+    const list = http.expectOne(`${ADMIN_API_BASE_URL}/adoptions/cats`);
+    expect(list.request.method).toBe('GET');
+    list.flush([]);
+
+    const body = {
+      name: 'Bianca',
+      sex: 'FEMALE' as const,
+      birthDate: '2024-01-01',
+      shortDescription: 'Dulce y compañera.',
+      imageUrl: 'https://cdn.test/bianca.jpg',
+      status: 'AVAILABLE' as const,
+      published: false,
+      displayOrder: 1,
+    };
+    api.createAdoptionCat(body).subscribe();
+    const create = http.expectOne(`${ADMIN_API_BASE_URL}/adoptions/cats`);
+    expect(create.request.method).toBe('POST');
+    expect(create.request.body).toEqual(body);
+    create.flush({ ...body, id: 'cat-id', createdAt: '', updatedAt: '' });
+
+    api.updateAdoptionCat('cat-id', { name: 'Bianca II' }).subscribe();
+    const update = http.expectOne(`${ADMIN_API_BASE_URL}/adoptions/cats/cat-id`);
+    expect(update.request.method).toBe('PATCH');
+    expect(update.request.body).toEqual({ name: 'Bianca II' });
+    update.flush({ ...body, id: 'cat-id', name: 'Bianca II', createdAt: '', updatedAt: '' });
+
+    for (const action of ['publish', 'pause', 'reserve', 'adopt'] as const) {
+      api.setAdoptionCatState('cat-id', action).subscribe();
+      const state = http.expectOne(`${ADMIN_API_BASE_URL}/adoptions/cats/cat-id/${action}`);
+      expect(state.request.method).toBe('POST');
+      expect(state.request.body).toEqual({});
+      state.flush({ ...body, id: 'cat-id', createdAt: '', updatedAt: '' });
+    }
+
+    api.adoptionApplications().subscribe();
+    const applications = http.expectOne(`${ADMIN_API_BASE_URL}/adoptions/applications`);
+    expect(applications.request.method).toBe('GET');
+    applications.flush([]);
+  });
+
   it('maps an actual 409 response through the central error helper', () => {
     let message = '';
     api.adjust('variant-id', 0, 'Recuento').subscribe({ error: (error) => (message = adminErrorMessage(error, 'Fallback')) });

@@ -125,6 +125,11 @@ export class AdminShellComponent {
           label: 'Rifas',
           icon: 'M3 9V6a1 1 0 0 1 1-1h16a1 1 0 0 1 1 1v3a3 3 0 0 0 0 6v3a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-3a3 3 0 0 0 0-6z M14 5v3 M14 11v2 M14 16v3',
         },
+        {
+          path: '/admin/adoptions',
+          label: 'Adopciones',
+          icon: 'M20.8 4.6c-1.5-1.5-4-1.5-5.5 0L12 7.9 8.7 4.6a3.9 3.9 0 0 0-5.5 5.5L12 19l8.8-8.9a3.9 3.9 0 0 0 0-5.5z',
+        },
       ],
     },
     {

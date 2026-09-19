@@ -1,0 +1,700 @@
+<div class="page adoptions-admin-page">
+  <header class="page-heading">
+    <div>
+      <h1>Adopciones</h1>
+      <p class="page-description">Gestión de michis publicados y solicitudes de adopción.</p>
+    </div>
+    <button class="button button-primary" type="button" (click)="openCreate()">
+      + Agregar michi
+    </button>
+  </header>
+
+  @if (feedback.current(); as notice) {
+    <p class="feedback {{ notice.kind }}" role="status">{{ notice.message }}</p>
+  }
+
+  <div class="adoption-tabs" role="tablist" aria-label="Secciones de adopciones">
+    <button
+      type="button"
+      role="tab"
+      [attr.aria-selected]="activeTab() === 'cats'"
+      [class.active]="activeTab() === 'cats'"
+      (click)="activeTab.set('cats')"
+    >
+      Michis <span>{{ cats().length }}</span>
+    </button>
+    <button
+      type="button"
+      role="tab"
+      [attr.aria-selected]="activeTab() === 'applications'"
+      [class.active]="activeTab() === 'applications'"
+      (click)="activeTab.set('applications')"
+    >
+      Solicitudes <span>{{ applications().length }}</span>
+    </button>
+  </div>
+
+  @if (activeTab() === 'cats') {
+    <section class="tab-panel" role="tabpanel" aria-label="Michis">
+      <div class="filters filter-panel adoption-filters">
+        <label>
+          Buscar por nombre
+          <input [(ngModel)]="catSearch" placeholder="Bianca..." />
+        </label>
+        <label>
+          Estado
+          <select [(ngModel)]="catStatus">
+            <option value="">Todos</option>
+            <option value="AVAILABLE">Disponible</option>
+            <option value="RESERVED">En proceso</option>
+            <option value="PAUSED">Pausado</option>
+            <option value="ADOPTED">Adoptado</option>
+          </select>
+        </label>
+        <label>
+          Publicación
+          <select [(ngModel)]="publication">
+            <option value="">Todas</option>
+            <option value="published">Publicado</option>
+            <option value="unpublished">No publicado</option>
+          </select>
+        </label>
+        <label>
+          Ordenar por
+          <select [(ngModel)]="catSort">
+            <option value="displayOrder">Orden visual</option>
+            <option value="name">Nombre</option>
+            <option value="updatedAt">Actualización</option>
+          </select>
+        </label>
+        <button
+          class="button button-secondary"
+          type="button"
+          [disabled]="catsRefreshing()"
+          (click)="loadCats(false)"
+        >
+          {{ catsRefreshing() ? 'Actualizando…' : 'Actualizar' }}
+        </button>
+      </div>
+
+      @if (catsLoading()) {
+        <div class="skeleton adoption-table-skeleton" aria-busy="true">Cargando michis…</div>
+      } @else if (catsError()) {
+        <div class="state">
+          <p>No pudimos cargar los michis.</p>
+          <button class="button button-primary" type="button" (click)="loadCats()">
+            Reintentar
+          </button>
+        </div>
+      } @else if (filteredCats().length) {
+        <div class="table-wrap">
+          <table class="adoption-cats-table">
+            <thead>
+              <tr>
+                <th>Foto</th>
+                <th>Michi</th>
+                <th>Sexo / edad</th>
+                <th>Estado</th>
+                <th>Publicación</th>
+                <th class="numeric">Orden</th>
+                <th>Actualizado</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (cat of filteredCats(); track cat.id) {
+                <tr>
+                  <td><img class="cat-thumb" [src]="cat.imageUrl" [alt]="cat.name" /></td>
+                  <td>
+                    <strong class="cat-name">{{ cat.name }}</strong>
+                    <code class="row-id" [title]="cat.id">{{ cat.id.slice(0, 8) }}</code>
+                  </td>
+                  <td>
+                    {{ sexLabel(cat.sex) }}
+                    <span class="technical-enum">{{ ageLabel(cat.birthDate) }}</span>
+                  </td>
+                  <td>
+                    <span class="badge status-{{ cat.status.toLowerCase() }}">
+                      {{ statusLabel(cat.status) }}
+                    </span>
+                    <span class="technical-enum">{{ cat.status }}</span>
+                  </td>
+                  <td>
+                    <button
+                      type="button"
+                      class="publication-mark"
+                      [class.is-published]="cat.published"
+                      [disabled]="busy()"
+                      [attr.aria-label]="
+                        cat.published ? 'Despublicar a ' + cat.name : 'Publicar a ' + cat.name
+                      "
+                      [title]="cat.published ? 'Despublicar' : 'Publicar'"
+                      (click)="cat.published ? unpublish(cat) : publish(cat)"
+                    >
+                      {{ cat.published ? 'Publicado' : 'No publicado' }}
+                    </button>
+                  </td>
+                  <td class="numeric">{{ cat.displayOrder }}</td>
+                  <td class="date-cell">{{ date(cat.updatedAt) }}</td>
+                  <td>
+                    <div class="cat-row-actions">
+                      <button
+                        class="row-action row-action--edit"
+                        type="button"
+                        (click)="openEdit(cat)"
+                      >
+                        Editar
+                      </button>
+                      @if (cat.status === 'AVAILABLE') {
+                        <button
+                          class="row-action row-action--accent"
+                          type="button"
+                          [disabled]="busy()"
+                          (click)="reserve(cat)"
+                        >
+                          En proceso
+                        </button>
+                        <button
+                          class="row-action row-action--danger"
+                          type="button"
+                          [disabled]="busy()"
+                          (click)="requestConfirmation(cat, 'pause')"
+                        >
+                          Pausar
+                        </button>
+                      } @else if (cat.status === 'RESERVED') {
+                        <button
+                          class="row-action"
+                          type="button"
+                          [disabled]="busy()"
+                          (click)="makeAvailable(cat)"
+                        >
+                          Disponible
+                        </button>
+                        <button
+                          class="row-action row-action--accent"
+                          type="button"
+                          [disabled]="busy()"
+                          (click)="requestConfirmation(cat, 'adopt')"
+                        >
+                          Adoptado
+                        </button>
+                        <button
+                          class="row-action row-action--danger"
+                          type="button"
+                          [disabled]="busy()"
+                          (click)="requestConfirmation(cat, 'pause')"
+                        >
+                          Pausar
+                        </button>
+                      } @else if (cat.status === 'PAUSED') {
+                        <button
+                          class="row-action row-action--accent"
+                          type="button"
+                          [disabled]="busy()"
+                          (click)="makeAvailable(cat)"
+                        >
+                          Reactivar
+                        </button>
+                      }
+                    </div>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      } @else if (cats().length) {
+        <div class="state"><p>No hay michis que coincidan con los filtros.</p></div>
+      } @else {
+        <div class="empty adoption-empty">
+          <strong>No hay michis cargados todavía.</strong>
+          <p>Creá la primera ficha para empezar a publicar adopciones.</p>
+          <button class="button button-primary" type="button" (click)="openCreate()">
+            Agregar primer michi
+          </button>
+        </div>
+      }
+    </section>
+  } @else {
+    <section class="tab-panel" role="tabpanel" aria-label="Solicitudes">
+      <div class="filters filter-panel applications-toolbar">
+        <label>
+          Buscar solicitud
+          <input [(ngModel)]="applicationSearch" placeholder="Nombre, email, teléfono o michi..." />
+        </label>
+        <button
+          class="button button-secondary"
+          type="button"
+          [disabled]="applicationsRefreshing()"
+          (click)="loadApplications(false)"
+        >
+          {{ applicationsRefreshing() ? 'Actualizando…' : 'Actualizar' }}
+        </button>
+      </div>
+
+      @if (applicationsLoading()) {
+        <div class="skeleton adoption-table-skeleton" aria-busy="true">Cargando solicitudes…</div>
+      } @else if (applicationsError()) {
+        <div class="state">
+          <p>No pudimos cargar las solicitudes.</p>
+          <button class="button button-primary" type="button" (click)="loadApplications()">
+            Reintentar
+          </button>
+        </div>
+      } @else if (filteredApplications().length) {
+        <div class="table-wrap">
+          <table class="applications-table">
+            <thead>
+              <tr>
+                <th>Fecha</th>
+                <th>Solicitante</th>
+                <th>Contacto</th>
+                <th>Interés en</th>
+                <th>Estado email</th>
+                <th>Acción</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (item of filteredApplications(); track item.id) {
+                <tr>
+                  <td class="date-cell">{{ date(item.createdAt) }}</td>
+                  <td>
+                    <strong>{{ item.application.applicant.fullName }}</strong>
+                  </td>
+                  <td class="contact-cell">
+                    <a [href]="'mailto:' + item.application.applicant.email">{{
+                      item.application.applicant.email
+                    }}</a>
+                    <span>{{ item.application.applicant.phone }}</span>
+                  </td>
+                  <td>
+                    @if (item.interest; as cat) {
+                      <div class="application-interest">
+                        @if (cat.imageUrl) {
+                          <img [src]="cat.imageUrl" [alt]="cat.name" />
+                        }
+                        <span
+                          ><strong>{{ cat.name }}</strong
+                          ><small
+                            >{{ sexLabel(cat.sex) }} · {{ ageLabel(cat.birthDate) }}</small
+                          ></span
+                        >
+                      </div>
+                    } @else {
+                      <span class="muted">Sin preferencia específica</span>
+                    }
+                  </td>
+                  <td>
+                    <span
+                      class="badge"
+                      [class.status-sent]="item.emailDelivered"
+                      [class.status-failed]="!item.emailDelivered"
+                    >
+                      {{ item.emailDelivered ? 'Entregado' : 'No entregado' }}
+                    </span>
+                  </td>
+                  <td>
+                    <button type="button" (click)="detailApplication.set(item)">Ver</button>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      } @else {
+        <div class="state">
+          <p>
+            {{ applications().length ? 'No hay coincidencias.' : 'Todavía no hay solicitudes.' }}
+          </p>
+        </div>
+      }
+    </section>
+  }
+</div>
+
+@if (editorCat() !== undefined) {
+  <div class="dialog-backdrop">
+    <section
+      appAdminDialog
+      class="dialog cat-editor-dialog"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="cat-editor-title"
+      (dialogDismiss)="closeEditor()"
+    >
+      <header>
+        <div>
+          <h2 id="cat-editor-title">{{ editorCat() ? 'Editar michi' : 'Agregar michi' }}</h2>
+          <p class="muted">La imagen debe estar alojada en una URL HTTPS externa.</p>
+        </div>
+        <button class="close-button" type="button" aria-label="Cerrar" (click)="closeEditor()">
+          ×
+        </button>
+      </header>
+
+      <form class="cat-editor-form" (ngSubmit)="saveCat()">
+        <div class="form-grid">
+          <label>
+            Nombre *
+            <input name="catName" [(ngModel)]="formModel.name" maxlength="100" required />
+          </label>
+          <label>
+            Sexo *
+            <select name="catSex" [(ngModel)]="formModel.sex" required>
+              <option value="FEMALE">Hembra</option>
+              <option value="MALE">Macho</option>
+            </select>
+          </label>
+          <label>
+            Fecha de nacimiento
+            <input name="catBirthDate" type="date" [(ngModel)]="formModel.birthDate" />
+          </label>
+          <label>
+            Orden visual
+            <input
+              name="catDisplayOrder"
+              type="number"
+              min="-10000"
+              max="10000"
+              step="1"
+              [(ngModel)]="formModel.displayOrder"
+            />
+          </label>
+          @if (!editorCat()) {
+            <label>
+              Estado inicial
+              <select name="catStatus" [(ngModel)]="formModel.status">
+                <option value="AVAILABLE">Disponible</option>
+                <option value="RESERVED">En proceso</option>
+                <option value="PAUSED">Pausado</option>
+                <option value="ADOPTED">Adoptado</option>
+              </select>
+            </label>
+          } @else {
+            <label>
+              Estado actual
+              <input [value]="statusLabel(formModel.status)" disabled />
+            </label>
+          }
+          <label class="check editor-published">
+            <input name="catPublished" type="checkbox" [(ngModel)]="formModel.published" />
+            Publicado
+          </label>
+          <label class="wide">
+            Descripción breve *
+            <textarea
+              name="catDescription"
+              [(ngModel)]="formModel.shortDescription"
+              maxlength="500"
+              required
+            ></textarea>
+            <small>{{ formModel.shortDescription.length }} / 500</small>
+          </label>
+          <label class="wide">
+            URL de imagen HTTPS *
+            <input
+              name="catImageUrl"
+              type="url"
+              [(ngModel)]="formModel.imageUrl"
+              (ngModelChange)="imageFailed.set(false)"
+              maxlength="2048"
+              placeholder="https://..."
+              required
+            />
+          </label>
+        </div>
+
+        <div class="cat-image-preview">
+          @if (formModel.imageUrl && !imageFailed()) {
+            <img
+              [src]="formModel.imageUrl"
+              [alt]="formModel.name || 'Vista previa del michi'"
+              (error)="imageFailed.set(true)"
+            />
+          } @else {
+            <span>{{
+              imageFailed() ? 'No se pudo cargar la imagen.' : 'Vista previa de imagen'
+            }}</span>
+          }
+        </div>
+
+        @if (formError()) {
+          <p class="feedback error" role="alert">{{ formError() }}</p>
+        }
+        <div class="dialog-actions">
+          <button
+            class="button button-secondary"
+            type="button"
+            [disabled]="busy()"
+            (click)="closeEditor()"
+          >
+            Cancelar
+          </button>
+          <button class="button button-primary" type="submit" [disabled]="busy()">
+            {{ busy() ? 'Guardando…' : editorCat() ? 'Guardar cambios' : 'Crear michi' }}
+          </button>
+        </div>
+      </form>
+    </section>
+  </div>
+}
+
+@if (confirmation(); as confirmationData) {
+  <div class="dialog-backdrop">
+    <section
+      appAdminDialog
+      class="dialog confirmation-dialog"
+      role="alertdialog"
+      aria-modal="true"
+      aria-labelledby="confirmation-title"
+      (dialogDismiss)="!busy() && confirmation.set(null)"
+    >
+      <header>
+        <h2 id="confirmation-title">
+          {{ confirmationData.action === 'adopt' ? 'Marcar como adoptado' : 'Pausar publicación' }}
+        </h2>
+        <button
+          class="close-button"
+          type="button"
+          aria-label="Cerrar"
+          [disabled]="busy()"
+          (click)="confirmation.set(null)"
+        >
+          ×
+        </button>
+      </header>
+      <p>
+        @if (confirmationData.action === 'adopt') {
+          {{ confirmationData.cat.name }} dejará de mostrarse como disponible para nuevas
+          adopciones.
+        } @else {
+          El michi dejará de mostrarse públicamente.
+        }
+      </p>
+      <div class="dialog-actions">
+        <button
+          class="button button-secondary"
+          type="button"
+          [disabled]="busy()"
+          (click)="confirmation.set(null)"
+        >
+          Cancelar
+        </button>
+        <button
+          class="button button-primary"
+          type="button"
+          [disabled]="busy()"
+          (click)="confirmAction()"
+        >
+          {{ busy() ? 'Procesando…' : 'Confirmar' }}
+        </button>
+      </div>
+    </section>
+  </div>
+}
+
+@if (detailApplication(); as item) {
+  <div class="dialog-backdrop">
+    <section
+      appAdminDialog
+      class="dialog application-dialog"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="application-title"
+      (dialogDismiss)="detailApplication.set(null)"
+    >
+      <header>
+        <div>
+          <p class="detail-kicker">Solicitud de adopción</p>
+          <h2 id="application-title">{{ item.application.applicant.fullName }}</h2>
+          <p class="muted">{{ date(item.createdAt) }}</p>
+        </div>
+        <button
+          class="close-button"
+          type="button"
+          aria-label="Cerrar"
+          (click)="detailApplication.set(null)"
+        >
+          ×
+        </button>
+      </header>
+
+      <div class="application-hero">
+        <div>
+          <span>Interés en</span>
+          @if (item.interest; as cat) {
+            <div class="application-interest application-interest--large">
+              @if (cat.imageUrl) {
+                <img [src]="cat.imageUrl" [alt]="cat.name" />
+              }
+              <span
+                ><strong>{{ cat.name }}</strong
+                ><small>{{ sexLabel(cat.sex) }} · {{ ageLabel(cat.birthDate) }}</small></span
+              >
+            </div>
+          } @else {
+            <strong>Sin preferencia específica</strong>
+          }
+        </div>
+        <span
+          class="badge"
+          [class.status-sent]="item.emailDelivered"
+          [class.status-failed]="!item.emailDelivered"
+        >
+          Email {{ item.emailDelivered ? 'entregado' : 'no entregado' }}
+        </span>
+      </div>
+
+      <section class="application-block contact-block">
+        <h3>1. Tus datos</h3>
+        <dl>
+          <div>
+            <dt>Email</dt>
+            <dd><app-admin-copy-id [value]="item.application.applicant.email" label="email" /></dd>
+          </div>
+          <div>
+            <dt>WhatsApp / teléfono</dt>
+            <dd>
+              <app-admin-copy-id [value]="item.application.applicant.phone" label="teléfono" />
+            </dd>
+          </div>
+        </dl>
+      </section>
+
+      <section class="application-block">
+        <h3>2. Tu hogar</h3>
+        <dl>
+          <div>
+            <dt>Otras mascotas</dt>
+            <dd>{{ yesNo(item.application.home.hasOtherPets) }}</dd>
+          </div>
+          @if (item.application.home.hasOtherPets) {
+            <div>
+              <dt>Veterinario de cabecera</dt>
+              <dd>{{ yesNo(item.application.home.hasRegularVet) }}</dd>
+            </div>
+            <div>
+              <dt>Vacunas al día</dt>
+              <dd>{{ yesNo(item.application.home.vaccinationsUpToDate) }}</dd>
+            </div>
+            <div>
+              <dt>Mascotas castradas</dt>
+              <dd>{{ yesNo(item.application.home.petsNeutered) }}</dd>
+            </div>
+          }
+          <div>
+            <dt>Acuerdo del hogar</dt>
+            <dd>{{ yesNo(item.application.home.householdAgrees) }}</dd>
+          </div>
+          <div>
+            <dt>Vivienda</dt>
+            <dd>{{ housingLabel(item.application.home.housingType) }}</dd>
+          </div>
+          @if (item.application.home.housingType === 'rented') {
+            <div>
+              <dt>Alquiler permite mascotas</dt>
+              <dd>{{ yesNo(item.application.home.rentalAllowsPets) }}</dd>
+            </div>
+          }
+          <div>
+            <dt>Cuidador de confianza</dt>
+            <dd>{{ yesNo(item.application.home.trustedCaregiver) }}</dd>
+          </div>
+        </dl>
+      </section>
+
+      <section class="application-block">
+        <h3>3. Adaptación</h3>
+        <dl>
+          <div>
+            <dt>Disposición para acompañar</dt>
+            <dd>{{ yesNo(item.application.adaptation.willingToSupportAdaptation) }}</dd>
+          </div>
+        </dl>
+      </section>
+
+      <section class="application-block">
+        <h3>4. Salud y cuidados</h3>
+        <dl>
+          <div>
+            <dt>Ingresos estables</dt>
+            <dd>{{ yesNo(item.application.care.hasStableIncome) }}</dd>
+          </div>
+          <div>
+            <dt>Puede cubrir urgencias</dt>
+            <dd>{{ yesNo(item.application.care.canCoverVetEmergency) }}</dd>
+          </div>
+          <div class="wide-answer">
+            <dt>Experiencia previa</dt>
+            <dd>{{ item.application.care.previousPetsDeathContext }}</dd>
+          </div>
+        </dl>
+      </section>
+
+      <section class="application-block">
+        <h3>5. Seguridad</h3>
+        <dl>
+          <div>
+            <dt>Protecciones del hogar</dt>
+            <dd>{{ safetyLabel(item.application.safety.homeSafetyStatus) }}</dd>
+          </div>
+        </dl>
+      </section>
+
+      <section class="application-block">
+        <h3>6. Compromiso</h3>
+        <dl>
+          <div>
+            <dt>Castración obligatoria</dt>
+            <dd>{{ yesNo(item.application.commitments.acceptsMandatoryNeutering) }}</dd>
+          </div>
+          <div>
+            <dt>Comprobante de castración</dt>
+            <dd>{{ yesNo(item.application.commitments.commitsNeuteringProof) }}</dd>
+          </div>
+          <div>
+            <dt>Seguimiento</dt>
+            <dd>{{ yesNo(item.application.commitments.acceptsFollowUp) }}</dd>
+          </div>
+          <div>
+            <dt>Devolución responsable</dt>
+            <dd>{{ yesNo(item.application.commitments.acceptsResponsibleReturnClause) }}</dd>
+          </div>
+          <div>
+            <dt>Compromiso a largo plazo</dt>
+            <dd>{{ yesNo(item.application.commitments.acceptsLongTermCommitment) }}</dd>
+          </div>
+        </dl>
+      </section>
+
+      <details class="technical-details">
+        <summary>Datos técnicos</summary>
+        <dl>
+          <div>
+            <dt>Application ID</dt>
+            <dd>
+              <code>{{ item.id }}</code>
+            </dd>
+          </div>
+          <div>
+            <dt>Adoptable cat ID</dt>
+            <dd>
+              <code>{{ item.adoptableCatId ?? 'null' }}</code>
+            </dd>
+          </div>
+          <div>
+            <dt>Creada</dt>
+            <dd>{{ date(item.createdAt) }}</dd>
+          </div>
+          <div>
+            <dt>Email delivered</dt>
+            <dd>
+              <code>{{ item.emailDelivered }}</code>
+            </dd>
+          </div>
+        </dl>
+      </details>
+    </section>
+  </div>
+}
