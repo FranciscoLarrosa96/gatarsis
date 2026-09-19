@@ -1,0 +1,94 @@
+<section id="michis-en-adopcion" class="cats-section" aria-labelledby="cats-title">
+  <div class="cats-heading">
+    <div>
+      <p class="eyebrow"><app-icon name="paw" class="size-4" /> Buscan una familia</p>
+      <h2 id="cats-title">Conocé a quienes esperan su hogar</h2>
+    </div>
+    <p>
+      Cada historia es distinta. Conocelos y, si sentís que alguno puede formar parte de tu familia,
+      completá el cuestionario de adopción.
+    </p>
+  </div>
+
+  @if (loading()) {
+    <div class="cats-grid" aria-label="Cargando michis en adopción" aria-busy="true">
+      @for (item of [1, 2, 3]; track item) {
+        <article class="cat-card cat-card--skeleton" aria-hidden="true">
+          <span class="skeleton-photo"></span>
+          <div class="skeleton-copy"><span></span><span></span><span></span><span></span></div>
+        </article>
+      }
+    </div>
+  } @else if (error()) {
+    <div class="cats-state cats-state--error" role="status">
+      <span><app-icon name="paw" class="size-6" /></span>
+      <div>
+        <h3>No pudimos mostrar los michis</h3>
+        <p>{{ error() }}</p>
+        <button type="button" class="secondary-button" (click)="retryRequested.emit()">
+          <app-icon name="refresh" class="size-4" /> Reintentar
+        </button>
+      </div>
+    </div>
+  } @else if (cats().length === 0) {
+    <div class="cats-state" role="status">
+      <span><app-icon name="heart" class="size-6" /></span>
+      <div>
+        <h3>Por ahora no tenemos michis publicados en adopción</h3>
+        <p>
+          Si querés que te orientemos cuando aparezca tu compañero ideal, podés completar el
+          cuestionario sin elegir uno en particular.
+        </p>
+      </div>
+    </div>
+  } @else {
+    <div class="cats-grid">
+      @for (cat of cats(); track cat.id; let index = $index) {
+        <article class="cat-card" [style.--card-index]="index">
+          <div class="cat-photo">
+            @if (cat.imageUrl) {
+              <img
+                [src]="cat.imageUrl"
+                [alt]="cat.name + ', michi en adopción'"
+                loading="lazy"
+                decoding="async"
+              />
+            } @else {
+              <span class="cat-photo-placeholder" aria-hidden="true">
+                <app-icon name="paw" class="size-8" />
+              </span>
+            }
+            @if (cat.status === 'RESERVED') {
+              <span class="cat-status"><i></i> En proceso</span>
+            }
+          </div>
+          <div class="cat-copy">
+            <h3>{{ cat.name }}</h3>
+            <p class="cat-meta">
+              {{ catSexLabel(cat.sex) }} <span aria-hidden="true">·</span>
+              {{ catAgeLabel(cat.birthDate) }}
+            </p>
+            <p class="cat-description">{{ cat.shortDescription }}</p>
+            @if (cat.status === 'AVAILABLE') {
+              <button type="button" class="cat-cta" (click)="catSelected.emit(cat)">
+                Quiero adoptar a {{ cat.name }} <app-icon name="arrow" class="size-4" />
+              </button>
+            } @else {
+              <p class="cat-unavailable">Este michi ya está conociendo a una posible familia.</p>
+            }
+          </div>
+        </article>
+      }
+    </div>
+  }
+
+  <div class="no-preference">
+    <div>
+      <strong>¿Todavía no sabés cuál?</strong>
+      <span>Podemos ayudarte a encontrar el compañero indicado para tu hogar.</span>
+    </div>
+    <button type="button" class="secondary-button" (click)="withoutCatSelected.emit()">
+      Quiero que me orienten <app-icon name="arrow" class="size-4" />
+    </button>
+  </div>
+</section>

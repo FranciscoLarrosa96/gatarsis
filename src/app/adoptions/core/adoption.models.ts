@@ -4,7 +4,22 @@ export type HousingType = 'owned' | 'rented' | 'other';
 
 export type HomeSafetyStatus = 'protected' | 'will_install' | 'no' | 'not_applicable';
 
+export type AdoptableCatSex = 'FEMALE' | 'MALE';
+
+export type PublicAdoptableCatStatus = 'AVAILABLE' | 'RESERVED';
+
+export interface AdoptableCat {
+  id: string;
+  name: string;
+  sex: AdoptableCatSex;
+  birthDate: string | null;
+  shortDescription: string;
+  imageUrl: string | null;
+  status: PublicAdoptableCatStatus;
+}
+
 export interface AdoptionApplicationRequest {
+  adoptableCatId?: string | null;
   applicant: {
     fullName: string;
     email: string;

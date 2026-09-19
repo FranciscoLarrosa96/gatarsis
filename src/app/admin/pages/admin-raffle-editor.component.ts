@@ -555,35 +555,91 @@ type ConfirmationKind = 'close' | 'draw';
                 ×
               </button>
             </header>
-            <div class="purchase-detail-grid">
-              <section>
-                <h3>Comprador y contacto</h3>
-                <dl class="raffle-detail-list">
-                  <div>
-                    <dt>Nombre</dt>
-                    <dd>{{ purchase.buyerName }}</dd>
+            <div class="purchase-body">
+              <div class="purchase-summary">
+                <section class="purchase-buyer">
+                  <h3>Comprador</h3>
+                  <p class="buyer-name">{{ purchase.buyerName }}</p>
+                  <div class="buyer-contacts">
+                    <a class="contact-chip" [href]="'mailto:' + purchase.buyerEmail">{{
+                      purchase.buyerEmail
+                    }}</a>
+                    <a class="contact-chip" [href]="'tel:' + purchase.buyerPhone">{{
+                      purchase.buyerPhone
+                    }}</a>
                   </div>
-                  <div>
-                    <dt>Email</dt>
-                    <dd>
-                      <a [href]="'mailto:' + purchase.buyerEmail">{{ purchase.buyerEmail }}</a>
-                    </dd>
-                  </div>
-                  <div>
-                    <dt>WhatsApp</dt>
-                    <dd>
-                      <a [href]="'tel:' + purchase.buyerPhone">{{ purchase.buyerPhone }}</a>
-                    </dd>
-                  </div>
-                  <div>
-                    <dt>Total</dt>
-                    <dd>{{ money(purchase.totalInCents) }}</dd>
-                  </div>
-                </dl>
-              </section>
-              <section>
-                <h3>Compra y pago</h3>
-                <dl class="raffle-detail-list payment-facts">
+                </section>
+                <section class="purchase-total">
+                  <h3>Total</h3>
+                  <p class="total-amount">{{ money(purchase.totalInCents) }}</p>
+                  @if (purchase.payment; as payment) {
+                    <span
+                      class="badge status-{{ payment.providerStatus.toLowerCase() }}"
+                      [title]="payment.providerStatus"
+                      >Pago {{ providerLabel(payment.providerStatus).toLowerCase() }}</span
+                    >
+                  } @else {
+                    <span class="muted">Sin pago informado</span>
+                  }
+                </section>
+              </div>
+
+              <ol class="purchase-timeline" aria-label="Cronología de la compra">
+                <li>
+                  <span>Creada</span><strong>{{ date(purchase.createdAt) }}</strong>
+                </li>
+                <li>
+                  <span>Pagada</span><strong>{{ date(purchase.paidAt) }}</strong>
+                </li>
+                <li>
+                  <span>Reserva vence</span><strong>{{ date(purchase.reservationExpiresAt) }}</strong>
+                </li>
+              </ol>
+
+              @if (purchase.refunds.length) {
+                <section class="purchase-block">
+                  <h3>Reembolsos ({{ purchase.refunds.length }})</h3>
+                  <ul class="refund-list">
+                    @for (refund of purchase.refunds; track refund.id) {
+                      <li>
+                        <div class="refund-head">
+                          <span
+                            class="badge status-{{ refund.status.toLowerCase() }}"
+                            >{{ refund.status }}</span
+                          >
+                          <strong>{{ money(refund.amountInCents) }}</strong>
+                          <span class="muted">{{
+                            date(refund.completedAt ?? refund.createdAt)
+                          }}</span>
+                        </div>
+                        <dl class="id-list">
+                          <div>
+                            <dt>ID local</dt>
+                            <dd>
+                              <app-admin-copy-id [value]="refund.id" label="ID de reembolso" />
+                            </dd>
+                          </div>
+                          @if (refund.providerRefundId) {
+                            <div>
+                              <dt>Refund ID MP</dt>
+                              <dd>
+                                <app-admin-copy-id
+                                  [value]="refund.providerRefundId"
+                                  label="Refund ID"
+                                />
+                              </dd>
+                            </div>
+                          }
+                        </dl>
+                      </li>
+                    }
+                  </ul>
+                </section>
+              }
+
+              <details class="purchase-block" open>
+                <summary>Pago y orden</summary>
+                <dl class="id-list">
                   <div>
                     <dt>Compra ID</dt>
                     <dd>
@@ -593,33 +649,11 @@ type ConfirmationKind = 'close' | 'draw';
                       />
                     </dd>
                   </div>
-                  <div class="wide">
-                    <dt>Creada / pagada</dt>
-                    <dd>{{ date(purchase.createdAt) }} / {{ date(purchase.paidAt) }}</dd>
-                  </div>
                   <div>
                     <dt>Orden</dt>
                     <dd>
                       <app-admin-copy-id [value]="purchase.orderId" label="ID del pedido" />
                       <small class="technical-enum">{{ purchase.orderStatus }}</small>
-                    </dd>
-                  </div>
-                  <div>
-                    <dt>Reserva</dt>
-                    <dd>{{ date(purchase.reservationExpiresAt) }}</dd>
-                  </div>
-                  <div>
-                    <dt>Pago</dt>
-                    <dd>
-                      @if (purchase.payment; as payment) {
-                        <span
-                          class="badge status-{{ payment.providerStatus.toLowerCase() }}"
-                          [title]="payment.providerStatus"
-                          >{{ providerLabel(payment.providerStatus) }}</span
-                        >
-                      } @else {
-                        No informado
-                      }
                     </dd>
                   </div>
                   @if (purchase.payment; as payment) {
@@ -634,6 +668,12 @@ type ConfirmationKind = 'close' | 'draw';
                       <dd><app-admin-copy-id [value]="payment.id" label="ID local del pago" /></dd>
                     </div>
                     <div>
+                      <dt>Importe / moneda</dt>
+                      <dd>
+                        {{ money(payment.transactionAmountInCents) }} · {{ payment.currencyId }}
+                      </dd>
+                    </div>
+                    <div>
                       <dt>Procesamiento</dt>
                       <dd>
                         <code>{{ payment.processingStatus }}</code>
@@ -644,25 +684,25 @@ type ConfirmationKind = 'close' | 'draw';
                       <dd>{{ payment.reviewReason || 'Sin motivo informado' }}</dd>
                     </div>
                     <div>
-                      <dt>Importe / moneda</dt>
-                      <dd>
-                        {{ money(payment.transactionAmountInCents) }} · {{ payment.currencyId }}
-                      </dd>
+                      <dt>Creado</dt>
+                      <dd>{{ date(payment.dateCreated) }}</dd>
                     </div>
-                    <div class="wide">
-                      <dt>Pago creado / aprobado / actualizado</dt>
-                      <dd>
-                        {{ date(payment.dateCreated) }} / {{ date(payment.dateApproved) }} /
-                        {{ date(payment.dateLastUpdated) }}
-                      </dd>
-                    </div>
-                  } @else {
                     <div>
-                      <dt>Pago asociado</dt>
-                      <dd>No hay un pago informado para esta compra.</dd>
+                      <dt>Aprobado</dt>
+                      <dd>{{ date(payment.dateApproved) }}</dd>
+                    </div>
+                    <div>
+                      <dt>Actualizado</dt>
+                      <dd>{{ date(payment.dateLastUpdated) }}</dd>
                     </div>
                   }
-                  @if (purchase.preference; as preference) {
+                </dl>
+              </details>
+
+              @if (purchase.preference; as preference) {
+                <details class="purchase-block">
+                  <summary>Preferencia de Mercado Pago</summary>
+                  <dl class="id-list">
                     <div>
                       <dt>Preferencia local</dt>
                       <dd>
@@ -684,61 +724,34 @@ type ConfirmationKind = 'close' | 'draw';
                       </div>
                     }
                     <div>
-                      <dt>Estado de preferencia</dt>
+                      <dt>Estado</dt>
                       <dd>
                         <code>{{ preference.status }}</code>
                       </dd>
                     </div>
                     <div>
-                      <dt>Preferencia creada / lista / actualizada</dt>
-                      <dd>
-                        {{ date(preference.createdAt) }} / {{ date(preference.readyAt) }} /
-                        {{ date(preference.updatedAt) }}
-                      </dd>
+                      <dt>Creada</dt>
+                      <dd>{{ date(preference.createdAt) }}</dd>
+                    </div>
+                    <div>
+                      <dt>Lista</dt>
+                      <dd>{{ date(preference.readyAt) }}</dd>
+                    </div>
+                    <div>
+                      <dt>Actualizada</dt>
+                      <dd>{{ date(preference.updatedAt) }}</dd>
                     </div>
                     <div>
                       <dt>Último error</dt>
                       <dd>
-                        <code>{{ preference.lastErrorCode || '—' }}</code> ·
-                        {{ date(preference.lastErrorAt) }}
-                      </dd>
-                    </div>
-                  }
-                  <div>
-                    <dt>Reembolsos</dt>
-                    <dd>{{ purchase.refunds.length }}</dd>
-                  </div>
-                </dl>
-              </section>
-              @for (refund of purchase.refunds; track refund.id) {
-                <section>
-                  <h3>Reembolso · {{ refund.status }}</h3>
-                  <dl class="raffle-detail-list">
-                    <div>
-                      <dt>ID local</dt>
-                      <dd><app-admin-copy-id [value]="refund.id" label="ID de reembolso" /></dd>
-                    </div>
-                    @if (refund.providerRefundId) {
-                      <div>
-                        <dt>Refund ID MP</dt>
-                        <dd>
-                          <app-admin-copy-id [value]="refund.providerRefundId" label="Refund ID" />
-                        </dd>
-                      </div>
-                    }
-                    <div>
-                      <dt>Importe</dt>
-                      <dd>{{ money(refund.amountInCents) }}</dd>
-                    </div>
-                    <div>
-                      <dt>Creado / completado / actualizado</dt>
-                      <dd>
-                        {{ date(refund.createdAt) }} / {{ date(refund.completedAt) }} /
-                        {{ date(refund.updatedAt) }}
+                        <code>{{ preference.lastErrorCode || '—' }}</code>
+                        @if (preference.lastErrorAt) {
+                          · {{ date(preference.lastErrorAt) }}
+                        }
                       </dd>
                     </div>
                   </dl>
-                </section>
+                </details>
               }
             </div>
           </section>

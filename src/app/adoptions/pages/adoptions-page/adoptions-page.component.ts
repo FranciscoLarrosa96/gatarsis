@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, DestroyRef, OnInit, inject, signal } from '@angular/core';
 import {
   Field,
   FormField,
@@ -13,7 +13,9 @@ import {
   validate,
 } from '@angular/forms/signals';
 import { firstValueFrom } from 'rxjs';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
+import { AdoptableCatsComponent } from '../../components/adoptable-cats/adoptable-cats.component';
 import { AppFooterComponent } from '../../../shared/components/app-footer/app-footer.component';
 import { AppHeaderComponent } from '../../../shared/components/app-header/app-header.component';
 import { BottomNavigationComponent } from '../../../shared/components/bottom-navigation/bottom-navigation.component';
@@ -21,6 +23,11 @@ import { IconComponent } from '../../../shared/components/icon/icon.component';
 import { ADOPTION_CONFIG } from '../../core/adoption.config';
 import { AdoptionApiService } from '../../core/adoption-api.service';
 import {
+  adoptableCatAgeLabel,
+  adoptableCatSexLabel,
+} from '../../core/adoption-display.utils';
+import {
+  AdoptableCat,
   AdoptionApplicationRequest,
   HomeSafetyStatus,
   HousingType,
@@ -153,12 +160,14 @@ const adoptionSchema = schema<AdoptionFormModel>((p) => {
     AppFooterComponent,
     BottomNavigationComponent,
     IconComponent,
+    AdoptableCatsComponent,
   ],
   templateUrl: './adoptions-page.component.html',
   styleUrl: './adoptions-page.component.css',
 })
-export class AdoptionsPageComponent {
+export class AdoptionsPageComponent implements OnInit {
   private readonly api = inject(AdoptionApiService);
+  private readonly destroyRef = inject(DestroyRef);
 
   readonly config = ADOPTION_CONFIG;
   readonly currentStep = signal(1);
@@ -166,6 +175,10 @@ export class AdoptionsPageComponent {
   readonly submitting = signal(false);
   readonly submitted = signal(false);
   readonly submitError = signal<string | null>(null);
+  readonly adoptableCats = signal<AdoptableCat[]>([]);
+  readonly catsLoading = signal(true);
+  readonly catsError = signal<string | null>(null);
+  readonly selectedCat = signal<AdoptableCat | null>(null);
 
   private readonly model = signal<AdoptionFormModel>(initialAdoptionModel());
   readonly form = form(this.model, adoptionSchema, {
@@ -196,6 +209,57 @@ export class AdoptionsPageComponent {
       },
     },
   });
+
+  ngOnInit(): void {
+    this.loadAdoptableCats();
+  }
+
+  loadAdoptableCats(): void {
+    this.catsLoading.set(true);
+    this.catsError.set(null);
+    this.api
+      .getAdoptableCats()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (cats) => {
+          this.adoptableCats.set(
+            cats.filter((cat) => cat.status === 'AVAILABLE' || cat.status === 'RESERVED'),
+          );
+          this.catsLoading.set(false);
+        },
+        error: () => {
+          this.adoptableCats.set([]);
+          this.catsLoading.set(false);
+          this.catsError.set(
+            'No pudimos cargar los michis en este momento. Podés reintentar o completar igualmente el cuestionario.',
+          );
+        },
+      });
+  }
+
+  selectCat(cat: AdoptableCat): void {
+    if (cat.status !== 'AVAILABLE') return;
+    this.selectedCat.set(cat);
+    this.scrollToQuestionnaire();
+  }
+
+  chooseWithoutCat(): void {
+    this.selectedCat.set(null);
+    this.scrollToQuestionnaire();
+  }
+
+  changeCat(): void {
+    this.selectedCat.set(null);
+    this.scrollToCats();
+  }
+
+  catSexLabel(sex: AdoptableCat['sex']): string {
+    return adoptableCatSexLabel(sex);
+  }
+
+  catAgeLabel(birthDate: string | null, now = new Date()): string {
+    return adoptableCatAgeLabel(birthDate, now);
+  }
 
   get hasOtherPets(): boolean {
     return this.form.home.hasOtherPets().value() === 'yes';
@@ -246,6 +310,7 @@ export class AdoptionsPageComponent {
 
   startAnother(): void {
     this.submitted.set(false);
+    this.selectedCat.set(null);
     this.currentStep.set(1);
     this.scrollToQuestionnaire();
   }
@@ -285,7 +350,9 @@ export class AdoptionsPageComponent {
 
   private toRequest(): AdoptionApplicationRequest {
     const value = this.model();
+    const adoptableCatId = this.selectedCat()?.id;
     return {
+      ...(adoptableCatId ? { adoptableCatId } : {}),
       applicant: {
         fullName: value.applicant.fullName.trim(),
         email: value.applicant.email.trim().toLowerCase(),
@@ -332,6 +399,15 @@ export class AdoptionsPageComponent {
       const questionnaire = document.getElementById('cuestionario');
       if (typeof questionnaire?.scrollIntoView === 'function') {
         questionnaire.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    });
+  }
+
+  private scrollToCats(): void {
+    queueMicrotask(() => {
+      const cats = document.getElementById('michis-en-adopcion');
+      if (typeof cats?.scrollIntoView === 'function') {
+        cats.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }
     });
   }

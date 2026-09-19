@@ -39,12 +39,39 @@
     <aside class="delivery-notice">{{ config.deliveryNotice }}</aside>
   }
 
+  <app-adoptable-cats
+    [cats]="adoptableCats()"
+    [loading]="catsLoading()"
+    [error]="catsError()"
+    (catSelected)="selectCat($event)"
+    (withoutCatSelected)="chooseWithoutCat()"
+    (retryRequested)="loadAdoptableCats()"
+  />
+
   <section id="cuestionario" class="questionnaire" aria-labelledby="questionnaire-title">
     <div class="questionnaire-heading">
       <p class="eyebrow"><app-icon name="paw" class="size-4" /> Pre-adopción responsable</p>
       <h2 id="questionnaire-title">Conozcámonos un poquito</h2>
       <p>Son seis pasos breves. Tus respuestas se usan únicamente para evaluar esta solicitud.</p>
     </div>
+
+    @if (selectedCat(); as cat) {
+      <aside class="selected-cat" aria-label="Michi seleccionado para la solicitud">
+        <div class="selected-cat-photo">
+          @if (cat.imageUrl) {
+            <img [src]="cat.imageUrl" [alt]="cat.name" />
+          } @else {
+            <app-icon name="paw" class="size-6" />
+          }
+        </div>
+        <div class="selected-cat-copy">
+          <span>Estás consultando por</span>
+          <strong>{{ cat.name }}</strong>
+          <small>{{ catSexLabel(cat.sex) }} · {{ catAgeLabel(cat.birthDate) }}</small>
+        </div>
+        <button type="button" (click)="changeCat()">Cambiar michi</button>
+      </aside>
+    }
 
     @if (!submitted()) {
       <div class="form-shell">
@@ -97,7 +124,12 @@
         <form id="adoption-form" class="adoption-form" [formRoot]="form">
           <div class="honeypot" aria-hidden="true">
             <label for="adoption-website">Sitio web</label>
-            <input id="adoption-website" [formField]="form.website" tabindex="-1" autocomplete="off" />
+            <input
+              id="adoption-website"
+              [formField]="form.website"
+              tabindex="-1"
+              autocomplete="off"
+            />
           </div>
 
           @if (!reviewing()) {
@@ -142,7 +174,9 @@
                         autocomplete="email"
                         inputmode="email"
                         [attr.aria-invalid]="showError(form.applicant.email)"
-                        [attr.aria-describedby]="showError(form.applicant.email) ? 'email-error' : null"
+                        [attr.aria-describedby]="
+                          showError(form.applicant.email) ? 'email-error' : null
+                        "
                       />
                       @if (showError(form.applicant.email)) {
                         <p class="field-error" id="email-error">Ingresá un email válido.</p>
@@ -157,7 +191,9 @@
                         autocomplete="tel"
                         inputmode="tel"
                         [attr.aria-invalid]="showError(form.applicant.phone)"
-                        [attr.aria-describedby]="showError(form.applicant.phone) ? 'phone-error' : null"
+                        [attr.aria-describedby]="
+                          showError(form.applicant.phone) ? 'phone-error' : null
+                        "
                       />
                       @if (showError(form.applicant.phone)) {
                         <p class="field-error" id="phone-error">Ingresá un teléfono de contacto.</p>
@@ -213,7 +249,10 @@
                         ];
                         track item.label
                       ) {
-                        <fieldset class="question compact" [class.has-error]="showError(item.field)">
+                        <fieldset
+                          class="question compact"
+                          [class.has-error]="showError(item.field)"
+                        >
                           <legend>{{ item.label }} <em>*</em></legend>
                           <div class="choice-row">
                             <label
@@ -233,7 +272,10 @@
                     </div>
                   }
 
-                  <fieldset class="question" [class.has-error]="showError(form.home.householdAgrees)">
+                  <fieldset
+                    class="question"
+                    [class.has-error]="showError(form.home.householdAgrees)"
+                  >
                     <legend>
                       ¿Todos los integrantes del hogar están de acuerdo con la adopción? <em>*</em>
                     </legend>
@@ -280,10 +322,18 @@
                       <legend>¿El lugar permite animales? <em>*</em></legend>
                       <div class="choice-row">
                         <label
-                          ><input type="radio" [formField]="form.home.rentalAllowsPets" value="yes" />
+                          ><input
+                            type="radio"
+                            [formField]="form.home.rentalAllowsPets"
+                            value="yes"
+                          />
                           <span>Sí</span></label
                         ><label
-                          ><input type="radio" [formField]="form.home.rentalAllowsPets" value="no" />
+                          ><input
+                            type="radio"
+                            [formField]="form.home.rentalAllowsPets"
+                            value="no"
+                          />
                           <span>No</span></label
                         >
                       </div>
@@ -293,7 +343,10 @@
                     </fieldset>
                   }
 
-                  <fieldset class="question" [class.has-error]="showError(form.home.trustedCaregiver)">
+                  <fieldset
+                    class="question"
+                    [class.has-error]="showError(form.home.trustedCaregiver)"
+                  >
                     <legend>
                       En caso de mudanza o viaje, ¿contás con personas de confianza que puedan
                       cuidar al gatito? <em>*</em>
@@ -473,7 +526,11 @@
                         <span>Todavía no, pero me comprometo a instalarla</span></label
                       >
                       <label
-                        ><input type="radio" [formField]="form.safety.homeSafetyStatus" value="no" />
+                        ><input
+                          type="radio"
+                          [formField]="form.safety.homeSafetyStatus"
+                          value="no"
+                        />
                         <span>No</span></label
                       >
                       <label
@@ -586,8 +643,7 @@
                       ><input
                         type="checkbox"
                         [formField]="form.commitment.acceptsLongTermCommitment"
-                      /><span
-                        ><app-icon name="check" class="size-4" /></span
+                      /><span><app-icon name="check" class="size-4" /></span
                       ><b>Entiendo y asumo el compromiso de una adopción a largo plazo. *</b></label
                     >
                     @if (showError(form.commitment.acceptsLongTermCommitment)) {

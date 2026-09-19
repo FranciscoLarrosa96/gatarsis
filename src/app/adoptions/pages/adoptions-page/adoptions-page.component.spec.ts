@@ -5,7 +5,29 @@ import { submit } from '@angular/forms/signals';
 import { provideRouter } from '@angular/router';
 
 import { PUBLIC_API_BASE_URL } from '../../../shop/core/commerce.models';
+import { AdoptableCat } from '../../core/adoption.models';
 import { AdoptionsPageComponent } from './adoptions-page.component';
+
+const cats: AdoptableCat[] = [
+  {
+    id: 'cat-bianca',
+    name: 'Bianca',
+    sex: 'FEMALE',
+    birthDate: '2024-03-10',
+    shortDescription: 'Dulce, compañera y muy curiosa.',
+    imageUrl: 'https://example.test/bianca.jpg',
+    status: 'AVAILABLE',
+  },
+  {
+    id: 'cat-orion',
+    name: 'Orión',
+    sex: 'MALE',
+    birthDate: null,
+    shortDescription: 'Tranquilo y cariñoso.',
+    imageUrl: null,
+    status: 'RESERVED',
+  },
+];
 
 describe('AdoptionsPageComponent', () => {
   let fixture: ComponentFixture<AdoptionsPageComponent>;
@@ -20,6 +42,8 @@ describe('AdoptionsPageComponent', () => {
     fixture = TestBed.createComponent(AdoptionsPageComponent);
     component = fixture.componentInstance;
     http = TestBed.inject(HttpTestingController);
+    fixture.detectChanges();
+    http.expectOne(`${PUBLIC_API_BASE_URL}/adoptions/cats`).flush([]);
     fixture.detectChanges();
   });
 
@@ -39,6 +63,61 @@ describe('AdoptionsPageComponent', () => {
     button.click();
 
     expect(goToQuestionnaire).toHaveBeenCalledOnce();
+  });
+
+  it('renders public cat cards with sex, calculated age and reserved state', () => {
+    component.adoptableCats.set(cats);
+    fixture.detectChanges();
+
+    const cards = fixture.nativeElement.querySelectorAll('.cat-card');
+    expect(cards).toHaveLength(2);
+    expect(cards[0].textContent).toContain('Bianca');
+    expect(cards[0].textContent).toContain('Hembra');
+    expect(cards[1].textContent).toContain('Macho');
+    expect(cards[1].textContent).toContain('Edad a confirmar');
+    expect(cards[1].textContent).toContain('En proceso');
+    expect(cards[1].querySelector('.cat-cta')).toBeNull();
+    expect(component.catAgeLabel('2025-01-20', new Date(2025, 8, 20))).toBe('8 meses');
+  });
+
+  it('selects an available cat and allows changing it', () => {
+    component.adoptableCats.set(cats);
+    fixture.detectChanges();
+
+    const selectButton = fixture.nativeElement.querySelector('.cat-cta') as HTMLButtonElement;
+    selectButton.click();
+    fixture.detectChanges();
+
+    expect(component.selectedCat()?.id).toBe('cat-bianca');
+    expect(fixture.nativeElement.querySelector('.selected-cat').textContent).toContain('Bianca');
+
+    (fixture.nativeElement.querySelector('.selected-cat button') as HTMLButtonElement).click();
+    fixture.detectChanges();
+    expect(component.selectedCat()).toBeNull();
+  });
+
+  it('keeps the questionnaire available while the collection is empty or fails', () => {
+    component.adoptableCats.set([]);
+    component.catsError.set(null);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.cats-state').textContent).toContain(
+      'Por ahora no tenemos michis',
+    );
+    expect(fixture.nativeElement.querySelector('#adoption-form')).not.toBeNull();
+
+    component.catsError.set('No pudimos cargar los michis.');
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.cats-state--error')).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('#adoption-form')).not.toBeNull();
+  });
+
+  it('shows stable skeleton cards while loading', () => {
+    component.catsLoading.set(true);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelectorAll('.cat-card--skeleton')).toHaveLength(3);
+    expect(fixture.nativeElement.querySelector('.cats-grid').getAttribute('aria-busy')).toBe(
+      'true',
+    );
   });
 
   it('does not advance while the current step is invalid', () => {
@@ -101,6 +180,7 @@ describe('AdoptionsPageComponent', () => {
     });
     expect(request.request.body.home.hasOtherPets).toBe(true);
     expect(request.request.body.home.hasRegularVet).toBe(true);
+    expect(request.request.body.adoptableCatId).toBeUndefined();
     expect(request.request.body.to).toBeUndefined();
     expect(request.request.body.recipient).toBeUndefined();
     expect(request.request.body.html).toBeUndefined();
@@ -111,6 +191,19 @@ describe('AdoptionsPageComponent', () => {
 
     expect(component.submitted()).toBe(true);
     expect(component.form.applicant.fullName().value()).toBe('');
+  });
+
+  it('includes the selected cat id in the existing application payload', async () => {
+    fillValidForm();
+    component.selectCat(cats[0]);
+    component.reviewing.set(true);
+    const done = submit(component.form);
+    await fixture.whenStable();
+
+    const request = http.expectOne(`${PUBLIC_API_BASE_URL}/adoptions/applications`);
+    expect(request.request.body.adoptableCatId).toBe('cat-bianca');
+    request.flush({ success: true });
+    await done;
   });
 
   it('keeps every answer available after an SMTP delivery error', async () => {
