@@ -348,7 +348,14 @@
           </label>
           <label>
             Fecha de nacimiento
-            <input name="catBirthDate" type="date" [(ngModel)]="formModel.birthDate" />
+            <input
+              name="catBirthDate"
+              type="text"
+              appAdminDatePicker
+              [dateValue]="formModel.birthDate"
+              (dateValueChange)="formModel.birthDate = $event"
+              placeholder="Elegí una fecha"
+            />
           </label>
           <label>
             Orden visual

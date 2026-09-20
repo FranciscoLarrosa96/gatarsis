@@ -89,4 +89,24 @@ describe('Admin raffle API contracts', () => {
     expect(draw.request.method).toBe('POST');
     expect(draw.request.body).toEqual({ winningNumber: 37 });
   });
+
+  it('registers a manual sale with buyer data and an idempotency key', () => {
+    const body = {
+      numbers: [12, 37],
+      buyer: {
+        name: 'Juan Pérez',
+        email: 'juan@example.com',
+        whatsapp: '+54 249 4000000',
+      },
+      paymentMethod: 'TRANSFER' as const,
+      note: 'Transferencia recibida',
+      idempotencyKey: 'manual-sale-key',
+    };
+
+    api.createManualRaffleSale('raffle-id', body).subscribe();
+    const request = http.expectOne(`${ADMIN_API_BASE_URL}/raffles/raffle-id/manual-sales`);
+
+    expect(request.request.method).toBe('POST');
+    expect(request.request.body).toEqual(body);
+  });
 });

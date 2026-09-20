@@ -41,6 +41,26 @@ describe('AdminOrdersComponent fulfillment', () => {
     expect(text).not.toContain('Participación de rifa');
   });
 
+  it('identifies a manual sale without pretending there is a Mercado Pago payment', () => {
+    setup(
+      detail({
+        order: {
+          ...detail().order,
+          paymentSource: 'MANUAL',
+          manualPaymentMethod: 'TRANSFER',
+          manualSaleNote: 'Transferencia recibida',
+        },
+        fulfillment: null,
+      }),
+    );
+
+    const text = fixture.nativeElement.textContent;
+    expect(text).toContain('Venta manual · Transferencia');
+    expect(text).toContain('Transferencia recibida');
+    expect(text).toContain('No existe un pago de Mercado Pago');
+    expect(text).not.toContain('Payment ID de Mercado Pago');
+  });
+
   it('shows only the applicable fulfillment CTA', () => {
     setup(detail());
     expect(fixture.nativeElement.textContent).toContain('Marcar listo para retirar');

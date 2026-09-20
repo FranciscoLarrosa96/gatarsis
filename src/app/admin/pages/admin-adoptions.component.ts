@@ -15,6 +15,7 @@ import { adminErrorMessage } from '../core/admin-domain-error';
 import { AdminFeedbackService } from '../core/admin-feedback';
 import { formatAdminDate } from '../core/admin-formatters';
 import { AdminCopyIdComponent } from '../shared/admin-copy-id.component';
+import { AdminDatePickerDirective } from '../shared/admin-date-picker.directive';
 import { AdminDialogDirective } from '../shared/admin-dialog.directive';
 import {
   adoptableCatAgeLabel,
@@ -42,7 +43,7 @@ interface ConfirmedCatAction {
 
 @Component({
   standalone: true,
-  imports: [FormsModule, AdminDialogDirective, AdminCopyIdComponent],
+  imports: [FormsModule, AdminDialogDirective, AdminCopyIdComponent, AdminDatePickerDirective],
   templateUrl: './admin-adoptions.component.html',
   styleUrls: ['./admin-pages.css', './admin-adoptions.component.css'],
 })

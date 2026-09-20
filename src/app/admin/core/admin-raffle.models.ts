@@ -5,6 +5,10 @@ export type AdminRaffleNumberStatus = 'AVAILABLE' | 'RESERVED' | 'SOLD';
 export type AdminRafflePurchaseStatus =
   'RESERVED' | 'PAYMENT_PENDING' | 'PAID' | 'EXPIRED' | 'REQUIRES_REVIEW' | 'REFUNDED';
 
+export type AdminManualRafflePaymentMethod = 'CASH' | 'TRANSFER' | 'OTHER';
+
+export type AdminRafflePaymentSource = 'MERCADO_PAGO' | 'MANUAL';
+
 export interface AdminRaffleListItem {
   id: string;
   title: string;
@@ -87,6 +91,9 @@ export interface AdminRafflePurchase {
   createdAt: string;
   reservationExpiresAt: string;
   paidAt: string | null;
+  paymentSource?: AdminRafflePaymentSource;
+  manualPaymentMethod?: AdminManualRafflePaymentMethod | null;
+  manualSaleNote?: string | null;
 }
 
 export interface AdminRafflePurchaseDetail extends AdminRafflePurchase {
@@ -128,3 +135,15 @@ export interface CreateAdminRaffleRequest {
 }
 
 export type UpdateAdminRaffleRequest = Partial<CreateAdminRaffleRequest>;
+
+export interface CreateAdminManualRaffleSaleRequest {
+  numbers: number[];
+  buyer: {
+    name: string;
+    email?: string;
+    whatsapp?: string;
+  };
+  paymentMethod: AdminManualRafflePaymentMethod;
+  note?: string;
+  idempotencyKey: string;
+}

@@ -37,9 +37,17 @@ import { AdminOrderDetail, AdminOrderListItem, AdminOrderStatus } from '../core/
             </span>
             <h2>{{ money(orderDetail.order.totalInCents) }}</h2>
             <p>{{ orderContext(orderDetail) }}</p>
-            <small class="muted">{{
-              orderDetail.items.length || orderDetail.fulfillment ? 'Tienda' : 'Origen no informado'
-            }}</small>
+            @if (orderDetail.order.paymentSource === 'MANUAL') {
+              <small class="manual-origin">
+                Venta manual · {{ manualPaymentMethodLabel(orderDetail.order.manualPaymentMethod) }}
+              </small>
+            } @else {
+              <small class="muted">{{
+                orderDetail.items.length || orderDetail.fulfillment
+                  ? 'Tienda'
+                  : 'Origen no informado'
+              }}</small>
+            }
           </div>
           <dl class="detail-facts">
             <div>
@@ -112,6 +120,21 @@ import { AdminOrderDetail, AdminOrderListItem, AdminOrderStatus } from '../core/
                   orderDetail.paymentPreference.providerPreferenceId || 'Sin provider ID'
                 }}</code>
               </div>
+            }
+            @if (orderDetail.order.paymentSource === 'MANUAL') {
+              <div class="compact-fact manual-payment-fact">
+                <span>Origen</span>
+                <strong>
+                  Venta manual ·
+                  {{ manualPaymentMethodLabel(orderDetail.order.manualPaymentMethod) }}
+                </strong>
+                <small>No existe un pago de Mercado Pago para esta operación.</small>
+              </div>
+              @if (orderDetail.order.manualSaleNote) {
+                <div class="compact-fact">
+                  <span>Nota</span><strong>{{ orderDetail.order.manualSaleNote }}</strong>
+                </div>
+              }
             }
             <div class="item-list">
               @for (payment of orderDetail.payments; track payment.id) {
@@ -298,6 +321,11 @@ import { AdminOrderDetail, AdminOrderListItem, AdminOrderStatus } from '../core/
                       <span class="badge status-{{ order.status.toLowerCase() }}">
                         {{ statusLabel(order.status) }}
                       </span>
+                      @if (order.paymentSource === 'MANUAL') {
+                        <small class="manual-origin table-origin">
+                          Venta manual · {{ manualPaymentMethodLabel(order.manualPaymentMethod) }}
+                        </small>
+                      }
                     </td>
                     <td class="numeric">{{ money(order.totalInCents) }}</td>
                     <td class="numeric">{{ order.itemsCount }}</td>
@@ -449,6 +477,12 @@ export class AdminOrdersComponent implements OnInit {
 
   statusLabel(value: string): string {
     return orderStatusLabel(value);
+  }
+
+  manualPaymentMethodLabel(method: string | null | undefined): string {
+    return method
+      ? ({ CASH: 'Efectivo', TRANSFER: 'Transferencia', OTHER: 'Otro' }[method] ?? method)
+      : 'Sin informar';
   }
 
   fulfillmentMethodLabel(method: string): string {

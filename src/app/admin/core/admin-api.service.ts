@@ -17,6 +17,7 @@ import {
   AdminRafflePurchase,
   AdminRafflePurchaseDetail,
   AdminRafflePurchaseListQuery,
+  CreateAdminManualRaffleSaleRequest,
   CreateAdminRaffleRequest,
   UpdateAdminRaffleRequest,
 } from './admin-raffle.models';
@@ -84,7 +85,10 @@ export class AdminApiService {
     catId: string,
     body: UpdateAdminAdoptableCatRequest,
   ): Observable<AdminAdoptableCat> {
-    return this.http.patch<AdminAdoptableCat>(`${ADMIN_API_BASE_URL}/adoptions/cats/${catId}`, body);
+    return this.http.patch<AdminAdoptableCat>(
+      `${ADMIN_API_BASE_URL}/adoptions/cats/${catId}`,
+      body,
+    );
   }
 
   setAdoptionCatState(
@@ -118,15 +122,23 @@ export class AdminApiService {
     return this.http.post<AdminProductDetail>(`${ADMIN_API_BASE_URL}/products`, body);
   }
 
-  updateProduct(productId: string, body: UpdateAdminProductRequest): Observable<AdminProductDetail> {
+  updateProduct(
+    productId: string,
+    body: UpdateAdminProductRequest,
+  ): Observable<AdminProductDetail> {
     return this.http.patch<AdminProductDetail>(`${ADMIN_API_BASE_URL}/products/${productId}`, body);
   }
 
   deleteProduct(productId: string): Observable<AdminCatalogDeletionResult> {
-    return this.http.delete<AdminCatalogDeletionResult>(`${ADMIN_API_BASE_URL}/products/${productId}`);
+    return this.http.delete<AdminCatalogDeletionResult>(
+      `${ADMIN_API_BASE_URL}/products/${productId}`,
+    );
   }
 
-  createVariant(productId: string, body: CreateAdminVariantRequest): Observable<AdminProductVariant> {
+  createVariant(
+    productId: string,
+    body: CreateAdminVariantRequest,
+  ): Observable<AdminProductVariant> {
     return this.http.post<AdminProductVariant>(
       `${ADMIN_API_BASE_URL}/products/${productId}/variants`,
       body,
@@ -137,20 +149,40 @@ export class AdminApiService {
     return this.http.get<AdminProductVariant>(`${ADMIN_API_BASE_URL}/variants/${variantId}`);
   }
 
-  updateVariant(variantId: string, body: UpdateAdminVariantRequest): Observable<AdminProductVariant> {
-    return this.http.patch<AdminProductVariant>(`${ADMIN_API_BASE_URL}/variants/${variantId}`, body);
+  updateVariant(
+    variantId: string,
+    body: UpdateAdminVariantRequest,
+  ): Observable<AdminProductVariant> {
+    return this.http.patch<AdminProductVariant>(
+      `${ADMIN_API_BASE_URL}/variants/${variantId}`,
+      body,
+    );
   }
 
   deleteVariant(variantId: string): Observable<AdminCatalogDeletionResult> {
-    return this.http.delete<AdminCatalogDeletionResult>(`${ADMIN_API_BASE_URL}/variants/${variantId}`);
+    return this.http.delete<AdminCatalogDeletionResult>(
+      `${ADMIN_API_BASE_URL}/variants/${variantId}`,
+    );
   }
 
-  createMedia(productId: string, body: CreateAdminProductMediaRequest): Observable<AdminProductMedia> {
-    return this.http.post<AdminProductMedia>(`${ADMIN_API_BASE_URL}/products/${productId}/media`, body);
+  createMedia(
+    productId: string,
+    body: CreateAdminProductMediaRequest,
+  ): Observable<AdminProductMedia> {
+    return this.http.post<AdminProductMedia>(
+      `${ADMIN_API_BASE_URL}/products/${productId}/media`,
+      body,
+    );
   }
 
-  updateMedia(mediaId: string, body: UpdateAdminProductMediaRequest): Observable<AdminProductMedia> {
-    return this.http.patch<AdminProductMedia>(`${ADMIN_API_BASE_URL}/product-media/${mediaId}`, body);
+  updateMedia(
+    mediaId: string,
+    body: UpdateAdminProductMediaRequest,
+  ): Observable<AdminProductMedia> {
+    return this.http.patch<AdminProductMedia>(
+      `${ADMIN_API_BASE_URL}/product-media/${mediaId}`,
+      body,
+    );
   }
 
   deleteMedia(mediaId: string): Observable<void> {
@@ -164,7 +196,11 @@ export class AdminApiService {
     );
   }
 
-  restock(variantId: string, quantity: number, reason: string): Observable<AdminInventoryMutationResponse> {
+  restock(
+    variantId: string,
+    quantity: number,
+    reason: string,
+  ): Observable<AdminInventoryMutationResponse> {
     return this.http.post<AdminInventoryMutationResponse>(
       `${ADMIN_API_BASE_URL}/inventory/${variantId}/restock`,
       { quantity, reason },
@@ -213,7 +249,9 @@ export class AdminApiService {
     );
   }
 
-  payments(query: AdminPaymentListQuery = {}): Observable<AdminPaginatedResponse<AdminPaymentListItem>> {
+  payments(
+    query: AdminPaymentListQuery = {},
+  ): Observable<AdminPaginatedResponse<AdminPaymentListItem>> {
     return this.http.get<AdminPaginatedResponse<AdminPaymentListItem>>(
       `${ADMIN_API_BASE_URL}/payments`,
       this.options(query),
@@ -271,14 +309,8 @@ export class AdminApiService {
     return this.http.post<AdminRaffleListItem>(`${ADMIN_API_BASE_URL}/raffles`, body);
   }
 
-  updateRaffle(
-    raffleId: string,
-    body: UpdateAdminRaffleRequest,
-  ): Observable<AdminRaffleListItem> {
-    return this.http.patch<AdminRaffleListItem>(
-      `${ADMIN_API_BASE_URL}/raffles/${raffleId}`,
-      body,
-    );
+  updateRaffle(raffleId: string, body: UpdateAdminRaffleRequest): Observable<AdminRaffleListItem> {
+    return this.http.patch<AdminRaffleListItem>(`${ADMIN_API_BASE_URL}/raffles/${raffleId}`, body);
   }
 
   publishRaffle(raffleId: string): Observable<AdminRaffleListItem> {
@@ -298,16 +330,13 @@ export class AdminApiService {
   }
 
   drawRaffle(raffleId: string, winningNumber: number): Observable<AdminRaffleListItem> {
-    return this.http.post<AdminRaffleListItem>(
-      `${ADMIN_API_BASE_URL}/raffles/${raffleId}/draw`,
-      { winningNumber },
-    );
+    return this.http.post<AdminRaffleListItem>(`${ADMIN_API_BASE_URL}/raffles/${raffleId}/draw`, {
+      winningNumber,
+    });
   }
 
   raffleNumbers(raffleId: string): Observable<AdminRaffleNumber[]> {
-    return this.http.get<AdminRaffleNumber[]>(
-      `${ADMIN_API_BASE_URL}/raffles/${raffleId}/numbers`,
-    );
+    return this.http.get<AdminRaffleNumber[]>(`${ADMIN_API_BASE_URL}/raffles/${raffleId}/numbers`);
   }
 
   rafflePurchases(
@@ -323,6 +352,16 @@ export class AdminApiService {
   rafflePurchase(raffleId: string, purchaseId: string): Observable<AdminRafflePurchaseDetail> {
     return this.http.get<AdminRafflePurchaseDetail>(
       `${ADMIN_API_BASE_URL}/raffles/${raffleId}/purchases/${purchaseId}`,
+    );
+  }
+
+  createManualRaffleSale(
+    raffleId: string,
+    body: CreateAdminManualRaffleSaleRequest,
+  ): Observable<AdminRafflePurchase> {
+    return this.http.post<AdminRafflePurchase>(
+      `${ADMIN_API_BASE_URL}/raffles/${raffleId}/manual-sales`,
+      body,
     );
   }
 

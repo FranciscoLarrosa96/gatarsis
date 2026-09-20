@@ -177,12 +177,7 @@ export interface AdminInventoryMutationResponse {
   updatedAt: string;
 }
 
-export type AdminInventoryMovementType =
-  | 'RESTOCK'
-  | 'RESERVE'
-  | 'RELEASE'
-  | 'SALE'
-  | 'ADJUSTMENT';
+export type AdminInventoryMovementType = 'RESTOCK' | 'RESERVE' | 'RELEASE' | 'SALE' | 'ADJUSTMENT';
 
 export interface AdminInventoryMovement {
   id: string;
@@ -204,12 +199,10 @@ export interface AdminInventoryMovementsQuery {
 }
 
 export type AdminOrderStatus =
-  | 'AWAITING_PAYMENT'
-  | 'PAYMENT_PENDING'
-  | 'PAID'
-  | 'EXPIRED'
-  | 'CANCELLED'
-  | 'REFUNDED';
+  'AWAITING_PAYMENT' | 'PAYMENT_PENDING' | 'PAID' | 'EXPIRED' | 'CANCELLED' | 'REFUNDED';
+
+export type AdminOrderPaymentSource = 'MERCADO_PAGO' | 'MANUAL';
+export type AdminOrderManualPaymentMethod = 'CASH' | 'TRANSFER' | 'OTHER';
 
 export interface AdminOrderListItem {
   id: string;
@@ -219,6 +212,8 @@ export interface AdminOrderListItem {
   createdAt: string;
   reservationExpiresAt: string;
   paidAt: string | null;
+  paymentSource?: AdminOrderPaymentSource;
+  manualPaymentMethod?: AdminOrderManualPaymentMethod | null;
 }
 
 export interface AdminOrderListQuery {
@@ -250,15 +245,9 @@ export interface AdminPaymentPreference {
   readyAt: string | null;
 }
 
-export type AdminPaymentProcessingStatus =
-  | 'RECEIVED'
-  | 'RECORDED'
-  | 'APPLIED'
-  | 'REQUIRES_REVIEW';
+export type AdminPaymentProcessingStatus = 'RECEIVED' | 'RECORDED' | 'APPLIED' | 'REQUIRES_REVIEW';
 
-export type AdminReviewResolution =
-  | 'ACKNOWLEDGED_NO_ACTION'
-  | 'MANUAL_INVESTIGATION_COMPLETE';
+export type AdminReviewResolution = 'ACKNOWLEDGED_NO_ACTION' | 'MANUAL_INVESTIGATION_COMPLETE';
 
 export interface AdminPaymentListItem {
   id: string;
@@ -289,6 +278,9 @@ export interface AdminOrderDetail {
     createdAt: string;
     reservationExpiresAt: string;
     paidAt: string | null;
+    paymentSource?: AdminOrderPaymentSource;
+    manualPaymentMethod?: AdminOrderManualPaymentMethod | null;
+    manualSaleNote?: string | null;
   };
   items: AdminOrderItemSnapshot[];
   paymentPreference: AdminPaymentPreference | null;

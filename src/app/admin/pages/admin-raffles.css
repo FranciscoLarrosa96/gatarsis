@@ -322,6 +322,141 @@
 .purchase-dialog {
   width: min(100%, 44rem);
 }
+
+.manual-sale-dialog {
+  width: min(100%, 58rem);
+  max-height: min(90vh, 54rem);
+  overflow-y: auto;
+}
+
+.manual-sale-form,
+.manual-sale-confirmation {
+  display: grid;
+  gap: 1.15rem;
+}
+
+.manual-number-picker {
+  display: grid;
+  gap: 0.8rem;
+  padding: 1rem;
+  border: 1px solid var(--adm-border);
+  border-radius: var(--adm-radius-card);
+  background: var(--adm-bg-sunken, var(--adm-bg));
+}
+
+.manual-number-picker h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.manual-selection-count {
+  min-width: 3.9rem;
+  padding: 0.4rem 0.65rem;
+  border-radius: 999px;
+  background: var(--adm-bg-raised);
+  color: var(--adm-accent);
+  font-family: var(--adm-font-mono);
+  text-align: center;
+}
+
+.manual-number-grid {
+  max-height: 15rem;
+  padding: 0.2rem;
+  overflow-y: auto;
+}
+
+.manual-number-grid .admin-number.is-selected {
+  border-color: var(--adm-accent);
+  background: var(--adm-accent);
+  color: white;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--adm-accent) 20%, transparent);
+}
+
+.manual-buyer-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.manual-note-field {
+  grid-column: 1 / -1;
+}
+
+.manual-note-field textarea {
+  resize: vertical;
+}
+
+.manual-sale-total {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.2rem 1rem;
+  align-items: end;
+  padding: 1rem 1.1rem;
+  border: 1px solid var(--adm-border-strong);
+  border-radius: var(--adm-radius-card);
+  background: var(--adm-bg-sunken, var(--adm-bg));
+}
+
+.manual-sale-total span,
+.manual-sale-summary span {
+  color: var(--adm-ink-muted);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.manual-sale-total strong {
+  grid-row: span 2;
+  color: var(--adm-accent);
+  font-size: 1.6rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.manual-sale-total small {
+  color: var(--adm-ink-muted);
+}
+
+.manual-sale-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.7rem;
+}
+
+.manual-sale-summary > div {
+  display: grid;
+  gap: 0.25rem;
+  min-width: 0;
+  padding: 0.8rem;
+  border: 1px solid var(--adm-border);
+  border-radius: 0.55rem;
+  background: var(--adm-bg-sunken, var(--adm-bg));
+}
+
+.manual-sale-summary strong {
+  overflow-wrap: anywhere;
+}
+
+.manual-sale-warning {
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.6;
+}
+
+.manual-sale-actions {
+  justify-content: flex-end;
+}
+
+.manual-purchase-origin {
+  display: block;
+  margin-top: 0.35rem;
+  color: var(--adm-accent);
+  font-size: 0.72rem;
+  font-weight: 750;
+}
+
+.field-error {
+  color: var(--adm-danger, #b42318);
+  font-weight: 700;
+}
 .purchase-body {
   display: grid;
   gap: 1.25rem;
@@ -551,5 +686,21 @@ details.purchase-block[open] > summary {
     grid-template-columns: 1fr;
     gap: 0.2rem;
   }
-}
 
+  .manual-buyer-grid,
+  .manual-sale-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .manual-sale-total {
+    grid-template-columns: 1fr;
+  }
+
+  .manual-sale-total strong {
+    grid-row: auto;
+  }
+
+  .manual-sale-actions .button {
+    flex: 1;
+  }
+}

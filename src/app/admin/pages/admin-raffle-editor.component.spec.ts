@@ -75,6 +75,99 @@ describe('AdminRaffleEditorComponent', () => {
     loadDetail(detail('CLOSED'), numbers());
   });
 
+  it('opens the manual sale dialog, selects available numbers and calculates the total', () => {
+    setup(raffleId);
+    loadDetail(detail('ACTIVE'), numbers());
+    fixture.detectChanges();
+
+    const openButton = [...fixture.nativeElement.querySelectorAll('button')].find(
+      (button: HTMLButtonElement) => button.textContent.includes('Registrar venta manual'),
+    ) as HTMLButtonElement;
+    openButton.click();
+    fixture.detectChanges();
+
+    expect(component.manualSaleOpen()).toBe(true);
+    expect(
+      fixture.nativeElement.querySelectorAll('.manual-number-grid .admin-number'),
+    ).toHaveLength(98);
+    component.toggleManualNumber(12);
+    component.toggleManualNumber(20);
+    fixture.detectChanges();
+
+    expect(component.selectedManualNumbers()).toEqual([12, 20]);
+    expect(component.manualSaleTotal()).toBe(100_000);
+    expect(fixture.nativeElement.textContent).toContain('$1.000,00');
+
+    for (const number of [0, 1, 2, 3, 4, 5, 6, 7]) component.toggleManualNumber(number);
+    component.toggleManualNumber(8);
+    expect(component.selectedManualNumbers()).toHaveLength(10);
+    expect(component.manualNumberError()).toContain('hasta 10 números');
+  });
+
+  it('confirms and submits a manual sale, then refreshes numbers, purchases and KPIs', () => {
+    setup(raffleId);
+    loadDetail(detail('ACTIVE'), numbers());
+    component.openManualSale();
+    component.toggleManualNumber(12);
+    component.toggleManualNumber(20);
+    component.manualSaleModel = {
+      buyerName: ' Juan Pérez ',
+      email: ' juan@example.com ',
+      whatsapp: ' +54 249 4000000 ',
+      paymentMethod: 'TRANSFER',
+      note: ' Transferencia recibida ',
+    };
+
+    component.reviewManualSale();
+    expect(component.manualSaleConfirming()).toBe(true);
+    expect(component.readableNumbersLabel(component.selectedManualNumbers())).toBe('12 y 20');
+    component.submitManualSale();
+
+    const request = http.expectOne(`${ADMIN_API_BASE_URL}/raffles/${raffleId}/manual-sales`);
+    expect(request.request.method).toBe('POST');
+    expect(request.request.body).toMatchObject({
+      numbers: [12, 20],
+      buyer: {
+        name: 'Juan Pérez',
+        email: 'juan@example.com',
+        whatsapp: '+54 249 4000000',
+      },
+      paymentMethod: 'TRANSFER',
+      note: 'Transferencia recibida',
+    });
+    expect(request.request.body.idempotencyKey).toEqual(expect.any(String));
+    request.flush({ rafflePurchaseId: purchaseId });
+    loadDetail(detail('ACTIVE'), numbers());
+
+    expect(component.manualSaleOpen()).toBe(false);
+    expect(component.notice()).toBe('Venta manual registrada correctamente.');
+  });
+
+  it('keeps the modal open and refreshes availability when a number was occupied', () => {
+    setup(raffleId);
+    loadDetail(detail('ACTIVE'), numbers());
+    component.openManualSale();
+    component.toggleManualNumber(12);
+    component.manualSaleModel.buyerName = 'Juan Pérez';
+    component.reviewManualSale();
+    component.submitManualSale();
+
+    http
+      .expectOne(`${ADMIN_API_BASE_URL}/raffles/${raffleId}/manual-sales`)
+      .flush(
+        { message: 'El número ya no está disponible.' },
+        { status: 409, statusText: 'Conflict' },
+      );
+    const refreshedNumbers = numbers();
+    refreshedNumbers[12] = { ...refreshedNumbers[12], status: 'RESERVED' };
+    http.expectOne(`${ADMIN_API_BASE_URL}/raffles/${raffleId}/numbers`).flush(refreshedNumbers);
+
+    expect(component.manualSaleOpen()).toBe(true);
+    expect(component.manualSaleConfirming()).toBe(false);
+    expect(component.manualSaleError()).toBeTruthy();
+    expect(component.selectedManualNumbers()).toEqual([]);
+  });
+
   it('only offers PAID/SOLD numbers and confirms a manual winner', () => {
     setup(raffleId);
     const closedRaffle = detail('CLOSED');

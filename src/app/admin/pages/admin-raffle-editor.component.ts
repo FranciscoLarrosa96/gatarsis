@@ -6,6 +6,7 @@ import { Observable, finalize, forkJoin } from 'rxjs';
 import { AdminApiService } from '../core/admin-api.service';
 import { adminErrorMessage } from '../core/admin-domain-error';
 import {
+  AdminManualRafflePaymentMethod,
   AdminRaffleDetail,
   AdminRaffleListItem,
   AdminRaffleNumber,
@@ -35,8 +36,17 @@ interface RaffleFormModel {
   drawAt: string;
 }
 
+interface ManualSaleFormModel {
+  buyerName: string;
+  email: string;
+  whatsapp: string;
+  paymentMethod: AdminManualRafflePaymentMethod;
+  note: string;
+}
+
 type LifecycleAction = 'publish' | 'pause' | 'resume' | 'close';
 type ConfirmationKind = 'close' | 'draw';
+const MAX_NUMBERS_PER_PURCHASE = 10;
 
 @Component({
   standalone: true,
@@ -80,6 +90,14 @@ type ConfirmationKind = 'close' | 'draw';
               </button>
             }
             @if (current.status === 'ACTIVE') {
+              <button
+                class="button button-primary"
+                type="button"
+                [disabled]="mutating() || current.stats.available === 0"
+                (click)="openManualSale()"
+              >
+                Registrar venta manual
+              </button>
               <button
                 class="button button-secondary"
                 type="button"
@@ -411,6 +429,14 @@ type ConfirmationKind = 'close' | 'draw';
                           <span class="badge status-{{ purchase.status.toLowerCase() }}">{{
                             purchaseStatusLabel(purchase.status)
                           }}</span>
+                          @if (purchase.paymentSource === 'MANUAL') {
+                            <small class="manual-purchase-origin">
+                              Venta manual ·
+                              {{
+                                manualPaymentMethodLabel(purchase.manualPaymentMethod || 'OTHER')
+                              }}
+                            </small>
+                          }
                         </td>
                         <td class="numeric">{{ money(purchase.totalInCents) }}</td>
                         <td class="date-cell">{{ date(purchase.createdAt) }}</td>
@@ -511,6 +537,28 @@ type ConfirmationKind = 'close' | 'draw';
                   <dt>Pago</dt>
                   <dd>{{ item.payment?.processingStatus || '—' }}</dd>
                 </div>
+                @if (manualPurchaseForNumber(item); as manualPurchase) {
+                  <div>
+                    <dt>Origen</dt>
+                    <dd><strong>Venta manual</strong></dd>
+                  </div>
+                  <div>
+                    <dt>Medio</dt>
+                    <dd>
+                      {{ manualPaymentMethodLabel(manualPurchase.manualPaymentMethod || 'OTHER') }}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>Total</dt>
+                    <dd>{{ money(manualPurchase.totalInCents) }}</dd>
+                  </div>
+                  @if (manualPurchase.manualSaleNote) {
+                    <div>
+                      <dt>Nota</dt>
+                      <dd>{{ manualPurchase.manualSaleNote }}</dd>
+                    </div>
+                  }
+                }
               </dl>
               @if (item.rafflePurchaseId) {
                 <button
@@ -545,6 +593,12 @@ type ConfirmationKind = 'close' | 'draw';
                 <span class="badge status-{{ purchase.status.toLowerCase() }}">{{
                   purchaseStatusLabel(purchase.status)
                 }}</span>
+                @if (purchase.paymentSource === 'MANUAL') {
+                  <span class="manual-purchase-origin">
+                    Venta manual ·
+                    {{ manualPaymentMethodLabel(purchase.manualPaymentMethod || 'OTHER') }}
+                  </span>
+                }
               </div>
               <button
                 class="close-button"
@@ -579,7 +633,11 @@ type ConfirmationKind = 'close' | 'draw';
                       >Pago {{ providerLabel(payment.providerStatus).toLowerCase() }}</span
                     >
                   } @else {
-                    <span class="muted">Sin pago informado</span>
+                    @if (purchase.paymentSource === 'MANUAL') {
+                      <span class="manual-purchase-origin">Sin pago de Mercado Pago</span>
+                    } @else {
+                      <span class="muted">Sin pago informado</span>
+                    }
                   }
                 </section>
               </div>
@@ -592,7 +650,8 @@ type ConfirmationKind = 'close' | 'draw';
                   <span>Pagada</span><strong>{{ date(purchase.paidAt) }}</strong>
                 </li>
                 <li>
-                  <span>Reserva vence</span><strong>{{ date(purchase.reservationExpiresAt) }}</strong>
+                  <span>Reserva vence</span
+                  ><strong>{{ date(purchase.reservationExpiresAt) }}</strong>
                 </li>
               </ol>
 
@@ -603,10 +662,9 @@ type ConfirmationKind = 'close' | 'draw';
                     @for (refund of purchase.refunds; track refund.id) {
                       <li>
                         <div class="refund-head">
-                          <span
-                            class="badge status-{{ refund.status.toLowerCase() }}"
-                            >{{ refund.status }}</span
-                          >
+                          <span class="badge status-{{ refund.status.toLowerCase() }}">{{
+                            refund.status
+                          }}</span>
                           <strong>{{ money(refund.amountInCents) }}</strong>
                           <span class="muted">{{
                             date(refund.completedAt ?? refund.createdAt)
@@ -656,6 +714,24 @@ type ConfirmationKind = 'close' | 'draw';
                       <small class="technical-enum">{{ purchase.orderStatus }}</small>
                     </dd>
                   </div>
+                  @if (purchase.paymentSource === 'MANUAL') {
+                    <div>
+                      <dt>Origen</dt>
+                      <dd>Venta manual</dd>
+                    </div>
+                    <div>
+                      <dt>Medio</dt>
+                      <dd>
+                        {{ manualPaymentMethodLabel(purchase.manualPaymentMethod || 'OTHER') }}
+                      </dd>
+                    </div>
+                    @if (purchase.manualSaleNote) {
+                      <div>
+                        <dt>Nota</dt>
+                        <dd>{{ purchase.manualSaleNote }}</dd>
+                      </div>
+                    }
+                  }
                   @if (purchase.payment; as payment) {
                     <div>
                       <dt>Payment ID MP</dt>
@@ -758,6 +834,213 @@ type ConfirmationKind = 'close' | 'draw';
         </div>
       }
 
+      @if (manualSaleOpen()) {
+        <div class="dialog-backdrop" (click)="closeManualSale()">
+          <section
+            class="dialog wide-dialog manual-sale-dialog"
+            appAdminDialog
+            (dialogDismiss)="closeManualSale()"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="manual-sale-title"
+            (click)="$event.stopPropagation()"
+          >
+            <header>
+              <div>
+                <p class="eyebrow">Venta fuera de la web</p>
+                <h2 id="manual-sale-title">
+                  {{ manualSaleConfirming() ? 'Confirmar venta manual' : 'Registrar venta manual' }}
+                </h2>
+              </div>
+              <button
+                class="close-button"
+                type="button"
+                aria-label="Cerrar"
+                [disabled]="manualSaleSubmitting()"
+                (click)="closeManualSale()"
+              >
+                ×
+              </button>
+            </header>
+
+            @if (manualSaleConfirming()) {
+              <div class="manual-sale-confirmation">
+                <div class="manual-sale-summary" aria-label="Resumen de la venta manual">
+                  <div>
+                    <span>Números</span>
+                    <strong>{{ numbersLabel(selectedManualNumbers()) }}</strong>
+                  </div>
+                  <div>
+                    <span>Comprador</span>
+                    <strong>{{ manualSaleModel.buyerName }}</strong>
+                  </div>
+                  <div>
+                    <span>Medio</span>
+                    <strong>{{ manualPaymentMethodLabel(manualSaleModel.paymentMethod) }}</strong>
+                  </div>
+                  <div>
+                    <span>Total</span>
+                    <strong>{{ money(manualSaleTotal()) }}</strong>
+                  </div>
+                </div>
+                <p class="manual-sale-warning">
+                  Vas a registrar como vendidos los números
+                  <strong>{{ readableNumbersLabel(selectedManualNumbers()) }}</strong> por
+                  <strong>{{ money(manualSaleTotal()) }}</strong> mediante
+                  {{ manualPaymentMethodLabel(manualSaleModel.paymentMethod).toLowerCase() }}.
+                </p>
+                <p class="muted">
+                  Esta operación quedará registrada como una venta manual y no generará un pago de
+                  Mercado Pago.
+                </p>
+                @if (manualSaleError()) {
+                  <p class="feedback error" role="alert">{{ manualSaleError() }}</p>
+                }
+                <div class="actions manual-sale-actions">
+                  <button
+                    class="button button-secondary"
+                    type="button"
+                    [disabled]="manualSaleSubmitting()"
+                    (click)="manualSaleConfirming.set(false)"
+                  >
+                    Volver
+                  </button>
+                  <button
+                    class="button button-primary"
+                    type="button"
+                    [disabled]="manualSaleSubmitting()"
+                    (click)="submitManualSale()"
+                  >
+                    {{ manualSaleSubmitting() ? 'Registrando...' : 'Registrar venta' }}
+                  </button>
+                </div>
+              </div>
+            } @else {
+              <form
+                #manualSaleForm="ngForm"
+                class="manual-sale-form"
+                (ngSubmit)="reviewManualSale()"
+              >
+                <section class="manual-number-picker">
+                  <div class="section-heading inline-heading">
+                    <div>
+                      <h3>Números disponibles *</h3>
+                      <p>
+                        Elegí hasta {{ maxNumbersPerPurchase }}. Sólo se muestran los que siguen
+                        disponibles.
+                      </p>
+                    </div>
+                    <strong class="manual-selection-count">
+                      {{ selectedManualNumbers().length }}/{{ maxNumbersPerPurchase }}
+                    </strong>
+                  </div>
+                  @if (availableManualSaleNumbers().length) {
+                    <div class="admin-number-grid manual-number-grid">
+                      @for (item of availableManualSaleNumbers(); track item.number) {
+                        <button
+                          type="button"
+                          class="admin-number"
+                          [class.is-selected]="isManualNumberSelected(item.number)"
+                          [attr.aria-pressed]="isManualNumberSelected(item.number)"
+                          [attr.aria-label]="'Número ' + numberLabel(item.number)"
+                          (click)="toggleManualNumber(item.number)"
+                        >
+                          {{ numberLabel(item.number) }}
+                        </button>
+                      }
+                    </div>
+                  } @else {
+                    <p class="empty compact">No quedan números disponibles.</p>
+                  }
+                  @if (manualNumberError()) {
+                    <small class="field-error" role="alert">{{ manualNumberError() }}</small>
+                  }
+                </section>
+
+                <div class="form-grid manual-buyer-grid">
+                  <label>
+                    Nombre *
+                    <input
+                      name="manualBuyerName"
+                      required
+                      maxlength="120"
+                      [(ngModel)]="manualSaleModel.buyerName"
+                    />
+                  </label>
+                  <label>
+                    Email
+                    <input
+                      name="manualBuyerEmail"
+                      type="email"
+                      maxlength="180"
+                      [(ngModel)]="manualSaleModel.email"
+                    />
+                  </label>
+                  <label>
+                    WhatsApp / teléfono
+                    <input
+                      name="manualBuyerWhatsapp"
+                      type="tel"
+                      maxlength="40"
+                      [(ngModel)]="manualSaleModel.whatsapp"
+                    />
+                  </label>
+                  <label>
+                    Medio de pago *
+                    <select
+                      name="manualPaymentMethod"
+                      required
+                      [(ngModel)]="manualSaleModel.paymentMethod"
+                    >
+                      <option value="CASH">Efectivo</option>
+                      <option value="TRANSFER">Transferencia</option>
+                      <option value="OTHER">Otro</option>
+                    </select>
+                  </label>
+                  <label class="manual-note-field">
+                    Referencia / nota
+                    <textarea
+                      name="manualSaleNote"
+                      rows="3"
+                      maxlength="500"
+                      [(ngModel)]="manualSaleModel.note"
+                    ></textarea>
+                  </label>
+                </div>
+
+                <div class="manual-sale-total">
+                  <span>Importe calculado</span>
+                  <strong>{{ money(manualSaleTotal()) }}</strong>
+                  <small>
+                    {{ selectedManualNumbers().length }} ×
+                    {{ money(raffle()?.priceInCents || 0) }}
+                  </small>
+                </div>
+                @if (manualSaleError()) {
+                  <p class="feedback error" role="alert">{{ manualSaleError() }}</p>
+                }
+                <div class="actions manual-sale-actions">
+                  <button class="button button-secondary" type="button" (click)="closeManualSale()">
+                    Cancelar
+                  </button>
+                  <button
+                    class="button button-primary"
+                    type="submit"
+                    [disabled]="
+                      manualSaleForm.invalid ||
+                      selectedManualNumbers().length === 0 ||
+                      selectedManualNumbers().length > maxNumbersPerPurchase
+                    "
+                  >
+                    Revisar venta
+                  </button>
+                </div>
+              </form>
+            }
+          </section>
+        </div>
+      }
+
       @if (confirmation()) {
         <div class="dialog-backdrop">
           <section
@@ -815,6 +1098,19 @@ export class AdminRaffleEditorComponent implements OnInit {
   readonly noticeKind = signal<'success' | 'error' | 'info'>('info');
   readonly imageFailed = signal(false);
   readonly confirmation = signal<ConfirmationKind | null>(null);
+  readonly manualSaleOpen = signal(false);
+  readonly manualSaleConfirming = signal(false);
+  readonly manualSaleSubmitting = signal(false);
+  readonly manualSaleError = signal('');
+  readonly manualNumberError = signal('');
+  readonly selectedManualNumbers = signal<number[]>([]);
+  readonly maxNumbersPerPurchase = MAX_NUMBERS_PER_PURCHASE;
+  readonly availableManualSaleNumbers = computed(() =>
+    this.numbers().filter((item) => item.status === 'AVAILABLE'),
+  );
+  readonly manualSaleTotal = computed(
+    () => this.selectedManualNumbers().length * (this.raffle()?.priceInCents ?? 0),
+  );
   readonly eligibleWinningNumbers = computed(() =>
     this.numbers()
       .filter((item) => item.status === 'SOLD' && item.order?.status === 'PAID')
@@ -824,6 +1120,8 @@ export class AdminRaffleEditorComponent implements OnInit {
   readonly id: string | null;
   dirty = false;
   model: RaffleFormModel = emptyModel();
+  manualSaleModel: ManualSaleFormModel = emptyManualSaleModel();
+  private manualSaleIdempotencyKey = '';
 
   constructor(
     private readonly api: AdminApiService,
@@ -869,7 +1167,7 @@ export class AdminRaffleEditorComponent implements OnInit {
       });
   }
 
-  loadOperationalData(): void {
+  loadOperationalData(showSuccessNotice = true): void {
     if (!this.id || this.loading()) return;
     this.loading.set(true);
     forkJoin({
@@ -883,7 +1181,7 @@ export class AdminRaffleEditorComponent implements OnInit {
           this.raffle.set(raffle);
           this.numbers.set(numbers);
           this.purchases.set(purchases.items);
-          this.showNotice('Datos actualizados.', 'success');
+          if (showSuccessNotice) this.showNotice('Datos actualizados.', 'success');
         },
         error: (error: unknown) => this.showError(error, 'No pudimos actualizar los datos.'),
       });
@@ -932,6 +1230,114 @@ export class AdminRaffleEditorComponent implements OnInit {
 
   requestClose(): void {
     this.confirmation.set('close');
+  }
+
+  openManualSale(): void {
+    if (this.raffle()?.status !== 'ACTIVE') return;
+    this.manualSaleModel = emptyManualSaleModel();
+    this.selectedManualNumbers.set([]);
+    this.manualSaleError.set('');
+    this.manualNumberError.set('');
+    this.manualSaleConfirming.set(false);
+    this.manualSaleIdempotencyKey = crypto.randomUUID();
+    this.manualSaleOpen.set(true);
+  }
+
+  closeManualSale(): void {
+    if (this.manualSaleSubmitting()) return;
+    this.manualSaleOpen.set(false);
+    this.manualSaleConfirming.set(false);
+    this.manualSaleError.set('');
+  }
+
+  isManualNumberSelected(number: number): boolean {
+    return this.selectedManualNumbers().includes(number);
+  }
+
+  toggleManualNumber(number: number): void {
+    const selected = this.selectedManualNumbers();
+    if (selected.includes(number)) {
+      this.selectedManualNumbers.set(selected.filter((item) => item !== number));
+      this.manualNumberError.set('');
+      return;
+    }
+    if (selected.length >= MAX_NUMBERS_PER_PURCHASE) {
+      this.manualNumberError.set(
+        `Podés registrar hasta ${MAX_NUMBERS_PER_PURCHASE} números por venta.`,
+      );
+      return;
+    }
+    this.selectedManualNumbers.set([...selected, number].sort((a, b) => a - b));
+    this.manualNumberError.set('');
+  }
+
+  reviewManualSale(): void {
+    if (!this.selectedManualNumbers().length) {
+      this.manualNumberError.set('Elegí al menos un número disponible.');
+      return;
+    }
+    if (!this.manualSaleModel.buyerName.trim()) return;
+    this.manualSaleError.set('');
+    this.manualSaleConfirming.set(true);
+  }
+
+  submitManualSale(): void {
+    if (
+      !this.id ||
+      this.manualSaleSubmitting() ||
+      this.raffle()?.status !== 'ACTIVE' ||
+      !this.selectedManualNumbers().length ||
+      !this.manualSaleModel.buyerName.trim()
+    ) {
+      return;
+    }
+
+    const body = {
+      numbers: this.selectedManualNumbers(),
+      buyer: {
+        name: this.manualSaleModel.buyerName.trim(),
+        ...(this.manualSaleModel.email.trim() ? { email: this.manualSaleModel.email.trim() } : {}),
+        ...(this.manualSaleModel.whatsapp.trim()
+          ? { whatsapp: this.manualSaleModel.whatsapp.trim() }
+          : {}),
+      },
+      paymentMethod: this.manualSaleModel.paymentMethod,
+      ...(this.manualSaleModel.note.trim() ? { note: this.manualSaleModel.note.trim() } : {}),
+      idempotencyKey: this.manualSaleIdempotencyKey,
+    };
+
+    this.manualSaleSubmitting.set(true);
+    this.manualSaleError.set('');
+    this.api
+      .createManualRaffleSale(this.id, body)
+      .pipe(finalize(() => this.manualSaleSubmitting.set(false)))
+      .subscribe({
+        next: () => {
+          this.manualSaleOpen.set(false);
+          this.manualSaleConfirming.set(false);
+          this.showNotice('Venta manual registrada correctamente.', 'success');
+          this.loadOperationalData(false);
+        },
+        error: (error: unknown) => {
+          this.manualSaleError.set(
+            adminErrorMessage(
+              error,
+              'No pudimos registrar la venta. Verificá que todos los números sigan disponibles.',
+            ),
+          );
+          this.refreshManualAvailability();
+        },
+      });
+  }
+
+  manualPaymentMethodLabel(method: AdminManualRafflePaymentMethod): string {
+    return { CASH: 'Efectivo', TRANSFER: 'Transferencia', OTHER: 'Otro' }[method];
+  }
+
+  readableNumbersLabel(numbers: number[]): string {
+    if (numbers.length < 2) return this.numberLabel(numbers[0]);
+    const labels = numbers.map((number) => this.numberLabel(number));
+    return `${labels.slice(0, -1).join(', ')} y ${labels.at(-1)}`;
   }
 
   requestDraw(): void {
@@ -985,6 +1391,17 @@ export class AdminRaffleEditorComponent implements OnInit {
       next: (detail) => this.purchaseDetail.set(detail),
       error: (error: unknown) => this.showError(error, 'No pudimos cargar la compra.'),
     });
+  }
+
+  manualPurchaseForNumber(item: AdminRaffleNumber): AdminRafflePurchase | null {
+    if (!item.rafflePurchaseId) return null;
+    return (
+      this.purchases().find(
+        (purchase) =>
+          purchase.rafflePurchaseId === item.rafflePurchaseId &&
+          purchase.paymentSource === 'MANUAL',
+      ) ?? null
+    );
   }
 
   confirmationText(): string {
@@ -1063,6 +1480,25 @@ export class AdminRaffleEditorComponent implements OnInit {
     };
   }
 
+  private refreshManualAvailability(): void {
+    if (!this.id) return;
+    this.api.raffleNumbers(this.id).subscribe({
+      next: (numbers) => {
+        this.numbers.set(numbers);
+        const available = new Set(
+          numbers.filter((item) => item.status === 'AVAILABLE').map((item) => item.number),
+        );
+        const selected = this.selectedManualNumbers();
+        const stillAvailable = selected.filter((number) => available.has(number));
+        this.selectedManualNumbers.set(stillAvailable);
+        if (stillAvailable.length !== selected.length) {
+          this.manualSaleConfirming.set(false);
+          this.manualNumberError.set('Actualizamos la grilla: uno o más números ya no están disponibles.');
+        }
+      },
+    });
+  }
+
   private showNotice(message: string, kind: 'success' | 'error' | 'info'): void {
     this.notice.set(message);
     this.noticeKind.set(kind);
@@ -1081,6 +1517,16 @@ function emptyModel(): RaffleFormModel {
     imageUrl: '',
     price: '',
     drawAt: '',
+  };
+}
+
+function emptyManualSaleModel(): ManualSaleFormModel {
+  return {
+    buyerName: '',
+    email: '',
+    whatsapp: '',
+    paymentMethod: 'CASH',
+    note: '',
   };
 }
 

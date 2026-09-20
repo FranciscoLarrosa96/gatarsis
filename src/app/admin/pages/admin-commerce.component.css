@@ -133,6 +133,26 @@
   width: min(100%, 38rem);
 }
 
+.manual-origin {
+  display: block;
+  margin-top: 0.4rem;
+  color: var(--adm-accent);
+  font-size: 0.72rem;
+  font-weight: 750;
+}
+
+.table-origin {
+  white-space: nowrap;
+}
+
+.manual-payment-fact {
+  border-color: color-mix(in srgb, var(--adm-accent) 45%, var(--adm-border));
+}
+
+.manual-payment-fact small {
+  color: var(--adm-ink-muted);
+}
+
 .refund-note {
   display: block;
   margin-top: 0.3rem;
