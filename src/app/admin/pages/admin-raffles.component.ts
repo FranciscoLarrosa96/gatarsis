@@ -1,6 +1,6 @@
 import { Component, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { finalize } from 'rxjs';
 
 import { AdminApiService } from '../core/admin-api.service';
@@ -20,6 +20,10 @@ import { formatAdminDate, formatArsFromCents, raffleStatusLabel } from '../core/
         </div>
         <a class="button button-primary" routerLink="/admin/raffles/new">Nueva rifa</a>
       </header>
+
+      @if (notice()) {
+        <p class="feedback success" aria-live="polite">{{ notice() }}</p>
+      }
 
       <section class="raffle-overview" aria-label="Resumen de rifas">
         <article>
@@ -144,6 +148,7 @@ export class AdminRafflesComponent implements OnInit {
   readonly raffles = signal<AdminRaffleListItem[]>([]);
   readonly loading = signal(true);
   readonly error = signal(false);
+  readonly notice = signal('');
   search = '';
   status: '' | AdminRaffleStatus = '';
 
@@ -158,7 +163,13 @@ export class AdminRafflesComponent implements OnInit {
     );
   }
 
-  constructor(private readonly api: AdminApiService) {}
+  constructor(
+    private readonly api: AdminApiService,
+    private readonly router: Router,
+  ) {
+    const notice = this.router.getCurrentNavigation()?.extras.state?.['notice'];
+    if (typeof notice === 'string') this.notice.set(notice);
+  }
 
   ngOnInit(): void {
     this.load();

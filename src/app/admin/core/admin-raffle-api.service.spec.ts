@@ -109,4 +109,12 @@ describe('Admin raffle API contracts', () => {
     expect(request.request.method).toBe('POST');
     expect(request.request.body).toEqual(body);
   });
+
+  it('uses the protected raffle delete endpoint without sending a body', () => {
+    api.deleteRaffle('raffle-id').subscribe();
+    const request = http.expectOne(`${ADMIN_API_BASE_URL}/raffles/raffle-id`);
+
+    expect(request.request.method).toBe('DELETE');
+    expect(request.request.body).toBeNull();
+  });
 });

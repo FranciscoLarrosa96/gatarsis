@@ -311,6 +311,43 @@
 .raffle-history article:last-child {
   border-bottom: 0;
 }
+
+.raffle-delete-zone {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+}
+
+.raffle-delete-zone .section-heading {
+  gap: 0.3rem;
+}
+
+.raffle-delete-zone h2,
+.raffle-delete-zone p {
+  margin: 0;
+}
+
+.raffle-delete-zone small {
+  color: var(--adm-ink-muted);
+}
+
+.raffle-delete-dialog {
+  width: min(100%, 34rem);
+  border-color: color-mix(in srgb, var(--adm-critical) 38%, var(--adm-border));
+}
+
+.delete-confirmation-field {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.delete-confirmation-field input {
+  font-family: var(--adm-font-mono);
+  letter-spacing: 0.08em;
+}
+
+.raffle-delete-actions {
+  justify-content: flex-end;
+}
 .raffle-history article > span {
   color: var(--adm-ink-muted);
 }
@@ -762,6 +799,15 @@ details.purchase-block[open] > summary {
   .raffle-history article {
     grid-template-columns: 1fr;
     gap: 0.2rem;
+  }
+
+  .raffle-delete-zone {
+    grid-template-columns: 1fr;
+  }
+
+  .raffle-delete-zone > .button,
+  .raffle-delete-actions .button {
+    width: 100%;
   }
 
   .raffle-image-row {

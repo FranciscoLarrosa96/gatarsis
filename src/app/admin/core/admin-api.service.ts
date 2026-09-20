@@ -355,6 +355,10 @@ export class AdminApiService {
     );
   }
 
+  deleteRaffle(raffleId: string): Observable<void> {
+    return this.http.delete<void>(`${ADMIN_API_BASE_URL}/raffles/${raffleId}`);
+  }
+
   createManualRaffleSale(
     raffleId: string,
     body: CreateAdminManualRaffleSaleRequest,

@@ -103,6 +103,82 @@ describe('AdminRaffleEditorComponent', () => {
     loadDetail(detail('CLOSED'), numbers());
   });
 
+  it('requires the exact confirmation, shows loading and navigates after deleting', async () => {
+    setup(raffleId);
+    loadDetail(detail('DRAFT'), numbers());
+    fixture.detectChanges();
+    const router = TestBed.inject(Router);
+    const navigate = vi.spyOn(router, 'navigate').mockResolvedValue(true);
+
+    component.requestDeleteRaffle();
+    fixture.detectChanges();
+    const confirmationInput = fixture.nativeElement.querySelector(
+      'input[name="deleteRaffleConfirmation"]',
+    ) as HTMLInputElement;
+    const confirmButton = () =>
+      [...fixture.nativeElement.querySelectorAll('button')].find((button: HTMLButtonElement) =>
+        button.textContent.includes('Eliminar permanentemente'),
+      ) as HTMLButtonElement;
+    expect(confirmButton().disabled).toBe(true);
+
+    confirmationInput.value = 'eliminar';
+    confirmationInput.dispatchEvent(new Event('input'));
+    await fixture.whenStable();
+    fixture.detectChanges();
+    expect(confirmButton().disabled).toBe(true);
+    confirmationInput.value = 'ELIMINAR';
+    confirmationInput.dispatchEvent(new Event('input'));
+    await fixture.whenStable();
+    fixture.detectChanges();
+    expect(confirmButton().disabled).toBe(false);
+
+    const deleteButton = confirmButton();
+    deleteButton.click();
+    fixture.detectChanges();
+    expect(component.deleting()).toBe(true);
+    expect(deleteButton.textContent).toContain('Eliminando...');
+    const request = http.expectOne(`${ADMIN_API_BASE_URL}/raffles/${raffleId}`);
+    expect(request.request.method).toBe('DELETE');
+    request.flush(null, { status: 204, statusText: 'No Content' });
+
+    expect(component.deleteDialogOpen()).toBe(false);
+    expect(navigate).toHaveBeenCalledWith(['/admin/raffles'], {
+      state: { notice: 'Rifa eliminada correctamente.' },
+    });
+  });
+
+  it('keeps the delete dialog open with a clear message when backend rejects activity', () => {
+    setup(raffleId);
+    loadDetail(detail('ACTIVE'), numbers());
+    component.requestDeleteRaffle();
+    component.deleteConfirmation = 'ELIMINAR';
+    component.deleteRaffle();
+
+    http
+      .expectOne(`${ADMIN_API_BASE_URL}/raffles/${raffleId}`)
+      .flush({ code: 'RAFFLE_HAS_ACTIVITY' }, { status: 409, statusText: 'Conflict' });
+
+    expect(component.deleteDialogOpen()).toBe(true);
+    expect(component.deleting()).toBe(false);
+    expect(component.deleteError()).toContain('ventas o pagos asociados');
+  });
+
+  it('recovers after an unexpected delete error', () => {
+    setup(raffleId);
+    loadDetail(detail('DRAFT'), numbers());
+    component.requestDeleteRaffle();
+    component.deleteConfirmation = 'ELIMINAR';
+    component.deleteRaffle();
+
+    http
+      .expectOne(`${ADMIN_API_BASE_URL}/raffles/${raffleId}`)
+      .flush({}, { status: 500, statusText: 'Server Error' });
+
+    expect(component.deleteDialogOpen()).toBe(true);
+    expect(component.deleting()).toBe(false);
+    expect(component.deleteError()).toBe('No pudimos eliminar la rifa. Intentá nuevamente.');
+  });
+
   it('opens the manual sale dialog, selects available numbers and calculates the total', () => {
     setup(raffleId);
     loadDetail(detail('ACTIVE'), numbers());

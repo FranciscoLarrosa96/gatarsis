@@ -1,3 +1,4 @@
+import { HttpErrorResponse } from '@angular/common/http';
 import { Component, OnInit, computed, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -538,6 +539,26 @@ const MAX_RAFFLE_IMAGES = 8;
             } @empty {
               <p class="muted">Sin actividad registrada.</p>
             }
+          </section>
+
+          <section class="editor-section danger-zone raffle-delete-zone">
+            <div class="section-heading">
+              <p class="eyebrow">Zona peligrosa</p>
+              <h2>Eliminar rifa</h2>
+              <p>
+                Elimina permanentemente esta rifa y los datos de prueba asociados que el backend
+                considere seguros de borrar.
+              </p>
+              <small>Las rifas con ventas o pagos reales no pueden eliminarse.</small>
+            </div>
+            <button
+              class="button button-danger"
+              type="button"
+              [disabled]="deleting()"
+              (click)="requestDeleteRaffle()"
+            >
+              Eliminar rifa
+            </button>
           </section>
         }
       }
@@ -1110,6 +1131,64 @@ const MAX_RAFFLE_IMAGES = 8;
         </div>
       }
 
+      @if (deleteDialogOpen() && raffle(); as current) {
+        <div class="dialog-backdrop" (click)="closeDeleteDialog()">
+          <section
+            class="dialog raffle-delete-dialog"
+            appAdminDialog
+            (dialogDismiss)="closeDeleteDialog()"
+            role="alertdialog"
+            aria-modal="true"
+            aria-labelledby="delete-raffle-title"
+            aria-describedby="delete-raffle-description"
+            (click)="$event.stopPropagation()"
+          >
+            <header>
+              <div>
+                <p class="eyebrow">Acción irreversible</p>
+                <h2 id="delete-raffle-title">Eliminar rifa</h2>
+              </div>
+            </header>
+            <p id="delete-raffle-description">
+              Esta acción eliminará permanentemente la rifa <strong>“{{ current.title }}”</strong> y
+              sus datos de prueba asociados. Esta acción no se puede deshacer.
+            </p>
+            <label class="delete-confirmation-field">
+              Escribí <strong>ELIMINAR</strong> para confirmar
+              <input
+                name="deleteRaffleConfirmation"
+                autocomplete="off"
+                spellcheck="false"
+                [disabled]="deleting()"
+                [(ngModel)]="deleteConfirmation"
+                placeholder="ELIMINAR"
+              />
+            </label>
+            @if (deleteError()) {
+              <p class="feedback error" role="alert">{{ deleteError() }}</p>
+            }
+            <div class="actions raffle-delete-actions">
+              <button
+                class="button button-secondary"
+                type="button"
+                [disabled]="deleting()"
+                (click)="closeDeleteDialog()"
+              >
+                Cancelar
+              </button>
+              <button
+                class="button button-danger"
+                type="button"
+                [disabled]="deleteConfirmation !== 'ELIMINAR' || deleting()"
+                (click)="deleteRaffle()"
+              >
+                {{ deleting() ? 'Eliminando...' : 'Eliminar permanentemente' }}
+              </button>
+            </div>
+          </section>
+        </div>
+      }
+
       @if (confirmation()) {
         <div class="dialog-backdrop">
           <section
@@ -1172,6 +1251,9 @@ export class AdminRaffleEditorComponent implements OnInit {
   readonly manualSaleSubmitting = signal(false);
   readonly manualSaleError = signal('');
   readonly manualNumberError = signal('');
+  readonly deleteDialogOpen = signal(false);
+  readonly deleting = signal(false);
+  readonly deleteError = signal('');
   readonly selectedManualNumbers = signal<number[]>([]);
   readonly maxNumbersPerPurchase = MAX_NUMBERS_PER_PURCHASE;
   readonly maxRaffleImages = MAX_RAFFLE_IMAGES;
@@ -1191,6 +1273,7 @@ export class AdminRaffleEditorComponent implements OnInit {
   dirty = false;
   model: RaffleFormModel = emptyModel();
   manualSaleModel: ManualSaleFormModel = emptyManualSaleModel();
+  deleteConfirmation = '';
   private manualSaleIdempotencyKey = '';
 
   constructor(
@@ -1300,6 +1383,45 @@ export class AdminRaffleEditorComponent implements OnInit {
 
   requestClose(): void {
     this.confirmation.set('close');
+  }
+
+  requestDeleteRaffle(): void {
+    if (!this.id || !this.raffle()) return;
+    this.deleteConfirmation = '';
+    this.deleteError.set('');
+    this.deleteDialogOpen.set(true);
+  }
+
+  closeDeleteDialog(): void {
+    if (this.deleting()) return;
+    this.deleteDialogOpen.set(false);
+    this.deleteConfirmation = '';
+    this.deleteError.set('');
+  }
+
+  deleteRaffle(): void {
+    if (!this.id || this.deleting() || this.deleteConfirmation !== 'ELIMINAR') return;
+    this.deleting.set(true);
+    this.deleteError.set('');
+    this.api
+      .deleteRaffle(this.id)
+      .pipe(finalize(() => this.deleting.set(false)))
+      .subscribe({
+        next: () => {
+          this.dirty = false;
+          this.deleteDialogOpen.set(false);
+          void this.router.navigate(['/admin/raffles'], {
+            state: { notice: 'Rifa eliminada correctamente.' },
+          });
+        },
+        error: (error: unknown) => {
+          this.deleteError.set(
+            error instanceof HttpErrorResponse && error.status === 409
+              ? 'No se puede eliminar esta rifa porque tiene ventas o pagos asociados.'
+              : adminErrorMessage(error, 'No pudimos eliminar la rifa. Intentá nuevamente.'),
+          );
+        },
+      });
   }
 
   openManualSale(): void {
