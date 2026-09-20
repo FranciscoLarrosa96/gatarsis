@@ -27,7 +27,7 @@ describe('AdminRaffleEditorComponent', () => {
       title: 'Rifa solidaria',
       prizeName: 'Air Fryer',
       description: 'A beneficio de rescates',
-      imageUrl: 'https://cdn.test/premio.jpg',
+      imageUrls: ['https://cdn.test/premio.jpg', 'https://cdn.test/detalle.jpg'],
       price: '5000',
       drawAt: '2026-12-20T17:00',
     };
@@ -41,6 +41,7 @@ describe('AdminRaffleEditorComponent', () => {
       title: 'Rifa solidaria',
       prizeName: 'Air Fryer',
       priceInCents: 500_000,
+      imageUrls: ['https://cdn.test/premio.jpg', 'https://cdn.test/detalle.jpg'],
     });
     request.flush({ id: raffleId, status: 'DRAFT' });
 
@@ -59,6 +60,33 @@ describe('AdminRaffleEditorComponent', () => {
     fixture.detectChanges();
     expect(fixture.nativeElement.textContent).toContain('Compradora Gatarsis');
     expect(fixture.nativeElement.textContent).toContain('compradora@example.com');
+  });
+
+  it('adds, reorders, removes and validates prize images without losing the principal position', () => {
+    setup(null);
+    component.model.imageUrls = ['https://cdn.test/principal.jpg', 'https://cdn.test/detalle.jpg'];
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain('Principal');
+    component.moveRaffleImage(1, -1);
+    expect(component.model.imageUrls).toEqual([
+      'https://cdn.test/detalle.jpg',
+      'https://cdn.test/principal.jpg',
+    ]);
+
+    component.addRaffleImage();
+    expect(component.validImages()).toBe(false);
+    expect(component.raffleImageError('http://cdn.test/insegura.jpg')).toContain('HTTPS');
+    component.model.imageUrls[2] = 'https://cdn.test/tercera.jpg';
+    expect(component.validImages()).toBe(true);
+
+    component.markImagePreviewFailed(2);
+    expect(component.imagePreviewFailed(2)).toBe(true);
+    component.removeRaffleImage(1);
+    expect(component.model.imageUrls).toEqual([
+      'https://cdn.test/detalle.jpg',
+      'https://cdn.test/tercera.jpg',
+    ]);
   });
 
   it('asks for confirmation before closing and then uses the lifecycle endpoint', () => {
@@ -230,6 +258,7 @@ describe('AdminRaffleEditorComponent', () => {
       prizeName: 'Air Fryer',
       description: 'Ayuda para rescates',
       imageUrl: null,
+      imageUrls: [],
       priceInCents: 50_000,
       status,
       drawAt: '2026-12-20T20:00:00.000Z',

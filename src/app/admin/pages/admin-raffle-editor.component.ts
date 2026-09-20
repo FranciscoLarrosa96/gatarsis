@@ -31,7 +31,7 @@ interface RaffleFormModel {
   title: string;
   prizeName: string;
   description: string;
-  imageUrl: string;
+  imageUrls: string[];
   price: string;
   drawAt: string;
 }
@@ -47,6 +47,7 @@ interface ManualSaleFormModel {
 type LifecycleAction = 'publish' | 'pause' | 'resume' | 'close';
 type ConfirmationKind = 'close' | 'draw';
 const MAX_NUMBERS_PER_PURCHASE = 10;
+const MAX_RAFFLE_IMAGES = 8;
 
 @Component({
   standalone: true,
@@ -192,18 +193,6 @@ const MAX_NUMBERS_PER_PURCHASE = 10;
                       placeholder="Contá para qué rescates será destinada esta ayuda."
                     ></textarea>
                   </label>
-                  <label class="wide">
-                    Imagen del premio (HTTPS)
-                    <input
-                      name="imageUrl"
-                      type="url"
-                      pattern="https://.*"
-                      maxlength="2048"
-                      [(ngModel)]="model.imageUrl"
-                      (ngModelChange)="imageFailed.set(false); markDirty()"
-                      placeholder="https://res.cloudinary.com/..."
-                    />
-                  </label>
                   <label>
                     Precio por número (ARS)
                     <input
@@ -229,6 +218,99 @@ const MAX_NUMBERS_PER_PURCHASE = 10;
                     />
                   </label>
                 </div>
+                <section class="raffle-admin-images" aria-labelledby="raffle-images-title">
+                  <div class="section-heading inline-heading">
+                    <div>
+                      <h3 id="raffle-images-title">Imágenes del premio</h3>
+                      <p>
+                        La primera imagen se usa como portada del premio. Máximo
+                        {{ maxRaffleImages }}.
+                      </p>
+                    </div>
+                    <button
+                      class="button button-secondary"
+                      type="button"
+                      [disabled]="model.imageUrls.length >= maxRaffleImages"
+                      (click)="addRaffleImage()"
+                    >
+                      + Agregar imagen
+                    </button>
+                  </div>
+
+                  <div class="raffle-image-list">
+                    @for (url of model.imageUrls; track $index; let index = $index) {
+                      <article class="raffle-image-row">
+                        <div class="raffle-image-preview">
+                          @if (url && !raffleImageError(url) && !imagePreviewFailed(index)) {
+                            <img
+                              [src]="url"
+                              [alt]="'Vista previa de la imagen ' + (index + 1)"
+                              (load)="clearImagePreviewFailure(index)"
+                              (error)="markImagePreviewFailed(index)"
+                            />
+                          } @else {
+                            <span>{{
+                              imagePreviewFailed(index) ? 'No pudimos cargarla' : 'Sin preview'
+                            }}</span>
+                          }
+                        </div>
+                        <label>
+                          <span class="raffle-image-label">
+                            Foto {{ index + 1 }}
+                            @if (index === 0) {
+                              <strong>Principal</strong>
+                            }
+                          </span>
+                          <input
+                            [name]="'imageUrl-' + index"
+                            type="url"
+                            required
+                            maxlength="2048"
+                            [(ngModel)]="model.imageUrls[index]"
+                            (ngModelChange)="onRaffleImageChanged(index)"
+                            placeholder="https://res.cloudinary.com/..."
+                          />
+                          @if (raffleImageError(url); as error) {
+                            <small class="field-error">{{ error }}</small>
+                          } @else if (duplicateRaffleImage(index)) {
+                            <small class="field-error">Esta imagen ya está incluida.</small>
+                          } @else if (imagePreviewFailed(index)) {
+                            <small class="field-error"
+                              >La URL es válida, pero la imagen no respondió.</small
+                            >
+                          }
+                        </label>
+                        <div class="raffle-image-actions" aria-label="Ordenar imagen">
+                          <button
+                            type="button"
+                            title="Mover hacia arriba"
+                            [disabled]="index === 0"
+                            (click)="moveRaffleImage(index, -1)"
+                          >
+                            ↑
+                          </button>
+                          <button
+                            type="button"
+                            title="Mover hacia abajo"
+                            [disabled]="index === model.imageUrls.length - 1"
+                            (click)="moveRaffleImage(index, 1)"
+                          >
+                            ↓
+                          </button>
+                          <button
+                            type="button"
+                            class="remove-image"
+                            title="Quitar imagen"
+                            [disabled]="model.imageUrls.length === 1"
+                            (click)="removeRaffleImage(index)"
+                          >
+                            Quitar
+                          </button>
+                        </div>
+                      </article>
+                    }
+                  </div>
+                </section>
                 <div class="raffle-fixed-rules">
                   <div>
                     <span>Numeración</span><strong>00–99</strong
@@ -246,25 +328,12 @@ const MAX_NUMBERS_PER_PURCHASE = 10;
                 <div class="section-actions">
                   <button
                     class="button button-primary"
-                    [disabled]="raffleForm.invalid || saving() || !validPrice()"
+                    [disabled]="raffleForm.invalid || saving() || !validPrice() || !validImages()"
                   >
                     {{ saving() ? 'Guardando...' : id ? 'Guardar cambios' : 'Crear borrador' }}
                   </button>
                 </div>
               </div>
-              <aside class="raffle-image-preview">
-                @if (model.imageUrl && !imageFailed()) {
-                  <img
-                    [src]="model.imageUrl"
-                    [alt]="model.prizeName || 'Vista previa del premio'"
-                    (error)="imageFailed.set(true)"
-                  />
-                } @else {
-                  <span>{{
-                    imageFailed() ? 'No pudimos cargar esa imagen.' : 'Vista previa del premio'
-                  }}</span>
-                }
-              </aside>
             </section>
           </form>
         }
@@ -1096,7 +1165,7 @@ export class AdminRaffleEditorComponent implements OnInit {
   readonly mutating = signal(false);
   readonly notice = signal('');
   readonly noticeKind = signal<'success' | 'error' | 'info'>('info');
-  readonly imageFailed = signal(false);
+  readonly imagePreviewFailures = signal<ReadonlySet<number>>(new Set());
   readonly confirmation = signal<ConfirmationKind | null>(null);
   readonly manualSaleOpen = signal(false);
   readonly manualSaleConfirming = signal(false);
@@ -1105,6 +1174,7 @@ export class AdminRaffleEditorComponent implements OnInit {
   readonly manualNumberError = signal('');
   readonly selectedManualNumbers = signal<number[]>([]);
   readonly maxNumbersPerPurchase = MAX_NUMBERS_PER_PURCHASE;
+  readonly maxRaffleImages = MAX_RAFFLE_IMAGES;
   readonly availableManualSaleNumbers = computed(() =>
     this.numbers().filter((item) => item.status === 'AVAILABLE'),
   );
@@ -1188,7 +1258,7 @@ export class AdminRaffleEditorComponent implements OnInit {
   }
 
   save(): void {
-    if (this.saving() || !this.validPrice()) return;
+    if (this.saving() || !this.validPrice() || !this.validImages()) return;
     const body = this.requestBody();
     this.saving.set(true);
     const request = this.id ? this.api.updateRaffle(this.id, body) : this.api.createRaffle(body);
@@ -1420,6 +1490,85 @@ export class AdminRaffleEditorComponent implements OnInit {
     return Number.isFinite(value) && value > 0;
   }
 
+  validImages(): boolean {
+    return (
+      this.model.imageUrls.length > 0 &&
+      this.model.imageUrls.length <= MAX_RAFFLE_IMAGES &&
+      this.model.imageUrls.every((url) => !this.raffleImageError(url)) &&
+      normalizedAdminImageUrls(this.model.imageUrls).length === this.model.imageUrls.length
+    );
+  }
+
+  duplicateRaffleImage(index: number): boolean {
+    const url = this.model.imageUrls[index]?.trim();
+    return (
+      !!url &&
+      this.model.imageUrls.some(
+        (candidate, candidateIndex) => candidateIndex !== index && candidate.trim() === url,
+      )
+    );
+  }
+
+  raffleImageError(url: string): string | null {
+    const value = url.trim();
+    if (!value) return 'Ingresá una URL para esta imagen.';
+    try {
+      const parsed = new URL(value);
+      return parsed.protocol === 'https:' ? null : 'La imagen debe usar una URL HTTPS.';
+    } catch {
+      return 'Ingresá una URL válida.';
+    }
+  }
+
+  addRaffleImage(): void {
+    if (this.model.imageUrls.length >= MAX_RAFFLE_IMAGES) return;
+    this.model.imageUrls.push('');
+    this.markDirty();
+  }
+
+  removeRaffleImage(index: number): void {
+    if (this.model.imageUrls.length === 1) return;
+    this.model.imageUrls.splice(index, 1);
+    this.imagePreviewFailures.set(new Set());
+    this.markDirty();
+  }
+
+  moveRaffleImage(index: number, direction: -1 | 1): void {
+    const target = index + direction;
+    if (target < 0 || target >= this.model.imageUrls.length) return;
+    [this.model.imageUrls[index], this.model.imageUrls[target]] = [
+      this.model.imageUrls[target],
+      this.model.imageUrls[index],
+    ];
+    this.imagePreviewFailures.set(new Set());
+    this.markDirty();
+  }
+
+  onRaffleImageChanged(index: number): void {
+    this.imagePreviewFailures.update((failed) => {
+      const next = new Set(failed);
+      next.delete(index);
+      return next;
+    });
+    this.markDirty();
+  }
+
+  imagePreviewFailed(index: number): boolean {
+    return this.imagePreviewFailures().has(index);
+  }
+
+  markImagePreviewFailed(index: number): void {
+    this.imagePreviewFailures.update((failed) => new Set(failed).add(index));
+  }
+
+  clearImagePreviewFailure(index: number): void {
+    this.imagePreviewFailures.update((failed) => {
+      const next = new Set(failed);
+      next.delete(index);
+      return next;
+    });
+  }
+
   statusLabel(status: AdminRaffleStatus): string {
     return raffleStatusLabel(status);
   }
@@ -1474,7 +1623,7 @@ export class AdminRaffleEditorComponent implements OnInit {
       title: this.model.title.trim(),
       prizeName: this.model.prizeName.trim(),
       description: this.model.description.trim() || null,
-      imageUrl: this.model.imageUrl.trim() || null,
+      imageUrls: normalizedAdminImageUrls(this.model.imageUrls),
       priceInCents: Math.round(Number(this.model.price.replace(',', '.')) * 100),
       drawAt: this.model.drawAt ? new Date(this.model.drawAt).toISOString() : null,
     };
@@ -1493,7 +1642,9 @@ export class AdminRaffleEditorComponent implements OnInit {
         this.selectedManualNumbers.set(stillAvailable);
         if (stillAvailable.length !== selected.length) {
           this.manualSaleConfirming.set(false);
-          this.manualNumberError.set('Actualizamos la grilla: uno o más números ya no están disponibles.');
+          this.manualNumberError.set(
+            'Actualizamos la grilla: uno o más números ya no están disponibles.',
+          );
         }
       },
     });
@@ -1514,7 +1665,7 @@ function emptyModel(): RaffleFormModel {
     title: 'Rifa solidaria',
     prizeName: '',
     description: '',
-    imageUrl: '',
+    imageUrls: [''],
     price: '',
     drawAt: '',
   };
@@ -1535,7 +1686,7 @@ function toFormModel(raffle: AdminRaffleDetail): RaffleFormModel {
     title: raffle.title,
     prizeName: raffle.prizeName,
     description: raffle.description ?? '',
-    imageUrl: raffle.imageUrl ?? '',
+    imageUrls: raffleImageUrlsForForm(raffle),
     price: (raffle.priceInCents / 100).toString(),
     drawAt: toLocalDateTime(raffle.drawAt),
   };
@@ -1546,6 +1697,17 @@ function toLocalDateTime(value: string | null): string {
   const date = new Date(value);
   const local = new Date(date.getTime() - date.getTimezoneOffset() * 60_000);
   return local.toISOString().slice(0, 16);
+}
+
+function normalizedAdminImageUrls(urls: string[]): string[] {
+  return [...new Set(urls.map((url) => url.trim()).filter(Boolean))];
+}
+
+function raffleImageUrlsForForm(raffle: AdminRaffleDetail): string[] {
+  const urls = normalizedAdminImageUrls(
+    raffle.imageUrls?.length ? raffle.imageUrls : raffle.imageUrl ? [raffle.imageUrl] : [],
+  );
+  return urls.length ? urls : [''];
 }
 
 function actionSuccessMessage(action: LifecycleAction): string {

@@ -92,8 +92,8 @@ import { formatAdminDate, formatArsFromCents, raffleStatusLabel } from '../core/
                 <tr>
                   <td>
                     <div class="raffle-table-title">
-                      @if (raffle.imageUrl) {
-                        <img [src]="raffle.imageUrl" [alt]="raffle.prizeName" />
+                      @if (raffleCoverUrl(raffle); as coverUrl) {
+                        <img [src]="coverUrl" [alt]="raffle.prizeName" />
                       }
                       <div>
                         <strong>{{ raffle.title }}</strong
@@ -182,6 +182,10 @@ export class AdminRafflesComponent implements OnInit {
 
   statusLabel(status: AdminRaffleStatus): string {
     return raffleStatusLabel(status);
+  }
+
+  raffleCoverUrl(raffle: AdminRaffleListItem): string | null {
+    return raffle.imageUrls?.[0] ?? raffle.imageUrl ?? null;
   }
 
   money(value: number): string {

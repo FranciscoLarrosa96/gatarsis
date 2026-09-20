@@ -51,7 +51,7 @@ describe('Admin raffle API contracts', () => {
       title: 'Rifa solidaria',
       prizeName: 'Premio',
       description: 'Ayuda para rescates',
-      imageUrl: 'https://cdn.test/premio.jpg',
+      imageUrls: ['https://cdn.test/premio.jpg', 'https://cdn.test/detalle.jpg'],
       priceInCents: 500_000,
       drawAt: '2026-12-20T20:00:00.000Z',
     };

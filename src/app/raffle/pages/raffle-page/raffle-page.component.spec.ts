@@ -4,6 +4,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 
 import { PUBLIC_API_BASE_URL } from '../../../shop/core/commerce.models';
+import { PhotoSwipeService } from '../../../core/services/photo-swipe.service';
 import { RaffleCheckoutStore } from '../../core/raffle-checkout.store';
 import { PublicRaffle, PublicRaffleNumber } from '../../core/raffle.models';
 import { RafflePageComponent } from './raffle-page.component';
@@ -18,6 +19,7 @@ const raffle: PublicRaffle = {
   prizeName: 'Air Fryer Zenith',
   description: 'Cada número ayuda a sostener rescates.',
   imageUrl: null,
+  imageUrls: [],
   priceInCents: 500_000,
   status: 'ACTIVE',
   drawAt: null,
@@ -58,22 +60,49 @@ describe('RafflePageComponent', () => {
     expect(numberButtons[65].getAttribute('aria-label')).toBe('Número 65 vendido');
   });
 
-  it('opens a loaded prize photo in a modal without altering number selection', () => {
+  it('changes the hero image from thumbnails and opens the gallery used by Casos', async () => {
     setup();
-    loadActive(numbers(), { ...raffle, imageUrl: 'https://example.test/prize.jpg' });
-    const dialog = fixture.nativeElement.querySelector('.raffle-prize-zoom') as HTMLDialogElement;
-    const show = vi.fn();
-    dialog.showModal = show;
-    component.openPrizeZoom();
-    expect(show).not.toHaveBeenCalled();
+    const photoSwipe = TestBed.inject(PhotoSwipeService);
+    const open = vi.spyOn(photoSwipe, 'open').mockResolvedValue();
+    loadActive(numbers(), {
+      ...raffle,
+      imageUrls: [
+        'https://example.test/prize-1.jpg',
+        'https://example.test/prize-2.jpg',
+        'https://example.test/prize-3.jpg',
+      ],
+    });
+
+    expect(fixture.nativeElement.querySelectorAll('.raffle-prize-thumbnail')).toHaveLength(3);
+    component.selectPrizeImage(1);
+    expect(component.selectedPrizeImage()?.src).toBe('https://example.test/prize-2.jpg');
     component.imageLoaded.set(true);
     fixture.detectChanges();
-    fixture.nativeElement.querySelector('.raffle-prize-zoom-trigger').click();
-    expect(show).toHaveBeenCalledOnce();
+    await component.openPrizeGallery();
+
+    expect(open).toHaveBeenCalledOnce();
+    expect(open.mock.calls[0][0].map((image) => image.src)).toEqual([
+      'https://example.test/prize-1.jpg',
+      'https://example.test/prize-2.jpg',
+      'https://example.test/prize-3.jpg',
+    ]);
+    expect(open).toHaveBeenCalledWith(expect.any(Array), 1);
     expect(component.selectedCount()).toBe(0);
-    component.imageFailed.set(true);
-    component.openPrizeZoom();
-    expect(show).toHaveBeenCalledOnce();
+  });
+
+  it('keeps legacy imageUrl as a single-image fallback without unnecessary thumbnails', () => {
+    setup();
+    loadActive(numbers(), {
+      ...raffle,
+      imageUrl: 'https://example.test/legacy-prize.jpg',
+      imageUrls: undefined,
+    });
+
+    expect(component.prizeImages().map((image) => image.src)).toEqual([
+      'https://example.test/legacy-prize.jpg',
+    ]);
+    expect(fixture.nativeElement.querySelector('.raffle-prize-image')).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('.raffle-prize-thumbnails')).toBeNull();
   });
 
   it('keeps the original long description in a collapsed details block and opens it without changing selection', () => {

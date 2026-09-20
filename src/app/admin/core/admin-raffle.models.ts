@@ -13,7 +13,8 @@ export interface AdminRaffleListItem {
   id: string;
   title: string;
   prizeName: string;
-  imageUrl: string | null;
+  imageUrl?: string | null;
+  imageUrls?: string[];
   priceInCents: number;
   status: AdminRaffleStatus;
   drawAt: string | null;
@@ -129,7 +130,7 @@ export interface CreateAdminRaffleRequest {
   title: string;
   prizeName: string;
   description?: string | null;
-  imageUrl?: string | null;
+  imageUrls: string[];
   priceInCents: number;
   drawAt?: string | null;
 }

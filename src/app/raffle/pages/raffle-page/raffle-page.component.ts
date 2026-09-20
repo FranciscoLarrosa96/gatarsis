@@ -16,6 +16,8 @@ import { RouterLink } from '@angular/router';
 import { EMPTY, catchError, finalize, forkJoin, switchMap } from 'rxjs';
 
 import { formatArs } from '../../../core/utils/format-ars';
+import { RescueImage } from '../../../core/models/rescue-image.model';
+import { PhotoSwipeService } from '../../../core/services/photo-swipe.service';
 import { AppFooterComponent } from '../../../shared/components/app-footer/app-footer.component';
 import { AppHeaderComponent } from '../../../shared/components/app-header/app-header.component';
 import { BottomNavigationComponent } from '../../../shared/components/bottom-navigation/bottom-navigation.component';
@@ -138,7 +140,7 @@ const dateTimeFormatter = new Intl.DateTimeFormat('es-AR', {
                 <p
                   class="text-left text-xs font-extrabold uppercase tracking-[0.15em] text-[var(--color-accent)]"
                 >
-                  {{ currentRaffle.status === 'DRAWN' ? 'Rifa finalizada' : currentRaffle.title }}
+                  {{ currentRaffle.status === 'DRAWN' ? 'Rifa finalizada' : '' }}
                 </p>
                 <h1 class="mt-3 text-4xl font-black leading-[1.02] sm:text-5xl lg:text-6xl">
                   {{ currentRaffle.prizeName }}
@@ -152,6 +154,7 @@ const dateTimeFormatter = new Intl.DateTimeFormat('es-AR', {
                       'Cada número que elegís nos ayuda a seguir sosteniendo rescates.'
                   }}
                 </p>
+
                 <div class="raffle-highlights" aria-label="Datos rápidos de la rifa">
                   <span>{{ currentStats().total }} números en total</span>
                   @if (currentRaffle.status === 'ACTIVE' || currentRaffle.status === 'PAUSED') {
@@ -263,63 +266,96 @@ const dateTimeFormatter = new Intl.DateTimeFormat('es-AR', {
                   <app-icon name="gift" class="size-3.5" />
                   Premio
                 </span>
-                @if (!imageFailed() && currentRaffle.imageUrl) {
-                  @if (!imageLoaded()) {
-                    <div
-                      class="raffle-prize-skeleton animate-pulse bg-[var(--color-surface-strong)]"
-                      aria-hidden="true"
-                    ></div>
-                  }
-                  <img
-                    [src]="currentRaffle.imageUrl"
-                    [alt]="'Premio de la rifa: ' + currentRaffle.prizeName"
-                    class="raffle-prize-image transition-opacity duration-300"
-                    [class.opacity-0]="!imageLoaded()"
-                    (load)="imageLoaded.set(true)"
-                    (error)="imageFailed.set(true)"
-                  />
-                  <button
-                    type="button"
-                    class="raffle-prize-zoom-trigger"
-                    [disabled]="!imageLoaded()"
-                    [attr.aria-label]="'Ampliar foto del premio: ' + currentRaffle.prizeName"
-                    (click)="openPrizeZoom()"
-                  >
-                    <span>＋ Tocar para ampliar</span>
-                  </button>
-                } @else {
-                  <div class="grid h-full min-h-64 place-items-center p-8 text-center">
-                    <div>
+                @if (selectedPrizeImage(); as selectedImage) {
+                  @if (!isPrizeImageFailed(selectedImage.src)) {
+                    <button
+                      type="button"
+                      class="raffle-prize-main group"
+                      [disabled]="!imageLoaded()"
+                      [attr.aria-label]="
+                        'Ampliar imagen ' +
+                        (selectedPrizeImageIndex() + 1) +
+                        ' de ' +
+                        prizeImages().length +
+                        ' del premio ' +
+                        currentRaffle.prizeName
+                      "
+                      (click)="openPrizeGallery()"
+                    >
+                      @if (!imageLoaded()) {
+                        <span
+                          class="raffle-prize-skeleton animate-pulse bg-[var(--color-surface-strong)]"
+                          aria-hidden="true"
+                        ></span>
+                      }
+                      <img
+                        [src]="selectedImage.src"
+                        [alt]="selectedImage.alt"
+                        class="raffle-prize-image"
+                        [class.is-loaded]="imageLoaded()"
+                        (load)="imageLoaded.set(true)"
+                        (error)="markPrizeImageFailed(selectedImage.src)"
+                      />
+                      <span class="raffle-prize-zoom-trigger" aria-hidden="true">
+                        <app-icon name="expand" class="size-4" />
+                        Ampliar
+                      </span>
+                      @if (prizeImages().length > 1) {
+                        <span class="raffle-prize-counter" aria-hidden="true">
+                          {{ selectedPrizeImageIndex() + 1 }} / {{ prizeImages().length }}
+                        </span>
+                      }
+                    </button>
+                  } @else {
+                    <div class="raffle-prize-fallback">
                       <app-icon name="gift" class="mx-auto size-14 text-[var(--color-accent)]" />
                       <p class="mt-4 text-center font-black">{{ currentRaffle.prizeName }}</p>
+                      <small>No pudimos cargar esta imagen.</small>
                     </div>
+                  }
+
+                  @if (prizeImages().length > 1) {
+                    <div
+                      class="raffle-prize-thumbnails"
+                      aria-label="Galería de imágenes del premio"
+                    >
+                      @for (image of prizeImages(); track image.src; let index = $index) {
+                        <button
+                          type="button"
+                          class="raffle-prize-thumbnail"
+                          [class.is-active]="selectedPrizeImageIndex() === index"
+                          [attr.aria-current]="selectedPrizeImageIndex() === index ? 'true' : null"
+                          [attr.aria-label]="
+                            'Ver imagen ' + (index + 1) + ' de ' + prizeImages().length
+                          "
+                          (click)="selectPrizeImage(index)"
+                        >
+                          @if (!isPrizeImageFailed(image.src)) {
+                            <img
+                              [src]="image.src"
+                              [alt]="''"
+                              loading="lazy"
+                              (error)="markPrizeImageFailed(image.src)"
+                            />
+                          } @else {
+                            <app-icon name="gift" class="size-5" />
+                          }
+                          @if (selectedPrizeImageIndex() === index) {
+                            <span>Actual</span>
+                          }
+                        </button>
+                      }
+                    </div>
+                  }
+                } @else {
+                  <div class="raffle-prize-fallback">
+                    <app-icon name="gift" class="mx-auto size-14 text-[var(--color-accent)]" />
+                    <p class="mt-4 text-center font-black">{{ currentRaffle.prizeName }}</p>
                   </div>
                 }
               </figure>
             </div>
           </section>
-
-          <dialog
-            #prizeZoom
-            class="raffle-prize-zoom"
-            [attr.aria-label]="'Foto ampliada: ' + currentRaffle.prizeName"
-            (click)="$event.target === prizeZoom && prizeZoom.close()"
-          >
-            <div class="raffle-prize-zoom-content">
-              <header>
-                <h2>{{ currentRaffle.prizeName }}</h2>
-                <button type="button" aria-label="Cerrar foto ampliada" (click)="prizeZoom.close()">
-                  ×
-                </button>
-              </header>
-              @if (currentRaffle.imageUrl) {
-                <img
-                  [src]="currentRaffle.imageUrl"
-                  [alt]="'Foto ampliada del premio: ' + currentRaffle.prizeName"
-                />
-              }
-            </div>
-          </dialog>
 
           @if (currentRaffle.description && currentRaffle.description.trim()) {
             <section
@@ -757,15 +793,15 @@ const dateTimeFormatter = new Intl.DateTimeFormat('es-AR', {
     </div>
     <app-bottom-navigation />
   `,
-  styleUrls: ['./raffle-page.component.css', './raffle-motion.css', './raffle-prize-zoom.css'],
+  styleUrls: ['./raffle-page.component.css', './raffle-motion.css'],
 })
 export class RafflePageComponent implements OnInit {
-  @ViewChild('prizeZoom') private prizeZoom?: ElementRef<HTMLDialogElement>;
   @ViewChild('prizeDetails') private prizeDetails?: ElementRef<HTMLDetailsElement>;
   @ViewChild('buyerNameInput') private buyerNameInput?: ElementRef<HTMLInputElement>;
 
   private readonly api = inject(PublicRaffleApiService);
   private readonly checkoutStore = inject(RaffleCheckoutStore);
+  private readonly photoSwipe = inject(PhotoSwipeService);
   private readonly destroyRef = inject(DestroyRef);
 
   readonly maxNumbers = MAX_NUMBERS;
@@ -786,7 +822,22 @@ export class RafflePageComponent implements OnInit {
   readonly phase = signal<PurchasePhase>('IDLE');
   readonly reservation = signal<RaffleReservationResponse | null>(null);
   readonly imageLoaded = signal(false);
-  readonly imageFailed = signal(false);
+  readonly failedPrizeImages = signal<ReadonlySet<string>>(new Set());
+  readonly selectedPrizeImageIndex = signal(0);
+  readonly prizeImages = computed<RescueImage[]>(() => {
+    const raffle = this.raffle();
+    if (!raffle) return [];
+    const urls = normalizedRaffleImageUrls(raffle);
+    return urls.map((src, index) => ({
+      src,
+      alt: `${raffle.prizeName}, imagen ${index + 1} de ${urls.length}`,
+      width: 1600,
+      height: 1200,
+    }));
+  });
+  readonly selectedPrizeImage = computed(
+    () => this.prizeImages()[this.selectedPrizeImageIndex()] ?? null,
+  );
 
   readonly buyerForm = new FormGroup({
     name: new FormControl('', {
@@ -882,6 +933,9 @@ export class RafflePageComponent implements OnInit {
       )
       .subscribe({
         next: ({ raffle, numbers }) => {
+          this.selectedPrizeImageIndex.set(0);
+          this.imageLoaded.set(false);
+          this.failedPrizeImages.set(new Set());
           this.raffle.set(raffle);
           this.applyNumbers(numbers.numbers, numbers.status);
           this.numbersLoaded.set(true);
@@ -970,10 +1024,33 @@ export class RafflePageComponent implements OnInit {
     });
   }
 
-  openPrizeZoom(): void {
-    if (!this.imageLoaded() || this.imageFailed() || !this.raffle()?.imageUrl) return;
-    const dialog = this.prizeZoom?.nativeElement;
-    if (dialog && !dialog.open) dialog.showModal();
+  selectPrizeImage(index: number): void {
+    if (!this.prizeImages()[index] || index === this.selectedPrizeImageIndex()) return;
+    this.imageLoaded.set(false);
+    this.selectedPrizeImageIndex.set(index);
+  }
+
+  isPrizeImageFailed(src: string): boolean {
+    return this.failedPrizeImages().has(src);
+  }
+
+  markPrizeImageFailed(src: string): void {
+    this.failedPrizeImages.update((failed) => new Set(failed).add(src));
+    this.imageLoaded.set(false);
+  }
+
+  async openPrizeGallery(): Promise<void> {
+    if (!this.imageLoaded()) return;
+    const availableImages = this.prizeImages().filter(
+      (image) => !this.failedPrizeImages().has(image.src),
+    );
+    const selected = this.selectedPrizeImage();
+    if (!selected || !availableImages.length) return;
+    const index = Math.max(
+      0,
+      availableImages.findIndex((image) => image.src === selected.src),
+    );
+    await this.photoSwipe.open(availableImages, index);
   }
 
   pay(): void {
@@ -1342,4 +1419,13 @@ export class RafflePageComponent implements OnInit {
   private statusLabel(status: RaffleNumberStatus): string {
     return { AVAILABLE: 'Disponible', RESERVED: 'Reservado', SOLD: 'Vendido' }[status];
   }
+}
+
+function normalizedRaffleImageUrls(raffle: PublicRaffle): string[] {
+  const candidates = raffle.imageUrls?.length
+    ? raffle.imageUrls
+    : raffle.imageUrl
+      ? [raffle.imageUrl]
+      : [];
+  return [...new Set(candidates.map((url) => url.trim()).filter(Boolean))];
 }

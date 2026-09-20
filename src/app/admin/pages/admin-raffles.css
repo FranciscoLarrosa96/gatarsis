@@ -67,7 +67,7 @@
 }
 
 .raffle-editor-grid {
-  grid-template-columns: minmax(0, 1fr) 18rem;
+  grid-template-columns: minmax(0, 1fr);
   align-items: start;
 }
 
@@ -77,7 +77,7 @@
 
 .raffle-image-preview {
   display: grid;
-  width: 100%;
+  width: 8rem;
   aspect-ratio: 4 / 3;
   place-items: center;
   overflow: hidden;
@@ -86,6 +86,83 @@
   background: var(--adm-bg-sunken);
   color: var(--adm-ink-muted);
   text-align: center;
+}
+
+.raffle-admin-images {
+  display: grid;
+  gap: 0.9rem;
+  margin-top: 1rem;
+  padding: 1rem;
+  border: 1px solid var(--adm-border);
+  border-radius: var(--adm-radius-card);
+  background: var(--adm-bg-sunken);
+}
+
+.raffle-admin-images h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.raffle-image-list {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.raffle-image-row {
+  display: grid;
+  grid-template-columns: 8rem minmax(0, 1fr) auto;
+  gap: 0.9rem;
+  align-items: center;
+  padding: 0.75rem;
+  border: 1px solid var(--adm-border);
+  border-radius: 0.65rem;
+  background: var(--adm-bg-raised);
+}
+
+.raffle-image-row label {
+  min-width: 0;
+}
+
+.raffle-image-label {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.raffle-image-label strong {
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--adm-accent) 14%, var(--adm-bg-raised));
+  padding: 0.2rem 0.5rem;
+  color: var(--adm-accent);
+  font-family: var(--adm-font-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.raffle-image-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.35rem;
+}
+
+.raffle-image-actions button {
+  min-width: 2.35rem;
+  min-height: 2.35rem;
+  border: 1px solid var(--adm-border);
+  border-radius: 0.45rem;
+  background: var(--adm-bg-raised);
+  font-weight: 800;
+}
+
+.raffle-image-actions button:not(:disabled):hover {
+  border-color: var(--adm-accent);
+  color: var(--adm-accent);
+}
+
+.raffle-image-actions .remove-image {
+  color: var(--adm-critical);
 }
 
 .raffle-image-preview img {
@@ -685,6 +762,24 @@ details.purchase-block[open] > summary {
   .raffle-history article {
     grid-template-columns: 1fr;
     gap: 0.2rem;
+  }
+
+  .raffle-image-row {
+    grid-template-columns: 5.5rem minmax(0, 1fr);
+    align-items: start;
+  }
+
+  .raffle-image-preview {
+    width: 5.5rem;
+  }
+
+  .raffle-image-actions {
+    grid-column: 1 / -1;
+    justify-content: stretch;
+  }
+
+  .raffle-image-actions button {
+    flex: 1;
   }
 
   .manual-buyer-grid,

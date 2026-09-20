@@ -14,7 +14,8 @@ export interface PublicRaffle {
   title: string;
   prizeName: string;
   description: string;
-  imageUrl: string | null;
+  imageUrl?: string | null;
+  imageUrls?: string[];
   priceInCents: number;
   status: PublicRaffleStatus;
   drawAt: string | null;
