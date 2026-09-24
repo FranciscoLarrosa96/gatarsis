@@ -255,39 +255,45 @@ type CaseSort = 'name-asc' | 'name-desc';
         src="images/extra/paw.png"
         alt=""
         aria-hidden="true"
-        class="cases-decor-paw cases-decor-paw--hero"
+        class="cases-decor-paw cases-decor-paw--hero page-decor"
+        style="--decor-delay: 250ms; --drift-duration: 10s"
       />
       <img
         src="images/extra/corazoncito-empty.png"
         alt=""
         aria-hidden="true"
-        class="cases-decor-heart"
+        class="cases-decor-heart page-decor"
+        style="--decor-delay: 550ms; --drift-duration: 7s"
       />
       <span
         aria-hidden="true"
-        class="cases-decor-dots cases-decor-dots--top"
+        class="cases-decor-dots cases-decor-dots--top page-decor"
+        style="--decor-delay: 400ms; --drift-duration: 12s"
       ></span>
       <span
         aria-hidden="true"
-        class="cases-decor-dots cases-decor-dots--left hidden md:block"
+        class="cases-decor-dots cases-decor-dots--left page-decor hidden md:block"
+        style="--decor-delay: 650ms; --drift-duration: 13s"
       ></span>
       <div class="relative z-10 mx-auto max-w-7xl px-4 py-10 sm:px-6 md:py-16 lg:px-8">
-        <div appReveal class="max-w-2xl">
-          <h1 class="text-5xl font-black leading-[0.98] md:text-6xl">
+        <div class="max-w-2xl">
+          <h1 class="page-intro page-intro--title text-5xl font-black leading-[0.98] md:text-6xl">
             Sus historias
             <span class="hidden align-middle text-[var(--color-accent)] sm:inline-flex"
-              ><app-icon name="heart" class="ml-2 size-9 md:size-10"
+              ><app-icon name="heart" class="page-heartbeat ml-2 size-9 md:size-10"
             /></span>
           </h1>
-          <p class="mt-4 max-w-xl text-lg leading-7 text-[var(--color-text-muted)]">
+          <p
+            class="page-intro mt-4 max-w-xl text-lg leading-7 text-[var(--color-text-muted)]"
+            style="--intro-step: 1"
+          >
             Seguí de cerca su evolución, tratamientos y recuperación desde el momento de su rescate.
           </p>
         </div>
 
         <div
-          appReveal
-          [appRevealDelay]="80"
-          class="mt-9 flex justify-end md:absolute md:right-8 md:top-[13.5rem] md:mt-0"
+          class="page-intro mt-9 flex justify-end md:absolute md:right-8 md:top-[13.5rem] md:mt-0"
+          style="--intro-step: 2"
         >
           <label class="shrink-0">
             <span class="sr-only">Ordenar historias</span>
@@ -304,9 +310,8 @@ type CaseSort = 'name-asc' | 'name-desc';
         </div>
 
         <div
-          appReveal
-          [appRevealDelay]="120"
-          class="-mx-4 mt-3 flex gap-3 overflow-x-auto overscroll-x-contain px-4 py-2 sm:mx-0 sm:px-0"
+          class="page-intro -mx-4 mt-3 flex gap-3 overflow-x-auto overscroll-x-contain px-4 py-2 sm:mx-0 sm:px-0"
+          style="--intro-step: 3"
           aria-label="Filtrar casos"
         >
           @for (filter of filters; track filter.value) {
@@ -332,53 +337,62 @@ type CaseSort = 'name-asc' | 'name-desc';
               src="images/extra/paw.png"
               alt=""
               aria-hidden="true"
-              class="cases-decor-paw cases-decor-paw--cards-left hidden md:block"
+              class="cases-decor-paw cases-decor-paw--cards-left page-decor hidden md:block"
+              style="--decor-delay: 620ms; --drift-duration: 10.5s"
             />
             <img
               src="images/extra/paw.png"
               alt=""
               aria-hidden="true"
-              class="cases-decor-paw cases-decor-paw--cards-right hidden md:block"
+              class="cases-decor-paw cases-decor-paw--cards-right page-decor hidden md:block"
+              style="--decor-delay: 740ms; --drift-duration: 12s"
             />
             <img
               src="images/extra/paw.png"
               alt=""
               aria-hidden="true"
-              class="cases-decor-paw cases-decor-paw--cards-upper-right hidden md:block"
+              class="cases-decor-paw cases-decor-paw--cards-upper-right page-decor hidden md:block"
+              style="--decor-delay: 860ms; --drift-duration: 13.5s"
             />
             <img
               src="images/extra/paw.png"
               alt=""
               aria-hidden="true"
-              class="cases-decor-paw cases-decor-paw--cards-middle-left hidden md:block"
+              class="cases-decor-paw cases-decor-paw--cards-middle-left page-decor hidden md:block"
+              style="--decor-delay: 980ms; --drift-duration: 9s"
             />
             <img
               src="images/extra/paw.png"
               alt=""
               aria-hidden="true"
-              class="cases-decor-paw cases-decor-paw--cards-middle-right hidden md:block"
+              class="cases-decor-paw cases-decor-paw--cards-middle-right page-decor hidden md:block"
+              style="--decor-delay: 1100ms; --drift-duration: 10.5s"
             />
             <img
               src="images/extra/paw.png"
               alt=""
               aria-hidden="true"
-              class="cases-decor-paw cases-decor-paw--cards-bottom-left hidden md:block"
+              class="cases-decor-paw cases-decor-paw--cards-bottom-left page-decor hidden md:block"
+              style="--decor-delay: 1220ms; --drift-duration: 12s"
             />
             <img
               src="images/extra/paw.png"
               alt=""
               aria-hidden="true"
-              class="cases-decor-paw cases-decor-paw--cards-bottom-middle hidden md:block"
+              class="cases-decor-paw cases-decor-paw--cards-bottom-middle page-decor hidden md:block"
+              style="--decor-delay: 1340ms; --drift-duration: 13.5s"
             />
             <img
               src="images/extra/paw.png"
               alt=""
               aria-hidden="true"
-              class="cases-decor-paw cases-decor-paw--cards-bottom-right hidden md:block"
+              class="cases-decor-paw cases-decor-paw--cards-bottom-right page-decor hidden md:block"
+              style="--decor-delay: 1460ms; --drift-duration: 9s"
             />
             <span
               aria-hidden="true"
-              class="cases-decor-dots cases-decor-dots--cards hidden md:block"
+              class="cases-decor-dots cases-decor-dots--cards page-decor hidden md:block"
+              style="--decor-delay: 700ms; --drift-duration: 14s"
             ></span>
             <div class="relative z-10 grid gap-7 md:grid-cols-2 lg:grid-cols-3">
               @for (item of filteredCases(); track item.slug) {
@@ -433,7 +447,7 @@ export class CasesPageComponent {
 
   protected filterClass(value: CaseFilter): string {
     const baseClasses =
-      'inline-flex min-h-12 shrink-0 items-center gap-2 rounded-full border px-5 text-sm font-bold transition';
+      'inline-flex min-h-12 shrink-0 items-center gap-2 rounded-full border px-5 text-sm font-bold transition active:scale-[0.97]';
     const stateClasses =
       this.activeFilter() === value
         ? 'bg-[var(--color-accent)] text-white border-[var(--color-accent)] shadow-sm'

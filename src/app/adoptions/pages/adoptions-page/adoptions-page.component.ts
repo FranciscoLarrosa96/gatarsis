@@ -20,6 +20,7 @@ import { AppFooterComponent } from '../../../shared/components/app-footer/app-fo
 import { AppHeaderComponent } from '../../../shared/components/app-header/app-header.component';
 import { BottomNavigationComponent } from '../../../shared/components/bottom-navigation/bottom-navigation.component';
 import { IconComponent } from '../../../shared/components/icon/icon.component';
+import { RevealOnScrollDirective } from '../../../shared/directives/reveal-on-scroll.directive';
 import { ADOPTION_CONFIG } from '../../core/adoption.config';
 import { AdoptionApiService } from '../../core/adoption-api.service';
 import {
@@ -161,6 +162,7 @@ const adoptionSchema = schema<AdoptionFormModel>((p) => {
     BottomNavigationComponent,
     IconComponent,
     AdoptableCatsComponent,
+    RevealOnScrollDirective,
   ],
   templateUrl: './adoptions-page.component.html',
   styleUrl: './adoptions-page.component.css',

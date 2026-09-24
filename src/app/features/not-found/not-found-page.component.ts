@@ -11,13 +11,22 @@ import { BottomNavigationComponent } from '../../shared/components/bottom-naviga
   template: `
     <app-header />
     <main id="contenido" class="mx-auto max-w-3xl px-4 py-20 text-center sm:px-6">
-      <h1 class="text-4xl font-black">No encontramos esta página.</h1>
-      <p class="mt-4 text-[var(--color-text-muted)]">
+      <img
+        src="images/extra/paw.png"
+        alt=""
+        aria-hidden="true"
+        class="page-intro page-intro--pop mx-auto mb-6 w-16 -rotate-12 opacity-40"
+      />
+      <h1 class="page-intro page-intro--title text-4xl font-black" style="--intro-step: 1">
+        No encontramos esta página.
+      </h1>
+      <p class="page-intro mt-4 text-[var(--color-text-muted)]" style="--intro-step: 2">
         El enlace puede haber cambiado o el contenido todavía no está cargado.
       </p>
       <a
         routerLink="/"
-        class="button-primary mt-8 inline-flex min-h-12 items-center justify-center rounded-full px-8 font-extrabold"
+        style="--intro-step: 3"
+        class="page-intro button-primary mt-8 inline-flex min-h-12 items-center justify-center rounded-full px-8 font-extrabold"
       >
         Volver al inicio
       </a>

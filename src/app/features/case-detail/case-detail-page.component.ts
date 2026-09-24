@@ -143,13 +143,13 @@ import { RevealOnScrollDirective } from '../../shared/directives/reveal-on-scrol
     <main id="contenido" class="case-detail-page pb-28 md:pb-0">
       @if (caseData(); as item) {
         <section class="case-detail-shell relative mx-auto max-w-7xl px-4 py-6 sm:px-6 md:py-12 lg:px-8">
-          <img src="images/extra/paw.png" alt="" aria-hidden="true" class="case-detail-decor case-detail-paw case-detail-paw--top" />
-          <img src="images/extra/paw.png" alt="" aria-hidden="true" class="case-detail-decor case-detail-paw case-detail-paw--bottom" />
-          <img src="images/extra/corazoncito-empty.png" alt="" aria-hidden="true" class="case-detail-decor case-detail-heart" />
-          <span aria-hidden="true" class="case-detail-decor case-detail-dots"></span>
+          <img src="images/extra/paw.png" alt="" aria-hidden="true" class="case-detail-decor case-detail-paw case-detail-paw--top page-decor" style="--decor-delay: 300ms; --drift-duration: 10s" />
+          <img src="images/extra/paw.png" alt="" aria-hidden="true" class="case-detail-decor case-detail-paw case-detail-paw--bottom page-decor" style="--decor-delay: 700ms; --drift-duration: 12s" />
+          <img src="images/extra/corazoncito-empty.png" alt="" aria-hidden="true" class="case-detail-decor case-detail-heart page-decor" style="--decor-delay: 550ms; --drift-duration: 7s" />
+          <span aria-hidden="true" class="case-detail-decor case-detail-dots page-decor" style="--decor-delay: 450ms; --drift-duration: 13s"></span>
           <a
             routerLink="/casos"
-            class="case-back-link inline-flex items-center gap-2 text-sm font-bold text-[var(--color-text-muted)] hover:text-[var(--color-accent)]"
+            class="case-back-link page-intro inline-flex items-center gap-2 text-sm font-bold text-[var(--color-text-muted)] hover:text-[var(--color-accent)]"
           >
             <app-icon name="arrow" class="size-4 rotate-180" />
             Casos
@@ -157,24 +157,32 @@ import { RevealOnScrollDirective } from '../../shared/directives/reveal-on-scrol
 
           <div class="mt-6 grid gap-8 lg:grid-cols-[1fr_360px] lg:items-start">
             <div>
-              <div appReveal class="case-intro mb-7">
-                <div class="flex flex-wrap gap-2">
+              <div class="case-intro mb-7">
+                <div class="page-intro flex flex-wrap gap-2" style="--intro-step: 1">
                   @for (status of item.statuses; track status) {
                     <app-status-badge [status]="status" />
                   }
                 </div>
-                <h1 class="mt-5 text-5xl font-black leading-tight sm:text-6xl">{{ item.name }}</h1>
-                <p class="case-summary mt-4 max-w-3xl text-lg text-[var(--color-text-muted)] text-justify">
+                <h1
+                  class="page-intro page-intro--title mt-5 text-5xl font-black leading-tight sm:text-6xl"
+                  style="--intro-step: 2"
+                >
+                  {{ item.name }}
+                </h1>
+                <p
+                  style="--intro-step: 3"
+                  class="case-summary page-intro mt-4 max-w-3xl text-lg text-[var(--color-text-muted)] text-justify"
+                >
                   {{ item.summary }}
                 </p>
                 @if (item.updatedAt) {
-                  <p class="mt-4 text-sm text-[var(--color-text-muted)]">
+                  <p class="page-intro mt-4 text-sm text-[var(--color-text-muted)]" style="--intro-step: 4">
                     Actualizado el {{ formatDate(item.updatedAt) }}
                   </p>
                 }
               </div>
 
-              <div appReveal [appRevealDelay]="80" class="case-gallery-wrap">
+              <div class="case-gallery-wrap page-intro page-intro--pop" style="--intro-step: 4">
                 <app-case-gallery [cover]="item.coverImage" [gallery]="item.gallery" />
               </div>
 
@@ -253,9 +261,8 @@ import { RevealOnScrollDirective } from '../../shared/directives/reveal-on-scrol
             </div>
 
             <aside
-              appReveal="right"
-              [appRevealDelay]="120"
-              class="hidden lg:sticky lg:top-24 lg:block"
+              style="--intro-step: 5"
+              class="page-intro page-intro--right hidden lg:sticky lg:top-24 lg:block"
             >
               <app-donation-card
                 title="¿Querés ayudar?"

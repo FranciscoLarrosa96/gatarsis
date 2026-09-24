@@ -716,6 +716,137 @@ a:focus-visible {
   transform: none;
 }
 
+/*
+ * Page intro: load choreography for secondary page heroes (Home and Rifa own theirs).
+ * Uses the independent translate/scale properties so existing transforms (rotations,
+ * hover nudges) keep working. Order is set per element with --intro-step.
+ */
+:root {
+  --page-motion-ease: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.page-intro {
+  animation: page-intro-in 650ms var(--page-motion-ease)
+    calc(120ms + var(--intro-step, 0) * 90ms) backwards;
+}
+
+.page-intro--title {
+  animation-name: page-title-in;
+  animation-duration: 750ms;
+}
+
+.page-intro--right {
+  animation-name: page-intro-right;
+  animation-duration: 800ms;
+}
+
+.page-intro--pop {
+  animation-name: page-intro-pop;
+  animation-duration: 700ms;
+}
+
+/* Decorative paws, hearts and dots: fade in, then drift slowly. */
+.page-decor {
+  animation:
+    page-decor-in 900ms var(--page-motion-ease) var(--decor-delay, 300ms) backwards,
+    page-decor-drift var(--drift-duration, 9s) ease-in-out
+      calc(var(--decor-delay, 300ms) + 900ms) infinite;
+}
+
+.page-heartbeat {
+  display: inline-block;
+  animation: page-heartbeat 6s ease-in-out 2.2s infinite;
+}
+
+@keyframes page-intro-in {
+  from {
+    opacity: 0;
+    translate: 0 14px;
+  }
+}
+
+@keyframes page-title-in {
+  from {
+    opacity: 0;
+    translate: 0 18px;
+    clip-path: inset(0 0 100%);
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
+    clip-path: inset(-10%);
+  }
+}
+
+@keyframes page-intro-right {
+  from {
+    opacity: 0;
+    translate: 28px 0;
+    scale: 0.98;
+  }
+}
+
+@keyframes page-intro-pop {
+  from {
+    opacity: 0;
+    translate: 0 16px;
+    scale: 0.96;
+  }
+}
+
+@keyframes page-decor-in {
+  from {
+    opacity: 0;
+    scale: 0.85;
+  }
+}
+
+@keyframes page-decor-drift {
+  0%,
+  100% {
+    translate: 0 0;
+  }
+  50% {
+    translate: 0 -7px;
+  }
+}
+
+@keyframes page-heartbeat {
+  0%,
+  76%,
+  100% {
+    scale: 1;
+  }
+  82% {
+    scale: 1.12;
+  }
+  88% {
+    scale: 0.97;
+  }
+  94% {
+    scale: 1.06;
+  }
+}
+
+@media (max-width: 767px) {
+  .page-intro {
+    animation-duration: 500ms;
+    animation-delay: calc(60ms + var(--intro-step, 0) * 70ms);
+  }
+
+  .page-decor {
+    animation: page-decor-in 700ms var(--page-motion-ease) var(--decor-delay, 200ms) backwards;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page-intro,
+  .page-decor,
+  .page-heartbeat {
+    animation: none !important;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

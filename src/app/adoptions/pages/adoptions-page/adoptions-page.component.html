@@ -6,23 +6,36 @@
     <span class="hero-orb hero-orb--two" aria-hidden="true"></span>
     <div class="hero-inner">
       <div class="hero-copy">
-        <p class="eyebrow"><app-icon name="heart" class="size-4" /> Adopciones Gatarsis</p>
-        <h1>Adoptar también es empezar una <span>nueva historia</span></h1>
-        <p class="hero-lead">
+        <p class="eyebrow page-intro">
+          <app-icon name="heart" class="page-heartbeat size-4" /> Adopciones Gatarsis
+        </p>
+        <h1 class="page-intro page-intro--title" style="--intro-step: 1">
+          Adoptar también es empezar una <span>nueva historia</span>
+        </h1>
+        <p class="hero-lead page-intro" style="--intro-step: 2">
           Queremos encontrar el hogar indicado para cada gatito y acompañar una adopción
           responsable, segura y para toda la vida.
         </p>
-        <button class="primary-cta" type="button" (click)="goToQuestionnaire()">
+        <button
+          class="primary-cta page-intro"
+          style="--intro-step: 3"
+          type="button"
+          (click)="goToQuestionnaire()"
+        >
           Completar cuestionario <app-icon name="arrow" class="size-5" />
         </button>
-        <p class="hero-note">
+        <p class="hero-note page-intro" style="--intro-step: 4">
           Completar el cuestionario no implica una adopción automática ni genera obligación alguna.
           Nos ayuda a conocer mejor cada hogar y encontrar la combinación más adecuada para el
           gatito y la familia.
         </p>
       </div>
 
-      <aside class="indoor-card" aria-labelledby="indoor-title">
+      <aside
+        class="indoor-card page-intro page-intro--right"
+        style="--intro-step: 3"
+        aria-labelledby="indoor-title"
+      >
         <span class="indoor-icon"><app-icon name="home" class="size-8" /></span>
         <p class="indoor-kicker">Una condición esencial</p>
         <h2 id="indoor-title">Adopción únicamente para hogares de interior</h2>
@@ -36,7 +49,7 @@
   </section>
 
   @if (config.deliveryNotice) {
-    <aside class="delivery-notice">{{ config.deliveryNotice }}</aside>
+    <aside appReveal class="delivery-notice">{{ config.deliveryNotice }}</aside>
   }
 
   <app-adoptable-cats
@@ -49,7 +62,7 @@
   />
 
   <section id="cuestionario" class="questionnaire" aria-labelledby="questionnaire-title">
-    <div class="questionnaire-heading">
+    <div appReveal class="questionnaire-heading">
       <p class="eyebrow"><app-icon name="paw" class="size-4" /> Pre-adopción responsable</p>
       <h2 id="questionnaire-title">Conozcámonos un poquito</h2>
       <p>Son seis pasos breves. Tus respuestas se usan únicamente para evaluar esta solicitud.</p>
@@ -74,7 +87,7 @@
     }
 
     @if (!submitted()) {
-      <div class="form-shell">
+      <div appReveal [appRevealDelay]="100" class="form-shell">
         <aside class="stepper" aria-label="Progreso del cuestionario">
           <p class="step-count">
             @if (reviewing()) {

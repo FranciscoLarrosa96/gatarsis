@@ -7,6 +7,7 @@ import { AppHeaderComponent } from '../../shared/components/app-header/app-heade
 import { BottomNavigationComponent } from '../../shared/components/bottom-navigation/bottom-navigation.component';
 import { CopyAliasButtonComponent } from '../../shared/components/copy-alias-button/copy-alias-button.component';
 import { IconComponent } from '../../shared/components/icon/icon.component';
+import { CountUpDirective } from '../../shared/directives/count-up.directive';
 import { RevealOnScrollDirective } from '../../shared/directives/reveal-on-scroll.directive';
 
 @Component({
@@ -17,6 +18,7 @@ import { RevealOnScrollDirective } from '../../shared/directives/reveal-on-scrol
     BottomNavigationComponent,
     CopyAliasButtonComponent,
     IconComponent,
+    CountUpDirective,
     RevealOnScrollDirective,
   ],
   styles: `
@@ -207,51 +209,60 @@ import { RevealOnScrollDirective } from '../../shared/directives/reveal-on-scrol
         src="images/extra/paw.png"
         alt=""
         aria-hidden="true"
-        class="transparency-decor transparency-decor-paw transparency-decor-paw--top"
+        class="transparency-decor transparency-decor-paw transparency-decor-paw--top page-decor"
+        style="--decor-delay: 250ms; --drift-duration: 10s"
       />
       <img
         src="images/extra/paw.png"
         alt=""
         aria-hidden="true"
-        class="transparency-decor transparency-decor-paw transparency-decor-paw--bottom hidden md:block"
+        class="transparency-decor transparency-decor-paw transparency-decor-paw--bottom page-decor hidden md:block"
+        style="--decor-delay: 700ms; --drift-duration: 12s"
       />
       <img
         src="images/extra/corazoncito-empty.png"
         alt=""
         aria-hidden="true"
-        class="transparency-decor transparency-decor-heart"
+        class="transparency-decor transparency-decor-heart page-decor"
+        style="--decor-delay: 550ms; --drift-duration: 7s"
       />
       <span
         aria-hidden="true"
-        class="transparency-decor transparency-dots transparency-dots--top"
+        class="transparency-decor transparency-dots transparency-dots--top page-decor"
+        style="--decor-delay: 400ms; --drift-duration: 12s"
       ></span>
       <span
         aria-hidden="true"
-        class="transparency-decor transparency-dots transparency-dots--left hidden md:block"
+        class="transparency-decor transparency-dots transparency-dots--left page-decor hidden md:block"
+        style="--decor-delay: 650ms; --drift-duration: 13s"
       ></span>
 
       <div class="relative z-10 mx-auto max-w-7xl px-4 py-10 sm:px-6 md:py-14 lg:px-8">
         <section
           class="grid items-center gap-10 lg:grid-cols-[minmax(0,1.05fr)_minmax(25rem,.95fr)] lg:gap-16"
         >
-          <div appReveal="left">
+          <div>
             <p
-              class="inline-flex items-center gap-2 rounded-full border border-[var(--color-border)] bg-[var(--color-card)] px-4 py-2 text-xs font-extrabold uppercase text-[var(--color-accent)]"
+              class="page-intro inline-flex items-center gap-2 rounded-full border border-[var(--color-border)] bg-[var(--color-card)] px-4 py-2 text-xs font-extrabold uppercase text-[var(--color-accent)]"
             >
               <app-icon name="heart" class="size-4 fill-current" />
               Deuda veterinaria activa
             </p>
-            <h1 class="transparency-hero-title mt-5 text-5xl font-black leading-[0.98] md:text-6xl">
+            <h1
+              class="transparency-hero-title page-intro page-intro--title mt-5 text-5xl font-black leading-[0.98] md:text-6xl"
+              style="--intro-step: 1"
+            >
               Transparencia para <span class="text-[var(--color-accent)]">ayudar</span> mejor
               <img
                 src="images/extra/corazoncito-empty.png"
                 alt=""
                 aria-hidden="true"
-                class="ml-2 inline-block size-10 align-middle object-contain"
+                class="page-heartbeat ml-2 inline-block size-10 align-middle object-contain"
               />
             </h1>
             <p
-              class="mt-5 max-w-xl text-lg leading-7 text-[var(--color-text-muted)] md:text-xl md:leading-8"
+              class="page-intro mt-5 max-w-xl text-lg leading-7 text-[var(--color-text-muted)] md:text-xl md:leading-8"
+              style="--intro-step: 2"
             >
               Cada número refleja una vida en recuperación. Nuestra prioridad es saldar las cuentas
               de quienes ya están sanando para poder ayudar a los que siguen esperando.
@@ -259,9 +270,8 @@ import { RevealOnScrollDirective } from '../../shared/directives/reveal-on-scrol
           </div>
 
           <section
-            appReveal="right"
-            [appRevealDelay]="120"
-            class="transparency-debt-panel dark-neon-card dark-neon-card--featured rounded-3xl border border-[var(--color-border)] p-3 shadow-[var(--shadow-elevated)] md:p-4"
+            style="--intro-step: 2"
+            class="page-intro page-intro--right transparency-debt-panel dark-neon-card dark-neon-card--featured rounded-3xl border border-[var(--color-border)] p-3 shadow-[var(--shadow-elevated)] md:p-4"
           >
             <div
               class="relative overflow-hidden rounded-2xl bg-[var(--color-card)] px-6 py-7 md:px-8 md:py-8"
@@ -277,6 +287,9 @@ import { RevealOnScrollDirective } from '../../shared/directives/reveal-on-scrol
                 Total a pagar
               </p>
               <p
+                [appCountUp]="config.currentDebt"
+                [countUpFormat]="formatArs"
+                [countUpDelay]="450"
                 class="transparency-debt-amount mt-4 text-[clamp(2.6rem,5vw,4rem)] font-black leading-none tabular-nums text-[var(--color-accent)]"
               >
                 {{ formattedDebt }}
@@ -425,4 +438,5 @@ import { RevealOnScrollDirective } from '../../shared/directives/reveal-on-scrol
 export class TransparencyPageComponent {
   protected readonly config = DONATION_CONFIG;
   protected readonly formattedDebt = formatArs(DONATION_CONFIG.currentDebt);
+  protected readonly formatArs = formatArs;
 }

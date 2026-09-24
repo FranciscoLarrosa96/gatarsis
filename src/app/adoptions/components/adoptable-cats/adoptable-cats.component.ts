@@ -1,6 +1,7 @@
 import { Component, input, output } from '@angular/core';
 
 import { IconComponent } from '../../../shared/components/icon/icon.component';
+import { RevealOnScrollDirective } from '../../../shared/directives/reveal-on-scroll.directive';
 import {
   adoptableCatAgeLabel,
   adoptableCatSexLabel,
@@ -9,7 +10,7 @@ import { AdoptableCat } from '../../core/adoption.models';
 
 @Component({
   selector: 'app-adoptable-cats',
-  imports: [IconComponent],
+  imports: [IconComponent, RevealOnScrollDirective],
   templateUrl: './adoptable-cats.component.html',
   styleUrl: './adoptable-cats.component.css',
 })
