@@ -165,7 +165,7 @@ const adoptionSchema = schema<AdoptionFormModel>((p) => {
     RevealOnScrollDirective,
   ],
   templateUrl: './adoptions-page.component.html',
-  styleUrl: './adoptions-page.component.css',
+  styleUrls: ['./adoptions-page.component.css', './adoptions-motion.css'],
 })
 export class AdoptionsPageComponent implements OnInit {
   private readonly api = inject(AdoptionApiService);
