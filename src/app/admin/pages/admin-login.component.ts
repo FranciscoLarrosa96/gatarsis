@@ -1,6 +1,6 @@
 import { Component, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { AdminAuthStore } from '../core/admin-auth.store';
 import { AdminThemeService } from '../core/admin-theme.service';
 import { AdminThemeToggleComponent } from '../shared/admin-theme-toggle.component';
@@ -50,7 +50,11 @@ import { AdminThemeToggleComponent } from '../shared/admin-theme-toggle.componen
       place-items: center;
       padding: 1.5rem;
       background:
-        radial-gradient(900px 420px at 15% -10%, color-mix(in srgb, var(--adm-accent) 8%, transparent), transparent 60%),
+        radial-gradient(
+          900px 420px at 15% -10%,
+          color-mix(in srgb, var(--adm-accent) 8%, transparent),
+          transparent 60%
+        ),
         var(--adm-bg);
       color: var(--adm-ink);
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
@@ -175,15 +179,25 @@ export class AdminLoginComponent {
   constructor(
     readonly auth: AdminAuthStore,
     private readonly router: Router,
+    private readonly route: ActivatedRoute,
     readonly theme: AdminThemeService,
   ) {}
   submit() {
     this.error.set('');
-    this.auth
-      .login(this.email, this.password)
-      .subscribe({
-        next: () => void this.router.navigate(['/admin/dashboard']),
-        error: () => this.error.set('No pudimos validar tus credenciales.'),
-      });
+    this.auth.login(this.email, this.password).subscribe({
+      next: () => {
+        const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl');
+        void (isSafeAdminReturnUrl(returnUrl)
+          ? this.router.navigateByUrl(returnUrl)
+          : this.router.navigate(['/admin/dashboard']));
+      },
+      error: () => this.error.set('No pudimos validar tus credenciales.'),
+    });
   }
+}
+
+function isSafeAdminReturnUrl(value: string | null): value is string {
+  return (
+    !!value && (value === '/admin' || value.startsWith('/admin/') || value.startsWith('/sortear'))
+  );
 }

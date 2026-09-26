@@ -88,6 +88,24 @@ describe('Admin raffle API contracts', () => {
     const draw = http.expectOne(`${ADMIN_API_BASE_URL}/raffles/raffle-id/draw`);
     expect(draw.request.method).toBe('POST');
     expect(draw.request.body).toEqual({ winningNumber: 37 });
+
+    api.runRaffleDraw('raffle-id', { method: 'AUTOMATIC' }).subscribe();
+    const automatic = http.expectOne(`${ADMIN_API_BASE_URL}/raffles/raffle-id/draw`);
+    expect(automatic.request.body).toEqual({ method: 'AUTOMATIC' });
+
+    api
+      .runRaffleDraw('raffle-id', {
+        method: 'EXTERNAL',
+        winningNumber: 47,
+        note: 'Instagram Live',
+      })
+      .subscribe();
+    const external = http.expectOne(`${ADMIN_API_BASE_URL}/raffles/raffle-id/draw`);
+    expect(external.request.body).toEqual({
+      method: 'EXTERNAL',
+      winningNumber: 47,
+      note: 'Instagram Live',
+    });
   });
 
   it('registers a manual sale with buyer data and an idempotency key', () => {

@@ -1,0 +1,291 @@
+<main class="draw-page">
+  <header class="draw-header">
+    <a class="draw-brand" routerLink="/sortear" aria-label="Gatarsis, sorteos">
+      <span aria-hidden="true">◌</span>
+      <strong>Gatarsis</strong>
+    </a>
+    <div class="draw-header-actions">
+      <button type="button" class="quiet-button" (click)="toggleFullscreen()">
+        Pantalla completa
+      </button>
+      <a routerLink="/admin/raffles">Ir al administrador</a>
+    </div>
+  </header>
+
+  @if (error()) {
+    <p class="draw-feedback" role="alert">{{ error() }}</p>
+  }
+
+  @if (loading()) {
+    <section class="draw-center" aria-live="polite">
+      <span class="draw-loader" aria-hidden="true"></span>
+      <h1>Preparando el espacio de sorteo…</h1>
+    </section>
+  } @else if (step() === 'SELECT') {
+    <section class="draw-selector">
+      <div class="draw-intro">
+        <span class="eyebrow">Herramienta de sorteos</span>
+        <h1>Sorteo de rifas</h1>
+        <p>Elegí la rifa que querés sortear.</p>
+      </div>
+
+      <section aria-labelledby="pending-title">
+        <div class="section-title">
+          <div>
+            <span class="eyebrow">Pendientes</span>
+            <h2 id="pending-title">Rifas disponibles</h2>
+          </div>
+          <span>{{ availableRaffles().length }}</span>
+        </div>
+        <div class="raffle-cards">
+          @for (item of availableRaffles(); track item.id) {
+            <article class="raffle-card" [class.is-ready]="item.status === 'CLOSED'">
+              <span class="status-chip status-{{ item.status.toLowerCase() }}">{{
+                item.status
+              }}</span>
+              <div>
+                <h3>{{ item.title }}</h3>
+                <p>{{ item.prizeName }}</p>
+              </div>
+              <small>{{
+                item.status === 'CLOSED'
+                  ? 'Venta cerrada · lista para verificar'
+                  : 'Todavía no está lista para sortear'
+              }}</small>
+              <button type="button" (click)="selectRaffle(item.id)">
+                {{ item.status === 'CLOSED' ? 'Preparar sorteo' : 'Ver estado' }}
+              </button>
+            </article>
+          } @empty {
+            <p class="empty-card">No hay rifas pendientes para mostrar.</p>
+          }
+        </div>
+      </section>
+
+      @if (completedRaffles().length) {
+        <section aria-labelledby="completed-title">
+          <div class="section-title">
+            <div>
+              <span class="eyebrow">Historial</span>
+              <h2 id="completed-title">Sorteos realizados</h2>
+            </div>
+          </div>
+          <div class="completed-list">
+            @for (item of completedRaffles(); track item.id) {
+              <button type="button" (click)="selectRaffle(item.id)">
+                <span
+                  ><strong>{{ item.title }}</strong
+                  ><small>{{ item.prizeName }}</small></span
+                >
+                <span>Ver resultado →</span>
+              </button>
+            }
+          </div>
+        </section>
+      }
+    </section>
+  } @else if (raffle(); as current) {
+    @if (step() === 'PREPARE') {
+      <section class="draw-stage">
+        <button type="button" class="back-link" (click)="finish()">← Elegir otra rifa</button>
+        <div class="stage-heading">
+          <span class="eyebrow">Gatarsis · Sorteo</span>
+          <h1>{{ current.title }}</h1>
+          <p>{{ current.prizeName }}</p>
+        </div>
+        <div class="draw-metrics">
+          <article>
+            <strong>{{ current.stats.totalNumbers }}</strong
+            ><span>números totales</span>
+          </article>
+          <article>
+            <strong>{{ eligibleNumbers().length }}</strong
+            ><span>participantes habilitados</span>
+          </article>
+          <article>
+            <strong>{{ money(current.stats.revenueInCents) }}</strong
+            ><span>recaudado</span>
+          </article>
+        </div>
+        <section class="readiness" [class.has-issues]="!ready()">
+          <h2>{{ ready() ? 'Todo listo para sortear' : 'Todavía no está lista para sortear' }}</h2>
+          @if (ready()) {
+            <ul>
+              <li>Venta cerrada</li>
+              <li>Pagos confirmados</li>
+              <li>Participantes listos</li>
+            </ul>
+          } @else {
+            <ul>
+              @for (issue of readinessIssues(); track issue) {
+                <li>{{ issue }}</li>
+              }
+            </ul>
+          }
+        </section>
+        <div class="stage-actions">
+          <button
+            type="button"
+            class="primary-action"
+            [disabled]="!ready()"
+            (click)="requestAutomaticDraw()"
+          >
+            Comenzar sorteo
+          </button>
+          <button type="button" [disabled]="!ready()" (click)="openExternal()">
+            Registrar resultado externo
+          </button>
+          <button type="button" (click)="participantsOpen.set(true)">Ver participantes</button>
+        </div>
+      </section>
+    } @else if (step() === 'CONFIRM') {
+      <section class="draw-center confirmation-card">
+        <span class="draw-symbol" aria-hidden="true">✦</span>
+        <span class="eyebrow">Confirmación</span>
+        <h1>¿Comenzamos?</h1>
+        <p>
+          Participan <strong>{{ eligibleNumbers().length }} números</strong> con pago confirmado.
+        </p>
+        <p>
+          Gatarsis elegirá un ganador de forma aleatoria. El resultado quedará registrado y no podrá
+          modificarse normalmente.
+        </p>
+        <div class="stage-actions">
+          <button type="button" [disabled]="submitting()" (click)="step.set('PREPARE')">
+            Volver
+          </button>
+          <button
+            type="button"
+            class="primary-action"
+            [disabled]="submitting()"
+            (click)="confirmAutomaticDraw()"
+          >
+            {{ submitting() ? 'Solicitando resultado…' : 'Sí, comenzar sorteo' }}
+          </button>
+        </div>
+      </section>
+    } @else if (step() === 'DRAWING') {
+      <section class="draw-center reveal" aria-live="polite">
+        <span class="eyebrow">{{ eligibleNumbers().length }} números participan</span>
+        <h1>Buscando al ganador…</h1>
+        <div class="rolling-number">{{ numberLabel(animatedNumber()) }}</div>
+        <p>El resultado ya fue definido y registrado de forma segura.</p>
+      </section>
+    } @else {
+      <section class="draw-center result-card" aria-live="polite">
+        <span class="winner-star" aria-hidden="true">★</span>
+        <span class="eyebrow">{{
+          drawMethod() === 'EXTERNAL' ? 'Resultado registrado' : '¡Tenemos ganador!'
+        }}</span>
+        <div class="winner-number">{{ numberLabel(winnerNumber()) }}</div>
+        <h1>{{ buyerName(winner()) }}</h1>
+        <p>{{ current.title }} · {{ current.prizeName }}</p>
+        <div class="result-meta">
+          <span>{{ date(current.drawnAt) }}</span>
+          <span>{{ eligibleNumbers().length }} números participaron</span>
+          <span>{{ drawMethod() === 'EXTERNAL' ? 'Sorteo externo' : 'Sorteo automático' }}</span>
+        </div>
+        <button type="button" class="primary-action" (click)="finish()">Finalizar</button>
+      </section>
+    }
+  }
+
+  @if (participantsOpen()) {
+    <div class="draw-overlay" role="presentation" (click)="participantsOpen.set(false)">
+      <section
+        class="draw-dialog participants-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="participants-title"
+        (click)="$event.stopPropagation()"
+      >
+        <div class="dialog-heading">
+          <div>
+            <span class="eyebrow">Verificación</span>
+            <h2 id="participants-title">Participantes habilitados</h2>
+          </div>
+          <button type="button" aria-label="Cerrar" (click)="participantsOpen.set(false)">×</button>
+        </div>
+        <p>{{ eligibleNumbers().length }} números vendidos con pago confirmado.</p>
+        <ol class="participants-list">
+          @for (item of eligibleNumbers(); track item.number) {
+            <li>
+              <strong>{{ numberLabel(item.number) }}</strong
+              ><span>{{ buyerName(item) }}</span>
+            </li>
+          }
+        </ol>
+      </section>
+    </div>
+  }
+
+  @if (externalStep() !== 'CLOSED') {
+    <div class="draw-overlay" role="presentation" (click)="closeExternal()">
+      <section
+        class="draw-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="external-title"
+        (click)="$event.stopPropagation()"
+      >
+        @if (externalStep() === 'FORM') {
+          <span class="eyebrow">Sorteo realizado fuera de Gatarsis</span>
+          <h2 id="external-title">Registrar ganador externo</h2>
+          <p>Usá esta opción si el sorteo ya fue realizado por otro medio.</p>
+          <label
+            >Número ganador
+            <select
+              [ngModel]="externalWinningNumber()"
+              (ngModelChange)="externalWinningNumber.set($event === null ? null : +$event)"
+            >
+              <option [ngValue]="null">Elegir número…</option>
+              @for (item of eligibleNumbers(); track item.number) {
+                <option [ngValue]="item.number">
+                  {{ numberLabel(item.number) }} · {{ buyerName(item) }}
+                </option>
+              }
+            </select>
+          </label>
+          <label
+            >Nota opcional<textarea
+              [(ngModel)]="externalNote"
+              rows="3"
+              placeholder="Ej.: Sorteo realizado mediante Instagram Live"
+            ></textarea>
+          </label>
+          <div class="dialog-actions">
+            <button type="button" (click)="closeExternal()">Cancelar</button
+            ><button
+              type="button"
+              class="primary-action"
+              [disabled]="externalWinningNumber() === null"
+              (click)="reviewExternal()"
+            >
+              Continuar
+            </button>
+          </div>
+        } @else {
+          <span class="eyebrow">Confirmación final</span>
+          <h2 id="external-title">¿Confirmás el resultado?</h2>
+          <div class="external-winner">
+            <strong>{{ numberLabel(externalWinningNumber()) }}</strong
+            ><span>{{ buyerName(winnerForExternal()) }}</span>
+          </div>
+          <p>Esta acción quedará registrada y no podrá modificarse normalmente.</p>
+          <div class="dialog-actions">
+            <button type="button" [disabled]="submitting()" (click)="externalStep.set('FORM')">
+              Volver</button
+            ><button
+              type="button"
+              class="primary-action"
+              [disabled]="submitting()"
+              (click)="confirmExternal()"
+            >
+              {{ submitting() ? 'Registrando…' : 'Confirmar ganador' }}
+            </button>
+          </div>
+        }
+      </section>
+    </div>
+  }
+</main>

@@ -1,6 +1,12 @@
 import { routes } from './app.routes';
+import { adminGuard } from './admin/core/admin.guard';
 
 describe('public commerce routes', () => {
+  it('protects both specialized draw routes with the existing admin guard', () => {
+    const drawRoute = routes.find((route) => route.path === 'sortear');
+    expect(drawRoute?.canActivate).toContain(adminGuard);
+    expect(drawRoute?.children?.map((route) => route.path)).toEqual(['', ':raffleId']);
+  });
   it.each([
     'rifa/checkout/success',
     'rifa/checkout/pending',

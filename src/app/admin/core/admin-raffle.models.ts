@@ -9,6 +9,9 @@ export type AdminManualRafflePaymentMethod = 'CASH' | 'TRANSFER' | 'OTHER';
 
 export type AdminRafflePaymentSource = 'MERCADO_PAGO' | 'MANUAL';
 
+export type AdminRaffleDrawRequest =
+  { method: 'AUTOMATIC' } | { method: 'EXTERNAL'; winningNumber: number; note?: string };
+
 export interface AdminRaffleListItem {
   id: string;
   title: string;

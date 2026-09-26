@@ -1,6 +1,23 @@
 import { Routes } from '@angular/router';
+import { adminGuard } from './admin/core/admin.guard';
 
 export const routes: Routes = [
+  {
+    path: 'sortear',
+    canActivate: [adminGuard],
+    children: [
+      {
+        path: '',
+        loadComponent: () =>
+          import('./draw/pages/draw-page.component').then((m) => m.DrawPageComponent),
+      },
+      {
+        path: ':raffleId',
+        loadComponent: () =>
+          import('./draw/pages/draw-page.component').then((m) => m.DrawPageComponent),
+      },
+    ],
+  },
   {
     path: 'admin',
     loadChildren: () => import('./admin/admin.routes').then((m) => m.ADMIN_ROUTES),

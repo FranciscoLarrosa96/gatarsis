@@ -11,6 +11,7 @@ import {
 } from './admin-adoption.models';
 import {
   AdminRaffleDetail,
+  AdminRaffleDrawRequest,
   AdminRaffleListItem,
   AdminRaffleListQuery,
   AdminRaffleNumber,
@@ -333,6 +334,13 @@ export class AdminApiService {
     return this.http.post<AdminRaffleListItem>(`${ADMIN_API_BASE_URL}/raffles/${raffleId}/draw`, {
       winningNumber,
     });
+  }
+
+  runRaffleDraw(raffleId: string, body: AdminRaffleDrawRequest): Observable<AdminRaffleDetail> {
+    return this.http.post<AdminRaffleDetail>(
+      `${ADMIN_API_BASE_URL}/raffles/${raffleId}/draw`,
+      body,
+    );
   }
 
   raffleNumbers(raffleId: string): Observable<AdminRaffleNumber[]> {
