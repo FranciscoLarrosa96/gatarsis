@@ -5,7 +5,11 @@ import { ActivatedRoute, Router, convertToParamMap, provideRouter } from '@angul
 import { vi } from 'vitest';
 
 import { ADMIN_API_BASE_URL } from '../core/admin-api.config';
-import { AdminRaffleDetail, AdminRaffleNumber } from '../core/admin-raffle.models';
+import {
+  AdminRaffleDetail,
+  AdminRaffleNumber,
+  AdminRafflePurchase,
+} from '../core/admin-raffle.models';
 import { AdminRaffleEditorComponent } from './admin-raffle-editor.component';
 
 const raffleId = '49de99a5-a861-4fd0-a3c4-c0d53dca616d';
@@ -19,6 +23,7 @@ describe('AdminRaffleEditorComponent', () => {
   afterEach(() => {
     fixture?.destroy();
     http?.verify();
+    vi.restoreAllMocks();
   });
 
   it('creates a DRAFT with a fixed 00–99 range and the exact backend DTO', () => {
@@ -60,6 +65,69 @@ describe('AdminRaffleEditorComponent', () => {
     fixture.detectChanges();
     expect(fixture.nativeElement.textContent).toContain('Compradora Gatarsis');
     expect(fixture.nativeElement.textContent).toContain('compradora@example.com');
+  });
+
+  it('switches to the searchable list and filters by number, status and payment', () => {
+    setup(raffleId);
+    loadDetail(detail('ACTIVE'), numbers(), [purchase()]);
+
+    expect(component.numbersView()).toBe('GRID');
+    component.numbersView.set('LIST');
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelectorAll('.raffle-number-table tbody tr')).toHaveLength(
+      100,
+    );
+
+    component.numberSearch.set('37');
+    expect(component.filteredNumberRows().map((row) => row.item.number)).toEqual([37]);
+    component.numberSearch.set('compradora');
+    expect(component.filteredNumberRows()).toHaveLength(2);
+
+    component.numberSearch.set('');
+    component.numberStatusFilter.set('SOLD');
+    component.paymentFilter.set('PAID');
+    expect(component.filteredNumberRows().map((row) => row.item.number)).toEqual([37]);
+    expect(component.filteredNumberRows()[0].originLabel).toBe('Online');
+    expect(component.filteredNumberRows()[0].amountInCents).toBe(50_000);
+  });
+
+  it('reuses the purchase detail action from the list view', () => {
+    setup(raffleId);
+    loadDetail(detail('ACTIVE'), numbers(), [purchase()]);
+    component.numbersView.set('LIST');
+    component.numberStatusFilter.set('SOLD');
+    const showPurchase = vi
+      .spyOn(component, 'showPurchaseById')
+      .mockImplementation(() => undefined);
+    fixture.detectChanges();
+
+    const button = fixture.nativeElement.querySelector(
+      '.raffle-number-table tbody button',
+    ) as HTMLButtonElement;
+    button.click();
+
+    expect(showPurchase).toHaveBeenCalledWith(purchaseId);
+  });
+
+  it('downloads both participant exports and exposes loading and backend errors', () => {
+    setup(raffleId);
+    loadDetail(detail('ACTIVE'), numbers(), [purchase()]);
+    vi.spyOn(globalThis.URL, 'createObjectURL').mockReturnValue('blob:raffle-export');
+    vi.spyOn(globalThis.URL, 'revokeObjectURL').mockImplementation(() => undefined);
+    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => undefined);
+
+    component.exportParticipants('xlsx');
+    expect(component.exporting()).toBe('xlsx');
+    const excel = http.expectOne(`${ADMIN_API_BASE_URL}/raffles/${raffleId}/export/xlsx`);
+    expect(excel.request.responseType).toBe('blob');
+    excel.flush(new Blob(['xlsx']));
+    expect(component.exporting()).toBeNull();
+
+    component.exportParticipants('pdf');
+    const pdf = http.expectOne(`${ADMIN_API_BASE_URL}/raffles/${raffleId}/export/pdf`);
+    pdf.flush(new Blob([]), { status: 500, statusText: 'Server Error' });
+    expect(component.exporting()).toBeNull();
+    expect(component.exportError()).toContain('No pudimos generar el archivo');
   });
 
   it('adds, reorders, removes and validates prize images without losing the principal position', () => {
@@ -314,17 +382,41 @@ describe('AdminRaffleEditorComponent', () => {
     fixture.detectChanges();
   }
 
-  function loadDetail(raffle: AdminRaffleDetail, numberItems: AdminRaffleNumber[]): void {
+  function loadDetail(
+    raffle: AdminRaffleDetail,
+    numberItems: AdminRaffleNumber[],
+    purchaseItems: AdminRafflePurchase[] = [],
+  ): void {
     http.expectOne(`${ADMIN_API_BASE_URL}/raffles/${raffleId}`).flush(raffle);
     http.expectOne(`${ADMIN_API_BASE_URL}/raffles/${raffleId}/numbers`).flush(numberItems);
     http
       .expectOne(`${ADMIN_API_BASE_URL}/raffles/${raffleId}/purchases?page=1&pageSize=100`)
       .flush({
-        items: [],
+        items: purchaseItems,
         page: 1,
         pageSize: 100,
-        total: 0,
+        total: purchaseItems.length,
       });
+  }
+
+  function purchase(): AdminRafflePurchase {
+    return {
+      rafflePurchaseId: purchaseId,
+      buyerName: 'Compradora Gatarsis',
+      buyerEmail: 'compradora@example.com',
+      buyerPhone: '+54 249 4000000',
+      numbers: [37],
+      unitPriceInCents: 50_000,
+      totalInCents: 50_000,
+      status: 'PAID',
+      orderId: 'order-paid',
+      orderStatus: 'PAID',
+      payment: null,
+      createdAt: '2026-09-13T12:00:00.000Z',
+      reservationExpiresAt: '2026-09-13T13:00:00.000Z',
+      paidAt: '2026-09-13T12:30:00.000Z',
+      paymentSource: 'MERCADO_PAGO',
+    };
   }
 
   function detail(status: AdminRaffleDetail['status']): AdminRaffleDetail {

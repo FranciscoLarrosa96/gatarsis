@@ -355,6 +355,18 @@ export class AdminApiService {
     );
   }
 
+  downloadRaffleParticipantsExcel(raffleId: string): Observable<Blob> {
+    return this.http.get(`${ADMIN_API_BASE_URL}/raffles/${raffleId}/export/xlsx`, {
+      responseType: 'blob',
+    });
+  }
+
+  downloadRaffleParticipantsPdf(raffleId: string): Observable<Blob> {
+    return this.http.get(`${ADMIN_API_BASE_URL}/raffles/${raffleId}/export/pdf`, {
+      responseType: 'blob',
+    });
+  }
+
   deleteRaffle(raffleId: string): Observable<void> {
     return this.http.delete<void>(`${ADMIN_API_BASE_URL}/raffles/${raffleId}`);
   }

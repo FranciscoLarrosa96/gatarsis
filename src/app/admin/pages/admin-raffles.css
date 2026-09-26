@@ -244,6 +244,126 @@
   color: var(--adm-low);
 }
 
+.raffle-number-tools,
+.raffle-view-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.raffle-number-tools {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.raffle-view-toggle {
+  padding: 0.2rem;
+  border: 1px solid var(--adm-border);
+  border-radius: 0.55rem;
+  background: var(--adm-bg-sunken);
+}
+
+.raffle-view-toggle button {
+  padding: 0.48rem 0.7rem;
+  border: 0;
+  border-radius: 0.4rem;
+  background: transparent;
+  color: var(--adm-ink-muted);
+  font-weight: 750;
+}
+
+.raffle-view-toggle button.is-active {
+  background: var(--adm-bg-raised);
+  color: var(--adm-accent);
+  box-shadow: var(--adm-shadow-card);
+}
+
+.raffle-export-menu {
+  position: relative;
+}
+
+.raffle-export-menu summary {
+  list-style: none;
+  cursor: pointer;
+}
+
+.raffle-export-menu summary::-webkit-details-marker {
+  display: none;
+}
+
+.raffle-export-options {
+  position: absolute;
+  z-index: 5;
+  top: calc(100% + 0.4rem);
+  right: 0;
+  display: grid;
+  width: min(19rem, 80vw);
+  padding: 0.35rem;
+  border: 1px solid var(--adm-border);
+  border-radius: 0.6rem;
+  background: var(--adm-bg-raised);
+  box-shadow: var(--adm-shadow-card);
+}
+
+.raffle-export-options button {
+  display: grid;
+  gap: 0.15rem;
+  padding: 0.7rem;
+  border: 0;
+  border-radius: 0.4rem;
+  background: transparent;
+  color: var(--adm-ink);
+  text-align: left;
+}
+
+.raffle-export-options button:not(:disabled):hover {
+  background: var(--adm-bg-sunken);
+}
+
+.raffle-export-options small,
+.raffle-list-count,
+.raffle-number-table td small {
+  color: var(--adm-ink-muted);
+}
+
+.raffle-list-filters {
+  display: grid;
+  grid-template-columns: minmax(14rem, 2fr) repeat(2, minmax(10rem, 1fr));
+  gap: 0.7rem;
+}
+
+.raffle-list-filters label,
+.raffle-number-table td {
+  min-width: 0;
+}
+
+.raffle-list-count {
+  margin: 0;
+  font-size: 0.76rem;
+}
+
+.raffle-number-table-wrap {
+  overflow-x: auto;
+}
+
+.raffle-number-table {
+  min-width: 62rem;
+}
+
+.raffle-number-table td small {
+  display: block;
+  overflow-wrap: anywhere;
+}
+
+.raffle-number-table .numeric,
+.raffle-number-table .date-cell {
+  white-space: nowrap;
+}
+
+.raffle-number-table tr.is-winner-row {
+  background: color-mix(in srgb, var(--adm-low) 9%, transparent);
+}
+
 .admin-number-grid {
   display: grid;
   grid-template-columns: repeat(10, minmax(0, 1fr));
@@ -795,6 +915,27 @@ details.purchase-block[open] > summary {
   }
   .admin-number-grid {
     grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+
+  .raffle-number-tools,
+  .raffle-view-toggle,
+  .raffle-export-menu,
+  .raffle-export-menu summary {
+    width: 100%;
+  }
+
+  .raffle-view-toggle button {
+    flex: 1;
+  }
+
+  .raffle-export-options {
+    position: static;
+    width: 100%;
+    margin-top: 0.4rem;
+  }
+
+  .raffle-list-filters {
+    grid-template-columns: 1fr;
   }
   .raffle-history article {
     grid-template-columns: 1fr;

@@ -45,6 +45,25 @@ interface ManualSaleFormModel {
   note: string;
 }
 
+type RaffleNumbersView = 'GRID' | 'LIST';
+type RaffleNumberListStatus = 'ALL' | AdminRaffleNumber['status'] | 'WINNER';
+type RafflePaymentFilter = 'ALL' | 'PAID' | 'PENDING' | 'REFUNDED';
+type RaffleExportFormat = 'xlsx' | 'pdf';
+
+interface AdminRaffleNumberListRow {
+  item: AdminRaffleNumber;
+  purchase: AdminRafflePurchase | null;
+  buyerName: string;
+  buyerEmail: string;
+  buyerPhone: string;
+  paymentState: Exclude<RafflePaymentFilter, 'ALL'> | null;
+  paymentLabel: string;
+  originLabel: string;
+  amountInCents: number | null;
+  date: string | null;
+  winner: boolean;
+}
+
 type LifecycleAction = 'publish' | 'pause' | 'resume' | 'close';
 type ConfirmationKind = 'close' | 'draw';
 const MAX_NUMBERS_PER_PURCHASE = 10;
@@ -391,34 +410,181 @@ const MAX_RAFFLE_IMAGES = 8;
                 <h2>Números 00–99</h2>
                 <p>Seleccioná un número para ver su compra, pago y datos de contacto.</p>
               </div>
+              <div class="raffle-number-tools">
+                <div class="raffle-view-toggle" role="group" aria-label="Vista de números">
+                  <button
+                    type="button"
+                    [class.is-active]="numbersView() === 'GRID'"
+                    [attr.aria-pressed]="numbersView() === 'GRID'"
+                    (click)="numbersView.set('GRID')"
+                  >
+                    Grilla
+                  </button>
+                  <button
+                    type="button"
+                    [class.is-active]="numbersView() === 'LIST'"
+                    [attr.aria-pressed]="numbersView() === 'LIST'"
+                    (click)="numbersView.set('LIST')"
+                  >
+                    Lista
+                  </button>
+                </div>
+                <details class="raffle-export-menu">
+                  <summary class="button button-secondary" aria-live="polite">
+                    {{ exporting() ? exportLoadingLabel() : 'Exportar' }}
+                  </summary>
+                  <div class="raffle-export-options">
+                    <button
+                      type="button"
+                      [disabled]="!!exporting()"
+                      (click)="exportParticipants('xlsx')"
+                    >
+                      <strong>Excel administrativo</strong>
+                      <small>Incluye contacto e IDs internos</small>
+                    </button>
+                    <button
+                      type="button"
+                      [disabled]="!!exporting()"
+                      (click)="exportParticipants('pdf')"
+                    >
+                      <strong>PDF de participantes</strong>
+                      <small>Sin email, teléfono ni IDs</small>
+                    </button>
+                  </div>
+                </details>
+              </div>
+            </div>
+
+            @if (exportError()) {
+              <p class="feedback error" role="alert">{{ exportError() }}</p>
+            }
+
+            @if (numbersView() === 'GRID') {
               <div class="number-legend" aria-label="Referencias">
                 <span><i class="is-available"></i>Disponible</span>
                 <span><i class="is-reserved"></i>Reservado</span>
                 <span><i class="is-sold"></i>Vendido</span>
                 <span><i class="is-winner">★</i>Ganador</span>
               </div>
-            </div>
-            <div class="admin-number-grid">
-              @for (item of numbers(); track item.number) {
-                <button
-                  type="button"
-                  class="admin-number status-{{ item.status.toLowerCase() }}"
-                  [class.is-winner]="current.winningNumber === item.number"
-                  [class.is-inspected]="
-                    inspectedNumber()?.number === item.number ||
-                    purchaseDetail()?.numbers?.includes(item.number)
-                  "
-                  [attr.aria-label]="numberAriaLabel(item, current)"
-                  [attr.aria-pressed]="selectedWinningNumber() === item.number"
-                  (click)="inspectNumber(item)"
-                >
-                  {{ numberLabel(item.number) }}
-                  @if (current.winningNumber === item.number) {
-                    <span aria-hidden="true">★</span>
-                  }
-                </button>
+              <div class="admin-number-grid">
+                @for (item of numbers(); track item.number) {
+                  <button
+                    type="button"
+                    class="admin-number status-{{ item.status.toLowerCase() }}"
+                    [class.is-winner]="current.winningNumber === item.number"
+                    [class.is-inspected]="
+                      inspectedNumber()?.number === item.number ||
+                      purchaseDetail()?.numbers?.includes(item.number)
+                    "
+                    [attr.aria-label]="numberAriaLabel(item, current)"
+                    [attr.aria-pressed]="selectedWinningNumber() === item.number"
+                    (click)="inspectNumber(item)"
+                  >
+                    {{ numberLabel(item.number) }}
+                    @if (current.winningNumber === item.number) {
+                      <span aria-hidden="true">★</span>
+                    }
+                  </button>
+                }
+              </div>
+            } @else {
+              <div class="raffle-list-filters">
+                <label class="raffle-list-search">
+                  Buscar
+                  <input
+                    type="search"
+                    [ngModel]="numberSearch()"
+                    (ngModelChange)="numberSearch.set($event)"
+                    placeholder="Número, comprador, email o teléfono..."
+                  />
+                </label>
+                <label>
+                  Estado
+                  <select
+                    [ngModel]="numberStatusFilter()"
+                    (ngModelChange)="numberStatusFilter.set($event)"
+                  >
+                    <option value="ALL">Todos</option>
+                    <option value="AVAILABLE">Disponible</option>
+                    <option value="RESERVED">Reservado</option>
+                    <option value="SOLD">Vendido</option>
+                    @if (current.winningNumber !== null) {
+                      <option value="WINNER">Ganador</option>
+                    }
+                  </select>
+                </label>
+                <label>
+                  Pago
+                  <select [ngModel]="paymentFilter()" (ngModelChange)="paymentFilter.set($event)">
+                    <option value="ALL">Todos</option>
+                    <option value="PAID">Pagado</option>
+                    <option value="PENDING">Pendiente</option>
+                    <option value="REFUNDED">Reembolsado</option>
+                  </select>
+                </label>
+              </div>
+              <p class="raffle-list-count" aria-live="polite">
+                {{ filteredNumberRows().length }} de {{ numberRows().length }} números
+              </p>
+              @if (filteredNumberRows().length) {
+                <div class="table-wrap inline-table raffle-number-table-wrap">
+                  <table class="raffle-number-table">
+                    <thead>
+                      <tr>
+                        <th>Número</th>
+                        <th>Comprador</th>
+                        <th>Estado</th>
+                        <th>Pago</th>
+                        <th>Origen</th>
+                        <th class="numeric">Importe</th>
+                        <th>Fecha</th>
+                        <th>Acción</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      @for (row of filteredNumberRows(); track row.item.number) {
+                        <tr [class.is-winner-row]="row.winner">
+                          <td>
+                            <code>{{ numberLabel(row.item.number) }}</code>
+                          </td>
+                          <td>
+                            <strong>{{ row.buyerName || '—' }}</strong>
+                            @if (row.buyerEmail) {
+                              <small>{{ row.buyerEmail }}</small>
+                            }
+                          </td>
+                          <td>
+                            <span class="badge status-{{ row.item.status.toLowerCase() }}">
+                              {{ row.winner ? 'Ganador' : numberStatusLabel(row.item) }}
+                            </span>
+                          </td>
+                          <td>{{ row.paymentLabel }}</td>
+                          <td>{{ row.originLabel }}</td>
+                          <td class="numeric">
+                            {{ row.amountInCents === null ? '—' : money(row.amountInCents) }}
+                          </td>
+                          <td class="date-cell">{{ date(row.date) }}</td>
+                          <td>
+                            @if (row.item.rafflePurchaseId) {
+                              <button
+                                type="button"
+                                (click)="showPurchaseById(row.item.rafflePurchaseId)"
+                              >
+                                Ver
+                              </button>
+                            } @else {
+                              <span class="muted">—</span>
+                            }
+                          </td>
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                </div>
+              } @else {
+                <p class="empty compact">No hay números que coincidan con la búsqueda.</p>
               }
-            </div>
+            }
           </section>
 
           @if (current.status === 'CLOSED') {
@@ -1254,6 +1420,12 @@ export class AdminRaffleEditorComponent implements OnInit {
   readonly deleteDialogOpen = signal(false);
   readonly deleting = signal(false);
   readonly deleteError = signal('');
+  readonly numbersView = signal<RaffleNumbersView>('GRID');
+  readonly numberSearch = signal('');
+  readonly numberStatusFilter = signal<RaffleNumberListStatus>('ALL');
+  readonly paymentFilter = signal<RafflePaymentFilter>('ALL');
+  readonly exporting = signal<RaffleExportFormat | null>(null);
+  readonly exportError = signal('');
   readonly selectedManualNumbers = signal<number[]>([]);
   readonly maxNumbersPerPurchase = MAX_NUMBERS_PER_PURCHASE;
   readonly maxRaffleImages = MAX_RAFFLE_IMAGES;
@@ -1268,6 +1440,58 @@ export class AdminRaffleEditorComponent implements OnInit {
       .filter((item) => item.status === 'SOLD' && item.order?.status === 'PAID')
       .map((item) => item.number),
   );
+  readonly numberRows = computed<AdminRaffleNumberListRow[]>(() => {
+    const purchases = new Map(
+      this.purchases().map((purchase) => [purchase.rafflePurchaseId, purchase]),
+    );
+    const winningNumber = this.raffle()?.winningNumber;
+    return this.numbers()
+      .map((item) => {
+        const purchase = item.rafflePurchaseId
+          ? (purchases.get(item.rafflePurchaseId) ?? null)
+          : null;
+        const paymentState = raffleRowPaymentState(item, purchase);
+        return {
+          item,
+          purchase,
+          buyerName: item.buyer?.name ?? purchase?.buyerName ?? '',
+          buyerEmail: item.buyer?.email ?? purchase?.buyerEmail ?? '',
+          buyerPhone: item.buyer?.phone ?? purchase?.buyerPhone ?? '',
+          paymentState,
+          paymentLabel: raffleRowPaymentLabel(item, purchase, paymentState),
+          originLabel:
+            purchase?.paymentSource === 'MANUAL'
+              ? 'Manual'
+              : item.rafflePurchaseId
+                ? 'Online'
+                : '—',
+          amountInCents: purchase?.unitPriceInCents ?? null,
+          date: item.soldAt ?? purchase?.createdAt ?? item.reservedUntil,
+          winner: winningNumber === item.number,
+        };
+      })
+      .sort((left, right) => left.item.number - right.item.number);
+  });
+  readonly filteredNumberRows = computed(() => {
+    const query = normalizeSearch(this.numberSearch());
+    const status = this.numberStatusFilter();
+    const payment = this.paymentFilter();
+    return this.numberRows().filter((row) => {
+      const matchesStatus =
+        status === 'ALL' || (status === 'WINNER' ? row.winner : row.item.status === status);
+      const matchesPayment = payment === 'ALL' || row.paymentState === payment;
+      const haystack = normalizeSearch(
+        [
+          row.item.number.toString(),
+          this.numberLabel(row.item.number),
+          row.buyerName,
+          row.buyerEmail,
+          row.buyerPhone,
+        ].join(' '),
+      );
+      return matchesStatus && matchesPayment && (!query || haystack.includes(query));
+    });
+  });
 
   readonly id: string | null;
   dirty = false;
@@ -1526,6 +1750,34 @@ export class AdminRaffleEditorComponent implements OnInit {
     return { CASH: 'Efectivo', TRANSFER: 'Transferencia', OTHER: 'Otro' }[method];
   }
 
+  exportLoadingLabel(): string {
+    return this.exporting() === 'xlsx' ? 'Preparando Excel...' : 'Preparando PDF...';
+  }
+
+  exportParticipants(format: RaffleExportFormat): void {
+    if (!this.id || this.exporting()) return;
+    if (!this.eligibleWinningNumbers().length) {
+      this.exportError.set('Todavía no hay participantes pagos para exportar.');
+      return;
+    }
+    this.exportError.set('');
+    this.exporting.set(format);
+    const request =
+      format === 'xlsx'
+        ? this.api.downloadRaffleParticipantsExcel(this.id)
+        : this.api.downloadRaffleParticipantsPdf(this.id);
+    request.pipe(finalize(() => this.exporting.set(null))).subscribe({
+      next: (blob) => this.downloadExport(blob, format),
+      error: (error: unknown) => {
+        this.exportError.set(
+          error instanceof HttpErrorResponse && error.status === 409
+            ? 'Todavía no hay participantes pagos para exportar.'
+            : adminErrorMessage(error, 'No pudimos generar el archivo. Intentá nuevamente.'),
+        );
+      },
+    });
+  }
+
   readableNumbersLabel(numbers: number[]): string {
     if (numbers.length < 2) return this.numberLabel(numbers[0]);
     const labels = numbers.map((number) => this.numberLabel(number));
@@ -1594,6 +1846,15 @@ export class AdminRaffleEditorComponent implements OnInit {
           purchase.paymentSource === 'MANUAL',
       ) ?? null
     );
+  }
+
+  private downloadExport(blob: Blob, format: RaffleExportFormat): void {
+    const url = globalThis.URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = `gatarsis-${slugifyFileName(this.raffle()?.title || 'rifa')}-participantes.${format}`;
+    anchor.click();
+    globalThis.URL.revokeObjectURL(url);
   }
 
   confirmationText(): string {
@@ -1839,4 +2100,63 @@ function actionSuccessMessage(action: LifecycleAction): string {
     resume: 'La rifa volvió a estar activa.',
     close: 'La venta quedó cerrada. Las operaciones iniciadas siguen su curso.',
   }[action];
+}
+
+function raffleRowPaymentState(
+  item: AdminRaffleNumber,
+  purchase: AdminRafflePurchase | null,
+): Exclude<RafflePaymentFilter, 'ALL'> | null {
+  if (
+    purchase?.status === 'REFUNDED' ||
+    purchase?.orderStatus === 'REFUNDED' ||
+    item.order?.status === 'REFUNDED'
+  ) {
+    return 'REFUNDED';
+  }
+  if (
+    purchase?.status === 'PAID' ||
+    purchase?.orderStatus === 'PAID' ||
+    item.order?.status === 'PAID'
+  ) {
+    return 'PAID';
+  }
+  if (
+    item.status === 'RESERVED' ||
+    purchase?.status === 'RESERVED' ||
+    purchase?.status === 'PAYMENT_PENDING' ||
+    purchase?.orderStatus === 'AWAITING_PAYMENT' ||
+    purchase?.orderStatus === 'PAYMENT_PENDING' ||
+    item.order?.status === 'AWAITING_PAYMENT' ||
+    item.order?.status === 'PAYMENT_PENDING'
+  ) {
+    return 'PENDING';
+  }
+  return null;
+}
+
+function raffleRowPaymentLabel(
+  item: AdminRaffleNumber,
+  purchase: AdminRafflePurchase | null,
+  state: Exclude<RafflePaymentFilter, 'ALL'> | null,
+): string {
+  if (state === 'PAID') return 'Pagado';
+  if (state === 'PENDING') return 'Pendiente';
+  if (state === 'REFUNDED') return 'Reembolsado';
+  return item.payment?.providerStatus || purchase?.status || '—';
+}
+
+function normalizeSearch(value: string): string {
+  return value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim()
+    .toLocaleLowerCase('es');
+}
+
+function slugifyFileName(value: string): string {
+  return (
+    normalizeSearch(value)
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '') || 'rifa'
+  );
 }
