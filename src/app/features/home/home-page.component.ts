@@ -1,12 +1,15 @@
 import { NgOptimizedImage } from '@angular/common';
-import { Component, inject } from '@angular/core';
+import { Component, computed, DestroyRef, inject, OnInit, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
 
 import { DONATION_CONFIG } from '../../core/config/donation.config';
 import { RescueCase } from '../../core/models/rescue-case.model';
 import { RescueCasesService } from '../../core/services/rescue-cases.service';
 import { formatArs } from '../../core/utils/format-ars';
-import { MERCH_PRODUCTS } from '../../data/merch/merch-products.data';
+import { PublicCommerceApiService } from '../../shop/core/public-commerce-api.service';
+import { PublicProduct } from '../../shop/core/commerce.models';
+import { selectCoverMedia } from '../../shop/core/product-media.util';
 import { AppFooterComponent } from '../../shared/components/app-footer/app-footer.component';
 import { AppHeaderComponent } from '../../shared/components/app-header/app-header.component';
 import { BottomNavigationComponent } from '../../shared/components/bottom-navigation/bottom-navigation.component';
@@ -710,23 +713,29 @@ import { HeroMotionDirective } from './hero-motion.directive';
           </div>
           <div class="home-carousel-window overflow-hidden" aria-label="Productos solidarios">
             <div class="home-carousel-track">
-              @for (image of productCarousel; track $index) {
+              @for (image of productCarousel(); track $index) {
                 <a
-                  routerLink="/tienda"
+                  [routerLink]="['/tienda', image.slug]"
+                  [attr.aria-label]="'Ver producto ' + image.name"
                   class="home-product-slide overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[var(--color-card)]"
                 >
                   <img
                     class="aspect-square h-full w-full object-cover"
                     [ngSrc]="image.src"
                     [alt]="image.alt"
-                    [width]="image.width"
-                    [height]="image.height"
+                    width="400"
+                    height="400"
                     loading="lazy"
                     sizes="(min-width: 768px) 18vw, 55vw"
                   />
                 </a>
               }
             </div>
+            @if (!productCarousel().length) {
+              <p class="py-6 text-sm text-[var(--color-text-muted)]">
+                {{ productsLoading() ? 'Cargando productos…' : 'Conocé las novedades en nuestra tienda.' }}
+              </p>
+            }
           </div>
         </div>
       </section>
@@ -736,8 +745,12 @@ import { HeroMotionDirective } from './hero-motion.directive';
     <app-bottom-navigation />
   `,
 })
-export class HomePageComponent {
+export class HomePageComponent implements OnInit {
   private readonly casesService = inject(RescueCasesService);
+  private readonly commerceApi = inject(PublicCommerceApiService);
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly products = signal<PublicProduct[]>([]);
+  protected readonly productsLoading = signal(true);
 
   protected readonly donationConfig = DONATION_CONFIG;
   protected readonly formattedDebt = formatArs(DONATION_CONFIG.currentDebt);
@@ -753,9 +766,21 @@ export class HomePageComponent {
     'tom',
   ].map((slug) => this.casesService.getBySlug(slug));
   protected readonly caseCarousel = [...this.highlightedCases, ...this.highlightedCases];
-  private readonly productImages = MERCH_PRODUCTS.flatMap((product) => [
-    product.coverImage,
-    ...product.gallery,
-  ]);
-  protected readonly productCarousel = [...this.productImages, ...this.productImages];
+  protected readonly productCarousel = computed(() => {
+    const images = this.products().flatMap((product) => {
+      const cover = selectCoverMedia(product);
+      return cover ? [{ src: cover.url, alt: cover.alt || product.name, slug: product.slug, name: product.name }] : [];
+    });
+    return [...images, ...images];
+  });
+
+  ngOnInit(): void {
+    this.commerceApi.products().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (products) => {
+        this.products.set(products);
+        this.productsLoading.set(false);
+      },
+      error: () => this.productsLoading.set(false),
+    });
+  }
 }
