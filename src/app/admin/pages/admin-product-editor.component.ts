@@ -448,32 +448,28 @@ interface DeletionTarget {
 
               <fieldset>
                 <legend>Talles</legend>
+                <p>Seleccioná los talles que querés generar. Podés activar o desactivar cualquiera.</p>
                 <div class="size-options">
-                  @for (size of commonSizes; track size) {
+                  @for (size of generatorSizeOptions(); track size) {
                     <button
                       type="button"
                       class="button button-secondary size-option"
                       [class.is-selected]="variantGenerator()!.sizes.includes(size)"
+                      [attr.aria-pressed]="variantGenerator()!.sizes.includes(size)"
                       (click)="toggleGeneratorSize(size)"
                     >{{ size }}</button>
                   }
                 </div>
-                @if (customGeneratorSizes().length) {
-                  <div class="chip-list">
-                    @for (size of customGeneratorSizes(); track size) {
-                      <button type="button" class="button button-secondary" (click)="removeGeneratorSize(size)">{{ size }} <span aria-hidden="true">×</span></button>
-                    }
-                  </div>
-                }
                 <div class="add-attribute">
                   <input
                     [ngModel]="variantGenerator()!.customSize"
                     (ngModelChange)="updateVariantGenerator('customSize', $event)"
                     name="generatorCustomSize"
                     placeholder="Otro talle"
+                    aria-label="Otro talle"
                     (keydown.enter)="$event.preventDefault(); addCustomGeneratorSize()"
                   />
-                  <button type="button" class="button button-secondary" (click)="addCustomGeneratorSize()">Otro talle</button>
+                  <button type="button" class="button button-secondary" (click)="addCustomGeneratorSize()">Agregar talle</button>
                 </div>
               </fieldset>
 
@@ -631,7 +627,7 @@ export class AdminProductEditorComponent implements OnInit {
   readonly failedImages = signal(new Set<string>());
   readonly draftImageFailed = signal(false);
   readonly initialImageFailed = signal(false);
-  readonly commonSizes = ['S', 'M', 'L', 'XL', 'XXL'];
+  readonly suggestedSizes = ['T1', 'T2', 'T3', 'T4', 'T5', 'T6', 'T8'];
   model: ProductForm = {
     name: '',
     slug: '',
@@ -769,6 +765,7 @@ export class AdminProductEditorComponent implements OnInit {
       colors: color ? [color] : [],
       colorInput: '',
       sizes: legacySizes,
+      sizeOptions: [...this.suggestedSizes, ...legacySizes],
       customSize: '',
       price: legacy ? centsToArsInput(legacy.priceInCents) : '',
       skuPrefix: skuPrefix(this.product()?.slug || this.model.slug),
@@ -853,23 +850,23 @@ export class AdminProductEditorComponent implements OnInit {
 
   addCustomGeneratorSize(): void {
     const draft = this.variantGenerator();
-    const size = draft?.customSize.trim();
-    if (!draft || !size || !isSingleSize(size) || draft.sizes.some((item) => normalized(item) === normalized(size))) {
+    const input = draft?.customSize.trim().replace(/\s+/g, ' ');
+    if (!draft || !input || !isSingleSize(input)) {
       return;
     }
-    this.variantGenerator.set({ ...draft, sizes: [...draft.sizes, size], customSize: '' });
+    const size = this.generatorSizeOptions().find((item) => normalized(item) === normalized(input)) ?? input;
+    this.variantGenerator.set({
+      ...draft,
+      sizeOptions: [...new Set([...draft.sizeOptions, size])],
+      sizes: draft.sizes.includes(size) ? draft.sizes : [...draft.sizes, size],
+      customSize: '',
+    });
     this.refreshGeneratedVariants();
   }
 
-  removeGeneratorSize(size: string): void {
-    this.variantGenerator.update((draft) =>
-      draft ? { ...draft, sizes: draft.sizes.filter((item) => item !== size) } : draft,
-    );
-    this.refreshGeneratedVariants();
-  }
-
-  customGeneratorSizes(): string[] {
-    return this.variantGenerator()?.sizes.filter((size) => !this.commonSizes.includes(size)) ?? [];
+  generatorSizeOptions(): string[] {
+    const draft = this.variantGenerator();
+    return draft ? [...new Set([...draft.sizeOptions, ...draft.sizes])] : [];
   }
 
   refreshGeneratedVariants(): void {
@@ -1338,6 +1335,7 @@ interface VariantGeneratorForm {
   colors: string[];
   colorInput: string;
   sizes: string[];
+  sizeOptions: string[];
   customSize: string;
   price: string;
   skuPrefix: string;
@@ -1370,7 +1368,7 @@ function variantAttributes(draft: VariantForm): Record<string, string> | undefin
 }
 
 function isSingleSize(value: string): boolean {
-  return !value.trim() || (!/[,;/]/.test(value) && !/\s/.test(value.trim()));
+  return !/[,;/]/.test(value);
 }
 
 function variantValue(variant: AdminProductVariant, key: 'model' | 'color' | 'size'): string {

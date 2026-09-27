@@ -351,6 +351,61 @@ describe('AdminProductEditorComponent ProductMedia UX', () => {
     http.expectOne(`${ADMIN_API_BASE_URL}/products/product-id`).flush(productDetail());
   });
 
+  it('renders only the numbered suggestions with none selected initially', () => {
+    component.openVariantGenerator();
+    fixture.detectChanges();
+    const chips = Array.from(fixture.nativeElement.querySelectorAll('.size-option')) as HTMLButtonElement[];
+    expect(chips.map((chip) => chip.textContent?.trim())).toEqual(['T1', 'T2', 'T3', 'T4', 'T5', 'T6', 'T8']);
+    expect(chips.every((chip) => chip.getAttribute('aria-pressed') === 'false')).toBe(true);
+    expect(component.variantGenerator()?.sizes).toEqual([]);
+    chips[0].click();
+    fixture.detectChanges();
+    expect(chips[0].getAttribute('aria-pressed')).toBe('true');
+    chips[0].click();
+    fixture.detectChanges();
+    expect(chips[0].getAttribute('aria-pressed')).toBe('false');
+    expect(component.generatedVariants()).toEqual([]);
+  });
+
+  it('normalizes custom sizes and keeps them available with the same toggle behavior', () => {
+    component.openVariantGenerator();
+    component.updateVariantGenerator('customSize', '  Kids   1  ');
+    component.addCustomGeneratorSize();
+    expect(component.variantGenerator()?.sizes).toEqual(['Kids 1']);
+    component.toggleGeneratorSize('Kids 1');
+    expect(component.variantGenerator()?.sizes).toEqual([]);
+    expect(component.generatorSizeOptions()).toContain('Kids 1');
+    fixture.detectChanges();
+    const chip = (Array.from(fixture.nativeElement.querySelectorAll('.size-option')) as HTMLButtonElement[])
+      .find((item) => item.textContent?.trim() === 'Kids 1')!;
+    expect(chip.getAttribute('aria-pressed')).toBe('false');
+    chip.click();
+    expect(component.variantGenerator()?.sizes).toEqual(['Kids 1']);
+    component.updateVariantGenerator('customSize', 'kids   1');
+    component.addCustomGeneratorSize();
+    expect(component.variantGenerator()?.sizes).toEqual(['Kids 1']);
+    expect(component.generatorSizeOptions().filter((size) => size === 'Kids 1')).toHaveLength(1);
+    component.updateVariantGenerator('customSize', 't1');
+    component.addCustomGeneratorSize();
+    expect(component.variantGenerator()?.sizes).toEqual(['Kids 1', 'T1']);
+    expect(component.generatorSizeOptions()).not.toContain('t1');
+  });
+
+  it('generates only selected sizes and still supports model-only combinations', () => {
+    component.openVariantGenerator();
+    component.variantGenerator.update((draft) => ({ ...draft!, models: ['Hilo rojo', 'Michis espacio'] }));
+    for (const size of ['T1', 'T2', 'T4', 'T6']) component.toggleGeneratorSize(size);
+    component.toggleGeneratorSize('T1');
+    expect(component.generatedVariants()).toHaveLength(6);
+    expect(component.generatedVariants().map(({ model, size }) => [model, size])).toEqual([
+      ['Hilo rojo', 'T2'], ['Hilo rojo', 'T4'], ['Hilo rojo', 'T6'],
+      ['Michis espacio', 'T2'], ['Michis espacio', 'T4'], ['Michis espacio', 'T6'],
+    ]);
+    for (const size of ['T2', 'T4', 'T6']) component.toggleGeneratorSize(size);
+    expect(component.generatedVariants()).toHaveLength(2);
+    expect(component.generatedVariants().every((variant) => variant.size === '')).toBe(true);
+  });
+
   it('generates one editable preview per color and size combination', () => {
     component.product.set(productDetail({ name: 'Remera Gatarsis', slug: 'remera-gatarsis' }));
     component.openVariantGenerator();
