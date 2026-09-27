@@ -284,7 +284,8 @@ export class ProductDetailPageComponent implements OnInit {
   }
 
   structuredAttributeKeys(product: PublicProduct): string[] {
-    return attributeKeys(product.variants);
+    const model = this.selectedAttributes()['model'];
+    return attributeKeys(model ? product.variants.filter((item) => variantAttribute(item, 'model') === model) : product.variants);
   }
 
   attributeOptions(product: PublicProduct, key: string): string[] {
@@ -339,8 +340,11 @@ export class ProductDetailPageComponent implements OnInit {
   selectAttribute(product: PublicProduct, key: string, value: string): void {
     const keys = this.structuredAttributeKeys(product);
     const keyIndex = keys.indexOf(key);
-    const next = { ...this.selectedAttributes(), [key]: value };
-    keys.slice(keyIndex + 1).forEach((following) => delete next[following]);
+    const next = Object.fromEntries(
+      keys.slice(0, keyIndex).filter((previous) => !!this.selectedAttributes()[previous])
+        .map((previous) => [previous, this.selectedAttributes()[previous]]),
+    );
+    next[key] = value;
     this.selectedAttributes.set(next);
     this.selectedVariant.set(this.variantForAttributes(product, next));
     this.selectedMedia.set(selectGalleryCover(this.galleryMedia(product)));

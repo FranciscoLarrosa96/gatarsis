@@ -11,6 +11,7 @@ export interface PublicProductMedia {
 export type VariantAttributes = Readonly<Record<string, string>>;
 
 export interface PublicProductVariant {
+  model?: string | null;
   id: string;
   sku: string;
   name: string;

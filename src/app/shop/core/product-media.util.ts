@@ -16,7 +16,15 @@ export function galleryForVariant(
 ): PublicProductMedia[] {
   const specific = sortedMedia(variant?.media ?? []);
   if (specific.length) return specific;
+  const model = variant ? variantAttribute(variant, 'model') : null;
   const color = variant ? variantAttribute(variant, 'color') : null;
+  if (model) {
+    const sameModelMedia = product.variants
+      .filter((candidate) => variantAttribute(candidate, 'model') === model && (!color || variantAttribute(candidate, 'color') === color))
+      .flatMap((candidate) => sortedMedia(candidate.media ?? []));
+    if (sameModelMedia.length) return sameModelMedia;
+    return sortedMedia(product.media);
+  }
   if (color) {
     const sameColorMedia = product.variants
       .filter(

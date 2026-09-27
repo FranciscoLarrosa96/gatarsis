@@ -43,6 +43,7 @@ export interface AdminProductMedia {
 }
 
 export interface AdminProductVariant {
+  model?: string | null;
   id: string;
   productId: string;
   sku: string;
@@ -93,6 +94,7 @@ export interface UpdateAdminProductRequest {
 }
 
 export interface CreateAdminVariantRequest {
+  model?: string | null;
   sku: string;
   name: string;
   color?: string | null;
@@ -106,6 +108,7 @@ export interface CreateAdminVariantRequest {
 }
 
 export interface UpdateAdminVariantRequest {
+  model?: string | null;
   sku?: string;
   name?: string;
   color?: string | null;

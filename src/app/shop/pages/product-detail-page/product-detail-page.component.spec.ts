@@ -184,6 +184,68 @@ describe('ProductDetailPageComponent variant pricing', () => {
     expect(component.selectedVariant()).toBeNull();
     expect(component.emptyAttributeMessage('size')).toBe('Los talles de este producto todavía no están disponibles.');
   });
+
+  it('shows models without color and stores the concrete model in the cart', () => {
+    const models: PublicProduct = {
+      ...product,
+      variants: product.variants.slice(0, 2).map((variant, index) => ({
+        ...variant, model: index === 0 ? 'Patita' : 'Corazón', color: null, size: null,
+      })),
+    };
+    component.product.set(models);
+    component.selectAttribute(models, 'model', 'Corazón');
+    fixture.detectChanges();
+
+    expect(component.structuredAttributeKeys(models)).toEqual(['model']);
+    const legends = [...fixture.nativeElement.querySelectorAll('legend')].map((item: HTMLElement) => item.textContent.trim());
+    expect(legends).toEqual(['Modelo']);
+    expect(component.selectedVariant()?.id).toBe('black');
+    component.addToCart(models, component.selectedVariant()!);
+    expect(cart.items()[0].variantName).toBe('Corazón');
+  });
+
+  it('resolves model and size with exact stock, price and model-specific images', () => {
+    const models: PublicProduct = {
+      ...product,
+      variants: [
+        { ...product.variants[0], id: 'hilo-s', model: 'Hilo rojo', color: null, size: 'S', availableStock: 0 },
+        { ...product.variants[0], id: 'hilo-m', model: 'Hilo rojo', color: null, size: 'M', availableStock: 4, media: [] },
+        { ...product.variants[1], id: 'espacio-m', model: 'Michis espacio', color: null, size: 'M', availableStock: 2 },
+      ],
+    };
+    component.product.set(models);
+    component.selectAttribute(models, 'model', 'Hilo rojo');
+    expect(component.isAttributeOptionDisabled(models, 'size', 'S')).toBe(true);
+    expect(component.isAttributeOptionDisabled(models, 'size', 'M')).toBe(false);
+    component.selectAttribute(models, 'size', 'M');
+    expect(component.selectedVariant()?.id).toBe('hilo-m');
+    expect(component.selectedMedia()?.id).toBe('white-image');
+    component.addToCart(models, component.selectedVariant()!);
+    expect(cart.items()[0].variantName).toBe('Hilo rojo · M');
+
+    component.selectAttribute(models, 'model', 'Michis espacio');
+    expect(component.selectedVariant()).toBeNull();
+    expect(component.selectedAttributes()).toEqual({ model: 'Michis espacio' });
+    expect(component.attributeOptions(models, 'size')).toEqual(['M']);
+    expect(component.selectedMedia()?.id).toBe('black-image');
+    component.selectAttribute(models, 'size', 'M');
+    expect(component.priceLabel(models)).toBe(component.money(100));
+  });
+
+  it('resolves model, color and size to a single concrete variant', () => {
+    const models: PublicProduct = {
+      ...product,
+      variants: [{ ...product.variants[0], model: 'Hilo rojo', color: 'Negro', size: 'L' }],
+    };
+    component.product.set(models);
+    component.selectAttribute(models, 'model', 'Hilo rojo');
+    component.selectAttribute(models, 'color', 'Negro');
+    expect(component.selectedVariant()).toBeNull();
+    component.selectAttribute(models, 'size', 'L');
+    component.addToCart(models, component.selectedVariant()!);
+    expect(cart.items()[0].variantId).toBe('white');
+    expect(cart.items()[0].variantName).toBe('Hilo rojo · Negro · L');
+  });
 });
 
 function makeProduct(): PublicProduct {

@@ -19,6 +19,7 @@ const VARIANT_COLOR_MAP: Record<string, string> = {
 };
 
 const ATTRIBUTE_LABELS: Readonly<Record<string, string>> = {
+  model: 'Modelo',
   color: 'Color',
   size: 'Talle',
 };
@@ -30,6 +31,8 @@ export function variantColor(variant: PublicProductVariant): string | null {
 }
 
 export function publicVariantLabel(variant: PublicProductVariant): string {
+  const model = variantAttribute(variant, 'model');
+  if (model) return [model, variantAttribute(variant, 'color'), variantAttribute(variant, 'size')].filter(Boolean).join(' · ');
   if (!hasExplicitAttributes(variant)) return variant.name;
   const color = variantAttribute(variant, 'color');
   const size = variantAttribute(variant, 'size');
@@ -58,7 +61,7 @@ export function attributeKeys(variants: PublicProductVariant[]): string[] {
       if (value.trim()) keys.add(key);
     }),
   );
-  const priority = ['color', 'size'];
+  const priority = ['model', 'color', 'size'];
   return [...keys].sort(
     (left, right) =>
       (priority.indexOf(left) + 1 || 99) - (priority.indexOf(right) + 1 || 99) ||
@@ -105,6 +108,7 @@ function compareSizes(left: string, right: string): number {
 
 function effectiveAttributes(variant: PublicProductVariant): VariantAttributes {
   return {
+    ...(variant.model ? { model: variant.model } : {}),
     ...(variant.color ? { color: variant.color } : {}),
     ...(variant.size ? { size: variant.size } : {}),
     ...(variant.attributes ?? {}),

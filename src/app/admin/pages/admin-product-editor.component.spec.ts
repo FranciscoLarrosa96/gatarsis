@@ -315,7 +315,7 @@ describe('AdminProductEditorComponent ProductMedia UX', () => {
 
     const request = http.expectOne(`${ADMIN_API_BASE_URL}/products/product-id/variants`);
     expect(request.request.body).toEqual({
-      name: 'Talle M', sku: 'SKU-M', priceInCents: 150000, color: null, size: null,
+      name: 'Talle M', sku: 'SKU-M', priceInCents: 150000, model: null, color: null, size: null,
       sortOrder: 0, lowStockThreshold: 2, active: true, initialStock: 10,
     });
     request.flush({ id: 'variant-id', productId: 'product-id', sku: 'SKU-M', name: 'Talle M', color: null, size: null, priceInCents: 150000, active: true, sortOrder: 0, lowStockThreshold: 2, createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z' });
@@ -370,6 +370,62 @@ describe('AdminProductEditorComponent ProductMedia UX', () => {
       expect.objectContaining({ color: 'Negro', size: 'M', sku: 'REM-GAT-NEG-M' }),
     ]));
     expect(component.generatedVariants()).toHaveLength(4);
+  });
+
+  it.each([
+    { models: ['Patita', 'Corazón', 'Logo Gatarsis'], colors: [], sizes: [], count: 3 },
+    { models: ['Hilo rojo', 'Michis espacio'], colors: [], sizes: ['S', 'M', 'L'], count: 6 },
+    { models: [], colors: ['Negro', 'Blanco'], sizes: ['S', 'M', 'L'], count: 6 },
+    { models: ['Hilo rojo', 'Michis espacio'], colors: ['Negro', 'Blanco'], sizes: ['S', 'M', 'L'], count: 12 },
+  ])('generates $count concrete combinations for independent dimensions', ({ models, colors, sizes, count }) => {
+    component.openVariantGenerator();
+    component.variantGenerator.update((draft) => ({ ...draft!, models, colors, sizes, price: '5000', skuPrefix: 'GATARSIS' }));
+    component.refreshGeneratedVariants();
+
+    expect(component.generatedVariants()).toHaveLength(count);
+    expect(component.creatableGeneratedVariants()).toHaveLength(count);
+    if (models.length) {
+      expect(component.generatedVariants()[0].model).toBe(models[0]);
+      expect(component.generatedVariants()[0].sku).toContain(models[0].toUpperCase().replace(' ', '-'));
+    }
+  });
+
+  it('trims models, rejects empty and duplicate options and allows removal', () => {
+    component.openVariantGenerator();
+    component.updateVariantGenerator('modelInput', ' Patita ');
+    component.addGeneratorModel();
+    component.updateVariantGenerator('modelInput', 'PATITA');
+    component.addGeneratorModel();
+    component.updateVariantGenerator('modelInput', '   ');
+    component.addGeneratorModel();
+    expect(component.variantGenerator()?.models).toEqual(['Patita']);
+    component.removeGeneratorModel('Patita');
+    expect(component.generatedVariants()).toEqual([]);
+  });
+
+  it('skips existing model combinations regardless of case and whitespace', () => {
+    component.product.set(productDetail({ variants: [{
+      ...createdVariant('LLA-PATITA', '', ''), model: ' Patita ', attributes: { model: ' Patita ' },
+    }] }));
+    component.openVariantGenerator();
+    component.variantGenerator.update((draft) => ({ ...draft!, models: ['PATITA', 'Corazón'], colors: [], sizes: [], price: '5000', skuPrefix: 'LLAVERO' }));
+    component.refreshGeneratedVariants();
+    expect(component.generatedVariants()[0].exists).toBe(true);
+    expect(component.creatableGeneratedVariants().map((item) => item.model)).toEqual(['Corazón']);
+  });
+
+  it('sends model-only generated variants with no color or size', () => {
+    component.openVariantGenerator();
+    component.variantGenerator.update((draft) => ({ ...draft!, models: ['Patita'], colors: [], sizes: [], price: '5000', skuPrefix: 'LLAVERO-GATARSIS', initialStock: 10 }));
+    component.refreshGeneratedVariants();
+    component.createGeneratedVariants();
+    const request = http.expectOne(`${ADMIN_API_BASE_URL}/products/product-id/variants`);
+    expect(request.request.body).toEqual(expect.objectContaining({
+      model: 'Patita', color: null, size: null, sku: 'LLAVERO-GATARSIS-PATITA',
+      attributes: { model: 'Patita' }, initialStock: 10, priceInCents: 500000,
+    }));
+    request.flush({ ...createdVariant('LLAVERO-GATARSIS-PATITA', '', ''), model: 'Patita', attributes: { model: 'Patita' } });
+    http.expectOne(`${ADMIN_API_BASE_URL}/products/product-id`).flush(productDetail());
   });
 
   it('keeps preview names, SKU and prices editable before creation', () => {

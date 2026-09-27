@@ -30,6 +30,7 @@ interface ProductForm {
 }
 
 interface VariantForm {
+  model: string;
   id: string | null;
   sku: string;
   name: string;
@@ -228,7 +229,7 @@ interface DeletionTarget {
                       <td><code>{{ item.sku }}</code></td>
                       <td>{{ ars(item.priceInCents) }}</td>
                       <td>
-                        {{ item.attributes?.['color'] || item.color || '—' }} / {{ item.attributes?.['size'] || item.size || '—' }}
+                        {{ variantDimensions(item) }}
                         @if (hasLegacyMultipleSizes(item)) {
                           <p class="muted">
                             <span>Esta variante contiene varios talles en un único registro.</span>
@@ -336,6 +337,7 @@ interface DeletionTarget {
                 <input [(ngModel)]="variant()!.lowStockThreshold" name="lowStockThreshold" type="number" min="0" />
                 <small>Cuando el stock disponible llegue a este valor se considera bajo.</small>
               </label>
+              <label>Modelo<input [(ngModel)]="variant()!.model" name="variantModel" maxlength="120" /></label>
               <label>Color<input [(ngModel)]="variant()!.color" name="color" /></label>
               <label>
                 Talle
@@ -410,6 +412,19 @@ interface DeletionTarget {
             </header>
 
             <div class="generator-controls">
+              <p>Usá sólo las opciones que correspondan al producto. Un llavero puede tener sólo modelos; una remera puede combinar modelo y talle.</p>
+              <fieldset>
+                <legend>Modelos</legend>
+                <div class="chip-list">
+                  @for (model of variantGenerator()!.models; track model) {
+                    <button type="button" class="button button-secondary" (click)="removeGeneratorModel(model)">{{ model }} <span aria-hidden="true">×</span></button>
+                  }
+                </div>
+                <div class="add-attribute">
+                  <input [ngModel]="variantGenerator()!.modelInput" (ngModelChange)="updateVariantGenerator('modelInput', $event)" name="generatorModel" placeholder="Otro modelo..." aria-label="Nuevo modelo" maxlength="120" (keydown.enter)="$event.preventDefault(); addGeneratorModel()" />
+                  <button type="button" class="button button-secondary" (click)="addGeneratorModel()">Agregar modelo</button>
+                </div>
+              </fieldset>
               <fieldset>
                 <legend>Colores</legend>
                 @if (variantGenerator()!.colors.length) {
@@ -486,7 +501,7 @@ interface DeletionTarget {
                     <tbody>
                       @for (draft of generatedVariants(); track $index; let index = $index) {
                         <tr [class.row-muted]="draft.exists">
-                          <td>{{ draft.color || 'Sin color' }} / {{ draft.size || 'Sin talle' }}</td>
+                          <td>{{ generatedDimensions(draft) }}</td>
                           <td><input [ngModel]="draft.name" (ngModelChange)="updateGeneratedVariant(index, 'name', $event)" [name]="'generatedName' + index" /></td>
                           <td><input [ngModel]="draft.sku" (ngModelChange)="updateGeneratedVariant(index, 'sku', $event)" [name]="'generatedSku' + index" /></td>
                           <td><input [ngModel]="draft.price" (ngModelChange)="updateGeneratedVariant(index, 'price', $event)" [name]="'generatedPrice' + index" inputmode="decimal" /></td>
@@ -503,7 +518,7 @@ interface DeletionTarget {
                   </table>
                 </div>
               } @else {
-                <p class="empty compact">Elegí al menos un color o un talle para generar combinaciones.</p>
+                <p class="empty compact">Elegí al menos un modelo, color o talle para generar variantes.</p>
               }
             </section>
 
@@ -749,6 +764,8 @@ export class AdminProductEditorComponent implements OnInit {
     const color = legacy ? variantValue(legacy, 'color') : '';
     const legacySizes = legacy ? splitLegacySizes(variantValue(legacy, 'size')) : [];
     const next: VariantGeneratorForm = {
+      models: legacy && variantValue(legacy, 'model') ? [variantValue(legacy, 'model')] : [],
+      modelInput: '',
       colors: color ? [color] : [],
       colorInput: '',
       sizes: legacySizes,
@@ -780,7 +797,7 @@ export class AdminProductEditorComponent implements OnInit {
         [field]: field === 'sortOrder' || field === 'initialStock' ? Number(value) : value,
       } as VariantGeneratorForm;
     });
-    if (field !== 'colorInput' && field !== 'customSize') this.refreshGeneratedVariants();
+    if (field !== 'modelInput' && field !== 'colorInput' && field !== 'customSize') this.refreshGeneratedVariants();
   }
 
   addGeneratorColor(): void {
@@ -789,6 +806,29 @@ export class AdminProductEditorComponent implements OnInit {
     if (!draft || !color || draft.colors.some((item) => normalized(item) === normalized(color))) return;
     this.variantGenerator.set({ ...draft, colors: [...draft.colors, color], colorInput: '' });
     this.refreshGeneratedVariants();
+  }
+
+  addGeneratorModel(): void {
+    const draft = this.variantGenerator();
+    const model = draft?.modelInput.trim();
+    if (!draft || !model || draft.models.some((item) => normalized(item) === normalized(model))) return;
+    this.variantGenerator.set({ ...draft, models: [...draft.models, model], modelInput: '' });
+    this.refreshGeneratedVariants();
+  }
+
+  removeGeneratorModel(model: string): void {
+    this.variantGenerator.update((draft) =>
+      draft ? { ...draft, models: draft.models.filter((item) => item !== model) } : draft,
+    );
+    this.refreshGeneratedVariants();
+  }
+
+  variantDimensions(item: AdminProductVariant): string {
+    return (['model', 'color', 'size'] as const).map((key) => variantValue(item, key)).filter(Boolean).join(' / ') || 'Sin opciones';
+  }
+
+  generatedDimensions(item: GeneratedVariantDraft): string {
+    return [item.model, item.color, item.size].filter(Boolean).join(' / ');
   }
 
   removeGeneratorColor(color: string): void {
@@ -837,24 +877,25 @@ export class AdminProductEditorComponent implements OnInit {
     if (!draft) return;
     const colors = draft.colors.length ? draft.colors : [''];
     const sizes = draft.sizes.length ? draft.sizes : [''];
-    if (!draft.colors.length && !draft.sizes.length) {
+    if (!draft.models.length && !draft.colors.length && !draft.sizes.length) {
       this.generatedVariants.set([]);
       return;
     }
     const existing = this.product()?.variants ?? [];
-    const combinations = colors.flatMap((color) =>
-      sizes.map((size) => ({ color, size })),
+    const combinations = (draft.models.length ? draft.models : ['']).flatMap((model) =>
+      colors.flatMap((color) => sizes.map((size) => ({ model, color, size }))),
     );
-    const rows = combinations.map(({ color, size }, index) => ({
+    const rows = combinations.map(({ model, color, size }, index) => ({
+        model,
         color,
         size,
-        name: [this.product()?.name || this.model.name, color, size].filter(Boolean).join(' '),
-        sku: generatedSku(draft.skuPrefix, color, size),
+        name: [this.product()?.name || this.model.name, model, color, size].filter(Boolean).join(' '),
+        sku: generatedSku(draft.skuPrefix, model, color, size),
         price: draft.price,
         active: draft.active,
         sortOrder: Number(draft.sortOrder) + index,
         initialStock: Number(draft.initialStock),
-        exists: existing.some((item) => sameCombination(item, color, size)),
+        exists: existing.some((item) => sameCombination(item, model, color, size)),
         error: null,
       }));
     this.generatedVariants.set(this.withDuplicateSkuErrors(rows));
@@ -935,12 +976,14 @@ export class AdminProductEditorComponent implements OnInit {
       return;
     }
     const attributes = {
+      ...(draft.model.trim() ? { model: draft.model.trim() } : {}),
       ...(draft.color.trim() ? { color: draft.color.trim() } : {}),
       ...(draft.size.trim() ? { size: draft.size.trim() } : {}),
     };
     const body: CreateAdminVariantRequest = {
       name: draft.name.trim(),
       sku: draft.sku.trim(),
+      model: nullable(draft.model),
       color: nullable(draft.color),
       size: nullable(draft.size),
       ...(Object.keys(attributes).length ? { attributes } : {}),
@@ -989,6 +1032,7 @@ export class AdminProductEditorComponent implements OnInit {
   newVariant(): void {
     this.variant.set({
       id: null,
+      model: '',
       sku: '',
       name: '',
       color: '',
@@ -1004,6 +1048,7 @@ export class AdminProductEditorComponent implements OnInit {
   editVariant(item: AdminProductVariant): void {
     this.variant.set({
       id: item.id,
+      model: variantValue(item, 'model'),
       sku: item.sku,
       name: item.name,
       color: item.attributes?.['color'] ?? item.color ?? '',
@@ -1029,12 +1074,19 @@ export class AdminProductEditorComponent implements OnInit {
       return;
     }
     const attributes = variantAttributes(draft);
+    if ((this.product()?.variants ?? []).some((item) =>
+      item.id !== draft.id && sameCombination(item, draft.model, draft.color, draft.size),
+    )) {
+      this.feedback('error', 'Ya existe una variante con ese modelo, color y talle.');
+      return;
+    }
     const baseBody: UpdateAdminVariantRequest = {
       sku: draft.sku,
       name: draft.name,
+      model: nullable(draft.model),
       color: nullable(draft.color),
       size: nullable(draft.size),
-      ...(attributes ? { attributes } : {}),
+      attributes: attributes ?? {},
       priceInCents,
       active: draft.active,
       sortOrder: draft.sortOrder,
@@ -1047,6 +1099,7 @@ export class AdminProductEditorComponent implements OnInit {
     const body: CreateAdminVariantRequest = {
       sku: draft.sku,
       name: draft.name,
+      model: nullable(draft.model),
       color: nullable(draft.color),
       size: nullable(draft.size),
       ...(attributes ? { attributes } : {}),
@@ -1280,6 +1333,8 @@ function nullable(value: string): string | null {
 }
 
 interface VariantGeneratorForm {
+  models: string[];
+  modelInput: string;
   colors: string[];
   colorInput: string;
   sizes: string[];
@@ -1292,6 +1347,7 @@ interface VariantGeneratorForm {
 }
 
 interface GeneratedVariantDraft {
+  model: string;
   color: string;
   size: string;
   name: string;
@@ -1306,6 +1362,7 @@ interface GeneratedVariantDraft {
 
 function variantAttributes(draft: VariantForm): Record<string, string> | undefined {
   const attributes = {
+    ...(nullable(draft.model) ? { model: draft.model.trim() } : {}),
     ...(nullable(draft.color) ? { color: draft.color.trim() } : {}),
     ...(nullable(draft.size) ? { size: draft.size.trim() } : {}),
   };
@@ -1316,14 +1373,15 @@ function isSingleSize(value: string): boolean {
   return !value.trim() || (!/[,;/]/.test(value) && !/\s/.test(value.trim()));
 }
 
-function variantValue(variant: AdminProductVariant, key: 'color' | 'size'): string {
+function variantValue(variant: AdminProductVariant, key: 'model' | 'color' | 'size'): string {
   return variant.attributes?.[key] ?? variant[key] ?? '';
 }
 
 function variantDeletionLabel(variant: AdminProductVariant): string {
+  const model = variantValue(variant, 'model');
   const color = variantValue(variant, 'color');
   const size = variantValue(variant, 'size');
-  return [variant.name, color && 'Color ' + color, size && 'Talle ' + size]
+  return [variant.name, model && 'Modelo ' + model, color && 'Color ' + color, size && 'Talle ' + size]
     .filter(Boolean)
     .join(' · ');
 }
@@ -1336,8 +1394,9 @@ function splitLegacySizes(value: string): string[] {
     .filter((item) => !!item && isSingleSize(item));
 }
 
-function sameCombination(variant: AdminProductVariant, color: string, size: string): boolean {
-  return normalized(variantValue(variant, 'color')) === normalized(color)
+function sameCombination(variant: AdminProductVariant, model: string, color: string, size: string): boolean {
+  return normalized(variantValue(variant, 'model')) === normalized(model)
+    && normalized(variantValue(variant, 'color')) === normalized(color)
     && normalized(variantValue(variant, 'size')) === normalized(size);
 }
 
@@ -1349,8 +1408,8 @@ function skuPrefix(value: string): string {
   return normalizeSkuPart(value);
 }
 
-function generatedSku(prefix: string, color: string, size: string): string {
-  return [skuPrefix(prefix), color ? normalizeSkuPart(color).slice(0, 3) : '', size ? normalizeSkuPart(size) : '']
+function generatedSku(prefix: string, model: string, color: string, size: string): string {
+  return [skuPrefix(prefix), normalizeSkuPart(model), color ? normalizeSkuPart(color).slice(0, 3) : '', size ? normalizeSkuPart(size) : '']
     .filter(Boolean)
     .join('-');
 }
