@@ -792,6 +792,7 @@ fieldset.conditional-panel {
   color: var(--color-accent);
 }
 
+.primary-cta:disabled,
 .primary-button:disabled,
 .secondary-button:disabled {
   opacity: 0.58;

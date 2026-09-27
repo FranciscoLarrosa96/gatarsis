@@ -1,4 +1,4 @@
-import { Component, DestroyRef, OnInit, inject, signal } from '@angular/core';
+import { Component, computed, DestroyRef, OnInit, inject, signal } from '@angular/core';
 import {
   Field,
   FormField,
@@ -44,8 +44,11 @@ interface AdoptionFormModel {
   home: {
     hasOtherPets: YesNo | '';
     hasRegularVet: YesNo | '';
+    regularVetName: string;
     vaccinationsUpToDate: YesNo | '';
     petsNeutered: YesNo | '';
+    petsFivFelvTestStatus: YesNo | 'not_applicable' | '';
+    petsDescription: string;
     householdAgrees: YesNo | '';
     housingType: HousingType | '';
     rentalAllowsPets: YesNo | '';
@@ -78,8 +81,11 @@ function initialAdoptionModel(): AdoptionFormModel {
     home: {
       hasOtherPets: '',
       hasRegularVet: '',
+      regularVetName: '',
       vaccinationsUpToDate: '',
       petsNeutered: '',
+      petsFivFelvTestStatus: '',
+      petsDescription: '',
       householdAgrees: '',
       housingType: '',
       rentalAllowsPets: '',
@@ -122,9 +128,22 @@ const adoptionSchema = schema<AdoptionFormModel>((p) => {
       required(home.hasRegularVet);
       required(home.vaccinationsUpToDate);
       required(home.petsNeutered);
+      required(home.petsFivFelvTestStatus);
+      required(home.petsDescription);
+      validate(home.petsDescription, (ctx) => nonBlank(ctx.value()));
+      maxLength(home.petsDescription, 1000);
     },
   );
   required(p.home.householdAgrees);
+  applyWhen(
+    p.home,
+    (ctx) => ctx.value().hasOtherPets === 'yes' && ctx.value().hasRegularVet === 'yes',
+    (home) => {
+      required(home.regularVetName);
+      validate(home.regularVetName, (ctx) => nonBlank(ctx.value()));
+      maxLength(home.regularVetName, 160);
+    },
+  );
   required(p.home.housingType);
   applyWhen(
     p.home,
@@ -181,11 +200,19 @@ export class AdoptionsPageComponent implements OnInit {
   readonly catsLoading = signal(true);
   readonly catsError = signal<string | null>(null);
   readonly selectedCat = signal<AdoptableCat | null>(null);
+  readonly canApply = computed(() =>
+    !this.catsLoading() && !this.catsError() && this.adoptableCats().some((cat) => cat.status === 'AVAILABLE'),
+  );
 
   private readonly model = signal<AdoptionFormModel>(initialAdoptionModel());
   readonly form = form(this.model, adoptionSchema, {
     submission: {
       action: async () => {
+        const selected = this.selectedCat();
+        if (!this.canApply() || (selected && !this.adoptableCats().some((cat) => cat.id === selected.id && cat.status === 'AVAILABLE'))) {
+          this.submitError.set('Por ahora no hay michis disponibles para esta solicitud. Revisá el listado antes de continuar.');
+          return;
+        }
         this.submitting.set(true);
         this.submitError.set(null);
         try {
@@ -233,19 +260,20 @@ export class AdoptionsPageComponent implements OnInit {
           this.adoptableCats.set([]);
           this.catsLoading.set(false);
           this.catsError.set(
-            'No pudimos cargar los michis en este momento. Podés reintentar o completar igualmente el cuestionario.',
+            'No pudimos cargar los michis en este momento. Reintentá para consultar la disponibilidad antes de completar el cuestionario.',
           );
         },
       });
   }
 
   selectCat(cat: AdoptableCat): void {
-    if (cat.status !== 'AVAILABLE') return;
+    if (!this.canApply() || !this.adoptableCats().some((item) => item.id === cat.id && item.status === 'AVAILABLE')) return;
     this.selectedCat.set(cat);
     this.scrollToQuestionnaire();
   }
 
   chooseWithoutCat(): void {
+    if (!this.canApply()) return;
     this.selectedCat.set(null);
     this.scrollToQuestionnaire();
   }
@@ -318,7 +346,12 @@ export class AdoptionsPageComponent implements OnInit {
   }
 
   goToQuestionnaire(): void {
+    if (!this.canApply()) return;
     this.scrollToQuestionnaire();
+  }
+
+  petsTestLabel(value: YesNo | 'not_applicable' | ''): string {
+    return value === 'not_applicable' ? 'No tengo gatos' : this.yesNoLabel(value);
   }
 
   yesNoLabel(value: YesNo | ''): string {
@@ -365,8 +398,13 @@ export class AdoptionsPageComponent implements OnInit {
         ...(value.home.hasOtherPets === 'yes'
           ? {
               hasRegularVet: value.home.hasRegularVet === 'yes',
+              ...(value.home.hasRegularVet === 'yes'
+                ? { regularVetName: value.home.regularVetName.trim() }
+                : {}),
               vaccinationsUpToDate: value.home.vaccinationsUpToDate === 'yes',
               petsNeutered: value.home.petsNeutered === 'yes',
+              petsFivFelvTestStatus: value.home.petsFivFelvTestStatus as YesNo | 'not_applicable',
+              petsDescription: value.home.petsDescription.trim(),
             }
           : {}),
         householdAgrees: value.home.householdAgrees === 'yes',

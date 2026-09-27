@@ -43,7 +43,7 @@ describe('AdoptionsPageComponent', () => {
     component = fixture.componentInstance;
     http = TestBed.inject(HttpTestingController);
     fixture.detectChanges();
-    http.expectOne(`${PUBLIC_API_BASE_URL}/adoptions/cats`).flush([]);
+    http.expectOne(`${PUBLIC_API_BASE_URL}/adoptions/cats`).flush(cats);
     fixture.detectChanges();
   });
 
@@ -96,19 +96,44 @@ describe('AdoptionsPageComponent', () => {
     expect(component.selectedCat()).toBeNull();
   });
 
-  it('keeps the questionnaire available while the collection is empty or fails', () => {
+  it('hides the questionnaire and disables the CTA while the collection is empty or fails', () => {
     component.adoptableCats.set([]);
     component.catsError.set(null);
     fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('.cats-state').textContent).toContain(
       'Por ahora no tenemos michis',
     );
-    expect(fixture.nativeElement.querySelector('#adoption-form')).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('#adoption-form')).toBeNull();
+    expect(fixture.nativeElement.querySelector('.primary-cta').disabled).toBe(true);
 
     component.catsError.set('No pudimos cargar los michis.');
     fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('.cats-state--error')).not.toBeNull();
-    expect(fixture.nativeElement.querySelector('#adoption-form')).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('#adoption-form')).toBeNull();
+  });
+
+  it.each(['empty', 'reserved', 'loading', 'error'] as const)('blocks even a valid submission when availability is %s', async (state) => {
+    fillValidForm();
+    if (state === 'empty') component.adoptableCats.set([]);
+    if (state === 'reserved') component.adoptableCats.set([cats[1]]);
+    if (state === 'loading') component.catsLoading.set(true);
+    if (state === 'error') component.catsError.set('Error');
+    expect(component.canApply()).toBe(false);
+    await submit(component.form);
+    http.expectNone(`${PUBLIC_API_BASE_URL}/adoptions/applications`);
+    expect(component.submitted()).toBe(false);
+    expect(component.submitError()).toContain('no hay michis disponibles');
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('#adoption-form')).toBeNull();
+  });
+
+  it('blocks submission if the selected cat is no longer available', async () => {
+    fillValidForm();
+    component.selectCat(cats[0]);
+    component.adoptableCats.set([{ ...cats[0], status: 'RESERVED' }, { ...cats[0], id: 'another-cat' }]);
+    await submit(component.form);
+    http.expectNone(`${PUBLIC_API_BASE_URL}/adoptions/applications`);
+    expect(component.submitted()).toBe(false);
   });
 
   it('shows stable skeleton cards while loading', () => {
@@ -140,11 +165,73 @@ describe('AdoptionsPageComponent', () => {
     expect(home.hasRegularVet().invalid()).toBe(true);
     expect(home.vaccinationsUpToDate().invalid()).toBe(true);
     expect(home.petsNeutered().invalid()).toBe(true);
+    expect(home.petsFivFelvTestStatus().invalid()).toBe(true);
+    expect(home.petsDescription().invalid()).toBe(true);
 
     home.hasOtherPets().value.set('no');
     expect(home.hasRegularVet().invalid()).toBe(false);
     expect(home.vaccinationsUpToDate().invalid()).toBe(false);
     expect(home.petsNeutered().invalid()).toBe(false);
+    expect(home.petsFivFelvTestStatus().invalid()).toBe(false);
+    expect(home.petsDescription().invalid()).toBe(false);
+  });
+
+  it('accepts no cats and validates the pet description', () => {
+    const home = component.form.home;
+    home.hasOtherPets().value.set('yes');
+    home.petsFivFelvTestStatus().value.set('not_applicable');
+    expect(home.petsFivFelvTestStatus().valid()).toBe(true);
+    expect(component.petsTestLabel('not_applicable')).toBe('No tengo gatos');
+    home.petsDescription().value.set('   ');
+    expect(home.petsDescription().invalid()).toBe(true);
+    home.petsDescription().value.set('x'.repeat(1001));
+    expect(home.petsDescription().invalid()).toBe(true);
+    home.petsDescription().value.set('Mi perro tiene cinco años.');
+    expect(home.petsDescription().valid()).toBe(true);
+  });
+
+  it('omits pet-specific answers when the applicant has no pets', async () => {
+    fillValidForm();
+    component.form.home.hasOtherPets().value.set('no');
+    component.reviewing.set(true);
+    const done = submit(component.form);
+    await fixture.whenStable();
+    const request = http.expectOne(`${PUBLIC_API_BASE_URL}/adoptions/applications`);
+    expect(request.request.body.home.petsFivFelvTestStatus).toBeUndefined();
+    expect(request.request.body.home.petsDescription).toBeUndefined();
+    request.flush({ success: true });
+    await done;
+  });
+
+  it('requires a nonblank vet name only when the applicant has pets and a regular vet', () => {
+    const home = component.form.home;
+    home.hasOtherPets().value.set('yes');
+    home.hasRegularVet().value.set('yes');
+    expect(home.regularVetName().invalid()).toBe(true);
+    home.regularVetName().value.set('   ');
+    expect(home.regularVetName().invalid()).toBe(true);
+    home.regularVetName().value.set('x'.repeat(161));
+    expect(home.regularVetName().invalid()).toBe(true);
+    home.regularVetName().value.set('Veterinaria Centro');
+    expect(home.regularVetName().valid()).toBe(true);
+    home.regularVetName().value.set('');
+    home.hasRegularVet().value.set('no');
+    expect(home.regularVetName().valid()).toBe(true);
+    home.hasRegularVet().value.set('yes');
+    home.hasOtherPets().value.set('no');
+    expect(home.regularVetName().valid()).toBe(true);
+  });
+
+  it('omits the vet name when the applicant has no regular vet', async () => {
+    fillValidForm();
+    component.form.home.hasRegularVet().value.set('no');
+    component.reviewing.set(true);
+    const done = submit(component.form);
+    await fixture.whenStable();
+    const request = http.expectOne(`${PUBLIC_API_BASE_URL}/adoptions/applications`);
+    expect(request.request.body.home.regularVetName).toBeUndefined();
+    request.flush({ success: true });
+    await done;
   });
 
   it('requires rental permission only for rented homes', () => {
@@ -173,8 +260,11 @@ describe('AdoptionsPageComponent', () => {
       component.form.applicant.phone,
       component.form.home.hasOtherPets,
       component.form.home.hasRegularVet,
+      component.form.home.regularVetName,
       component.form.home.vaccinationsUpToDate,
       component.form.home.petsNeutered,
+      component.form.home.petsFivFelvTestStatus,
+      component.form.home.petsDescription,
       component.form.home.householdAgrees,
       component.form.home.housingType,
       component.form.home.rentalAllowsPets,
@@ -224,6 +314,9 @@ describe('AdoptionsPageComponent', () => {
     });
     expect(request.request.body.home.hasOtherPets).toBe(true);
     expect(request.request.body.home.hasRegularVet).toBe(true);
+    expect(request.request.body.home.regularVetName).toBe('Veterinaria Centro');
+    expect(request.request.body.home.petsFivFelvTestStatus).toBe('yes');
+    expect(request.request.body.home.petsDescription).toBe('Luna es tranquila y tiene tres años.');
     expect(request.request.body.adoptableCatId).toBeUndefined();
     expect(request.request.body.to).toBeUndefined();
     expect(request.request.body.recipient).toBeUndefined();
@@ -280,8 +373,11 @@ describe('AdoptionsPageComponent', () => {
       home: {
         hasOtherPets: 'yes',
         hasRegularVet: 'yes',
+        regularVetName: '  Veterinaria Centro  ',
         vaccinationsUpToDate: 'yes',
         petsNeutered: 'yes',
+        petsFivFelvTestStatus: 'yes',
+        petsDescription: '  Luna es tranquila y tiene tres años.  ',
         householdAgrees: 'yes',
         housingType: 'rented',
         rentalAllowsPets: 'yes',

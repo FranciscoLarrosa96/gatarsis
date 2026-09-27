@@ -28,8 +28,11 @@ export interface AdoptionApplicationRequest {
   home: {
     hasOtherPets: boolean;
     hasRegularVet?: boolean;
+    regularVetName?: string;
     vaccinationsUpToDate?: boolean;
     petsNeutered?: boolean;
+    petsFivFelvTestStatus?: YesNo | 'not_applicable';
+    petsDescription?: string;
     householdAgrees: boolean;
     housingType: HousingType;
     rentalAllowsPets?: boolean;

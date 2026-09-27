@@ -36,7 +36,7 @@
   line-height: 1.02;
 }
 
-.cats-heading > p {
+.cats-heading > div > p:not(.eyebrow) {
   max-width: 36rem;
   margin: 0;
   color: var(--color-text-muted);
@@ -243,6 +243,37 @@
 
 .cats-state .secondary-button {
   margin-top: 1rem;
+}
+
+.cats-state--empty {
+  max-width: none;
+  align-items: center;
+  padding: clamp(1.5rem, 4vw, 3rem);
+  background: linear-gradient(120deg, var(--color-card), var(--color-surface));
+  gap: clamp(1rem, 3vw, 2rem);
+}
+
+.cats-state--empty > span {
+  width: 4rem;
+  height: 4rem;
+  border-radius: 50%;
+}
+
+.cats-state--empty h3 {
+  font-size: clamp(1.15rem, 2.3vw, 1.5rem);
+  font-weight: 850;
+  line-height: 1.3;
+}
+
+.cats-state--empty p {
+  max-width: 55ch;
+}
+
+@media (max-width: 639px) {
+  .cats-state--empty {
+    flex-direction: column;
+    align-items: flex-start;
+  }
 }
 
 .cat-card--skeleton {

@@ -2,12 +2,16 @@
   <div appReveal class="cats-heading">
     <div>
       <p class="eyebrow"><app-icon name="paw" class="size-4" /> Buscan una familia</p>
-      <h2 id="cats-title">Conocé a quienes esperan su hogar</h2>
+      <h2 id="cats-title">{{ !loading() && !error() && !cats().length ? 'Cada adopción, una nueva historia' : 'Conocé a quienes esperan su hogar' }}</h2>
+      <p>
+        @if (!loading() && !error() && !cats().length) {
+          Cuando haya michis buscando una familia, vas a encontrarlos acá.
+        } @else {
+        Cada historia es distinta. Conocelos y, si sentís que alguno puede formar parte de tu
+        familia, completá el cuestionario de adopción.
+        }
+      </p>
     </div>
-    <p>
-      Cada historia es distinta. Conocelos y, si sentís que alguno puede formar parte de tu familia,
-      completá el cuestionario de adopción.
-    </p>
   </div>
 
   @if (loading()) {
@@ -31,10 +35,12 @@
       </div>
     </div>
   } @else if (cats().length === 0) {
-    <div class="cats-state" role="status">
-      <span><app-icon name="heart" class="size-6" /></span>
+    <div class="cats-state cats-state--empty" role="status">
+      <span aria-hidden="true"><app-icon name="heart" class="size-6" /></span>
       <div>
         <h3>Por ahora no tenemos michis en adopción</h3>
+        <p>El cuestionario está pausado hasta que haya un michi disponible. Gracias por querer sumar una nueva historia a tu familia.</p>
+        <a class="secondary-button" href="/">Conocé otras formas de ayudar <app-icon name="arrow" class="size-4" /></a>
       </div>
     </div>
   } @else {
@@ -77,14 +83,4 @@
       }
     </div>
   }
-
-  <div appReveal class="no-preference">
-    <div>
-      <strong>¿Todavía no sabés cuál?</strong>
-      <span>Podemos ayudarte a encontrar el compañero indicado para tu hogar.</span>
-    </div>
-    <button type="button" class="secondary-button" (click)="withoutCatSelected.emit()">
-      Quiero que me orienten <app-icon name="arrow" class="size-4" />
-    </button>
-  </div>
 </section>
