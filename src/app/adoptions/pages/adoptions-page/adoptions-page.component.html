@@ -13,8 +13,8 @@
           Adoptar también es empezar una <span>nueva historia</span>
         </h1>
         <p class="hero-lead page-intro" style="--intro-step: 2">
-          Queremos encontrar el hogar indicado para cada gatito y acompañar una adopción
-          responsable, segura y para toda la vida.
+          Queremos encontrar el hogar indicado para cada gato y acompañar una adopción responsable,
+          segura y para toda la vida.
         </p>
         <button
           class="primary-cta page-intro"
@@ -26,8 +26,8 @@
         </button>
         <p class="hero-note page-intro" style="--intro-step: 4">
           Completar el cuestionario no implica una adopción automática ni genera obligación alguna.
-          Nos ayuda a conocer mejor cada hogar y encontrar la combinación más adecuada para el
-          gatito y la familia.
+          Nos ayuda a conocer mejor cada hogar y encontrar la combinación más adecuada para el gato
+          y la familia.
         </p>
       </div>
 
@@ -39,7 +39,7 @@
         <span class="indoor-icon"><app-icon name="home" class="size-8" /></span>
         <p class="indoor-kicker">Una condición esencial</p>
         <h2 id="indoor-title">Adopción únicamente para hogares de interior</h2>
-        <p>No se entregan gatitos para vida en la calle ni con libre acceso al exterior.</p>
+        <p>No se entrega ningún gato para vida en la calle ni con libre acceso al exterior.</p>
         <div class="indoor-detail">
           <app-icon name="shield" class="size-5" />
           <span>Un hogar protegido también es una forma de amor.</span>
@@ -66,6 +66,7 @@
       <p class="eyebrow"><app-icon name="paw" class="size-4" /> Pre-adopción responsable</p>
       <h2 id="questionnaire-title">Conozcámonos un poquito</h2>
       <p>Son seis pasos breves. Tus respuestas se usan únicamente para evaluar esta solicitud.</p>
+      <p>Todas las preguntas que aparecen en el formulario son obligatorias.</p>
     </div>
 
     @if (selectedCat(); as cat) {
@@ -256,7 +257,8 @@
                           },
                           {
                             field: form.home.vaccinationsUpToDate,
-                            label: '¿Tienen el plan de vacunación al día?',
+                            label:
+                              '¿Tienen el plan de vacunación al día? (antirrábica y triple felina)',
                           },
                           { field: form.home.petsNeutered, label: '¿Están castradas?' },
                         ];
@@ -362,7 +364,7 @@
                   >
                     <legend>
                       En caso de mudanza o viaje, ¿contás con personas de confianza que puedan
-                      cuidar al gatito? <em>*</em>
+                      cuidar al gato? <em>*</em>
                     </legend>
                     <div class="choice-row">
                       <label
@@ -392,8 +394,8 @@
                   <aside class="info-card">
                     <app-icon name="info" class="size-6" />
                     <p>
-                      Los gatitos pueden necesitar un tiempo de adaptación al nuevo hogar. Durante
-                      este proceso pueden mostrarse tímidos, demandar atención, maullar o presentar
+                      El gato puede necesitar un tiempo de adaptación al nuevo hogar. Durante este
+                      proceso puede mostrarse tímido, demandar atención, maullar o presentar
                       conductas propias de su etapa de crecimiento.
                     </p>
                   </aside>
@@ -617,11 +619,11 @@
                     <h4>Una adopción responsable</h4>
                     <p>
                       En caso de que, por cualquier motivo, no puedas continuar con la tenencia del
-                      gatito, te comprometés a contactarnos previamente para buscar una solución
+                      gato, te comprometés a contactarnos previamente para buscar una solución
                       conjunta.
                     </p>
                     <p>
-                      El gatito no deberá ser regalado, vendido ni entregado a terceros sin previo
+                      El gato no deberá ser regalado, vendido ni entregado a terceros sin previo
                       aviso.
                     </p>
                     <p>
@@ -646,7 +648,7 @@
                   <article class="commitment-card commitment-card--accent">
                     <h4>Un compromiso a largo plazo</h4>
                     <p>
-                      Un gatito no es un regalo ni una etapa pasajera. Es un ser vivo que puede
+                      Un gato no es un regalo ni una etapa pasajera. Es un ser vivo que puede
                       depender de vos durante los próximos 15 o 20 años, tanto en lo físico como en
                       lo emocional.
                     </p>
@@ -741,7 +743,7 @@
                         <dd>{{ yesNoLabel(form.home.hasRegularVet().value()) }}</dd>
                       </div>
                       <div>
-                        <dt>Vacunas al día</dt>
+                        <dt>Vacunas al día (antirrábica y triple felina)</dt>
                         <dd>
                           {{ yesNoLabel(form.home.vaccinationsUpToDate().value()) }}
                         </dd>

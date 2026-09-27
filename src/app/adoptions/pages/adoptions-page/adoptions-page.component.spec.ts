@@ -166,6 +166,50 @@ describe('AdoptionsPageComponent', () => {
     http.expectNone(`${PUBLIC_API_BASE_URL}/adoptions/applications`);
   });
 
+  it('rejects submission when any visible question is unanswered', async () => {
+    const fields = [
+      component.form.applicant.fullName,
+      component.form.applicant.email,
+      component.form.applicant.phone,
+      component.form.home.hasOtherPets,
+      component.form.home.hasRegularVet,
+      component.form.home.vaccinationsUpToDate,
+      component.form.home.petsNeutered,
+      component.form.home.householdAgrees,
+      component.form.home.housingType,
+      component.form.home.rentalAllowsPets,
+      component.form.home.trustedCaregiver,
+      component.form.adaptation.willingToSupportAdaptation,
+      component.form.care.hasStableIncome,
+      component.form.care.canCoverVetEmergency,
+      component.form.care.previousPetsDeathContext,
+      component.form.safety.homeSafetyStatus,
+      component.form.safety.acceptsMandatoryNeutering,
+      component.form.safety.commitsNeuteringProof,
+      component.form.safety.acceptsFollowUp,
+    ];
+
+    for (const field of fields) {
+      fillValidForm();
+      field().value.set('');
+      component.reviewing.set(true);
+      await submit(component.form);
+
+      expect(field().invalid()).toBe(true);
+      expect(component.reviewing()).toBe(false);
+      http.expectNone(`${PUBLIC_API_BASE_URL}/adoptions/applications`);
+    }
+  });
+
+  it('rejects a whitespace-only answer about previous pets', async () => {
+    fillValidForm();
+    component.form.care.previousPetsDeathContext().value.set('   ');
+    await submit(component.form);
+
+    expect(component.form.care.previousPetsDeathContext().invalid()).toBe(true);
+    http.expectNone(`${PUBLIC_API_BASE_URL}/adoptions/applications`);
+  });
+
   it('submits a trimmed whitelist payload and never persists PII in browser storage', async () => {
     fillValidForm();
     component.reviewing.set(true);
