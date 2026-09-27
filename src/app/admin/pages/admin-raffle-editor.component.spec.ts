@@ -270,10 +270,16 @@ describe('AdminRaffleEditorComponent', () => {
     expect(component.manualSaleTotal()).toBe(100_000);
     expect(fixture.nativeElement.textContent).toContain('$1.000,00');
 
-    for (const number of [0, 1, 2, 3, 4, 5, 6, 7]) component.toggleManualNumber(number);
-    component.toggleManualNumber(8);
-    expect(component.selectedManualNumbers()).toHaveLength(10);
-    expect(component.manualNumberError()).toContain('hasta 10 números');
+    for (const number of [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 13])
+      component.toggleManualNumber(number);
+    expect(component.selectedManualNumbers()).toHaveLength(15);
+    expect(component.manualSaleTotal()).toBe(750_000);
+    expect(component.manualNumberError()).toBe('');
+    expect(component.manualSelectionSummary()).toContain('5 más');
+
+    component.toggleManualNumber(13);
+    expect(component.selectedManualNumbers()).toHaveLength(14);
+    expect(fixture.nativeElement.textContent).not.toContain('Elegí hasta 10');
   });
 
   it('confirms and submits a manual sale, then refreshes numbers, purchases and KPIs', () => {

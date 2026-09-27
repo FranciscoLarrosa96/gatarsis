@@ -167,7 +167,7 @@ describe('RafflePageComponent', () => {
     expect(component.isSelected(65)).toBe(true);
   });
 
-  it('selects, deselects and enforces the maximum of ten numbers', () => {
+  it('selects and deselects more than ten available numbers without a fixed limit', () => {
     setup();
     loadActive(numbers());
 
@@ -176,14 +176,18 @@ describe('RafflePageComponent', () => {
     component.toggleNumber({ number: 0, status: 'AVAILABLE' });
     expect(component.isSelected(0)).toBe(false);
 
-    for (let number = 0; number < 10; number += 1) {
+    for (let number = 0; number < 25; number += 1) {
       component.toggleNumber({ number, status: 'AVAILABLE' });
     }
-    component.toggleNumber({ number: 10, status: 'AVAILABLE' });
 
-    expect(component.selectedCount()).toBe(10);
-    expect(component.isSelected(10)).toBe(false);
-    expect(component.selectionMessage()).toContain('Ya elegiste tus 10 números');
+    expect(component.selectedCount()).toBe(25);
+    expect(component.isSelected(24)).toBe(true);
+    expect(component.selectionMessage()).toBe('');
+    expect(component.totalPrice()).toContain('125.000');
+
+    component.toggleNumber({ number: 24, status: 'AVAILABLE' });
+    expect(component.selectedCount()).toBe(24);
+    expect(component.isSelected(24)).toBe(false);
   });
 
   it('calculates the summary and keeps buyer PII out of localStorage', () => {
@@ -219,6 +223,28 @@ describe('RafflePageComponent', () => {
     });
     expect(localStorage.getItem('gatarsis.raffle.checkout.v1')).toBeNull();
     expect(JSON.stringify(localStorage)).not.toContain('Francisco');
+    request.flush({ code: 'SERVICE_UNAVAILABLE' }, { status: 503, statusText: 'Unavailable' });
+  });
+
+  it('submits a large selection in one reservation request', () => {
+    setup();
+    loadActive(numbers());
+    const selectedNumbers = numbers()
+      .filter((item) => item.status === 'AVAILABLE')
+      .slice(0, 25);
+    selectedNumbers.forEach((item) => component.toggleNumber(item));
+    component.continueToForm();
+    component.buyerForm.setValue({
+      name: 'Persona Compradora',
+      email: 'persona@example.com',
+      phone: '+54 249 4000000',
+    });
+
+    component.pay();
+    const request = http.expectOne(`${PUBLIC_API_BASE_URL}/raffles/${raffleId}/reservations`);
+    expect(request.request.body.numbers).toHaveLength(25);
+    expect(request.request.body.numbers).toEqual(selectedNumbers.map((item) => item.number));
+    http.expectNone(`${PUBLIC_API_BASE_URL}/raffles/${raffleId}/reservations/0`);
     request.flush({ code: 'SERVICE_UNAVAILABLE' }, { status: 503, statusText: 'Unavailable' });
   });
 
@@ -324,15 +350,22 @@ describe('RafflePageComponent', () => {
     expect(fixture.nativeElement.textContent).not.toContain('Pagar con Mercado Pago');
   });
 
-  it('gives explicit feedback when the maximum of ten numbers is reached', () => {
+  it('keeps a large selection summary compact and never shows a maximum of ten', () => {
     setup();
     loadActive(numbers());
-    for (let number = 0; number < 10; number += 1) {
+    for (let number = 0; number < 17; number += 1) {
       component.toggleNumber({ number, status: 'AVAILABLE' });
     }
-    component.toggleNumber({ number: 10, status: 'AVAILABLE' });
+    fixture.detectChanges();
 
-    expect(component.selectionMessage()).toContain('Ya elegiste tus 10 números');
+    expect(component.hasHiddenSelectedNumbers()).toBe(true);
+    expect(component.selectedLabels()).toContain('+9 más');
+    expect(fixture.nativeElement.textContent).toContain('17 seleccionados');
+    expect(fixture.nativeElement.textContent).not.toContain('máximo por compra');
+
+    component.showAllSelectedNumbers.set(true);
+    expect(component.selectedLabels()).toContain('16');
+    expect(component.selectedLabels()).not.toContain('más');
   });
 
   it('shows a persistent banner for a pending checkout and lets the user jump back to its status', () => {

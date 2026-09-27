@@ -66,7 +66,6 @@ interface AdminRaffleNumberListRow {
 
 type LifecycleAction = 'publish' | 'pause' | 'resume' | 'close';
 type ConfirmationKind = 'close' | 'draw';
-const MAX_NUMBERS_PER_PURCHASE = 10;
 const MAX_RAFFLE_IMAGES = 8;
 
 @Component({
@@ -1141,7 +1140,7 @@ const MAX_RAFFLE_IMAGES = 8;
                 </div>
                 <p class="manual-sale-warning">
                   Vas a registrar como vendidos los números
-                  <strong>{{ readableNumbersLabel(selectedManualNumbers()) }}</strong> por
+                  <strong>{{ manualSelectionSummary() }}</strong> por
                   <strong>{{ money(manualSaleTotal()) }}</strong> mediante
                   {{ manualPaymentMethodLabel(manualSaleModel.paymentMethod).toLowerCase() }}.
                 </p>
@@ -1181,13 +1180,10 @@ const MAX_RAFFLE_IMAGES = 8;
                   <div class="section-heading inline-heading">
                     <div>
                       <h3>Números disponibles *</h3>
-                      <p>
-                        Elegí hasta {{ maxNumbersPerPurchase }}. Sólo se muestran los que siguen
-                        disponibles.
-                      </p>
+                      <p>Elegí uno o más. Sólo se muestran los que siguen disponibles.</p>
                     </div>
                     <strong class="manual-selection-count">
-                      {{ selectedManualNumbers().length }}/{{ maxNumbersPerPurchase }}
+                      {{ selectedManualNumbers().length }} seleccionados
                     </strong>
                   </div>
                   @if (availableManualSaleNumbers().length) {
@@ -1282,11 +1278,7 @@ const MAX_RAFFLE_IMAGES = 8;
                   <button
                     class="button button-primary"
                     type="submit"
-                    [disabled]="
-                      manualSaleForm.invalid ||
-                      selectedManualNumbers().length === 0 ||
-                      selectedManualNumbers().length > maxNumbersPerPurchase
-                    "
+                    [disabled]="manualSaleForm.invalid || selectedManualNumbers().length === 0"
                   >
                     Revisar venta
                   </button>
@@ -1427,7 +1419,6 @@ export class AdminRaffleEditorComponent implements OnInit {
   readonly exporting = signal<RaffleExportFormat | null>(null);
   readonly exportError = signal('');
   readonly selectedManualNumbers = signal<number[]>([]);
-  readonly maxNumbersPerPurchase = MAX_NUMBERS_PER_PURCHASE;
   readonly maxRaffleImages = MAX_RAFFLE_IMAGES;
   readonly availableManualSaleNumbers = computed(() =>
     this.numbers().filter((item) => item.status === 'AVAILABLE'),
@@ -1677,12 +1668,6 @@ export class AdminRaffleEditorComponent implements OnInit {
       this.manualNumberError.set('');
       return;
     }
-    if (selected.length >= MAX_NUMBERS_PER_PURCHASE) {
-      this.manualNumberError.set(
-        `Podés registrar hasta ${MAX_NUMBERS_PER_PURCHASE} números por venta.`,
-      );
-      return;
-    }
     this.selectedManualNumbers.set([...selected, number].sort((a, b) => a - b));
     this.manualNumberError.set('');
   }
@@ -1782,6 +1767,13 @@ export class AdminRaffleEditorComponent implements OnInit {
     if (numbers.length < 2) return this.numberLabel(numbers[0]);
     const labels = numbers.map((number) => this.numberLabel(number));
     return `${labels.slice(0, -1).join(', ')} y ${labels.at(-1)}`;
+  }
+
+  manualSelectionSummary(): string {
+    const numbers = this.selectedManualNumbers();
+    if (numbers.length <= 10) return this.readableNumbersLabel(numbers);
+    const visible = numbers.slice(0, 10).map((number) => this.numberLabel(number));
+    return `${visible.join(', ')} y ${numbers.length - visible.length} más`;
   }
 
   requestDraw(): void {

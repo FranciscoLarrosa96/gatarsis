@@ -40,7 +40,6 @@ import {
 
 type PurchasePhase = 'IDLE' | 'RESERVING' | 'CREATING_PREFERENCE' | 'REDIRECTING' | 'ERROR';
 
-const MAX_NUMBERS = 10;
 const dateTimeFormatter = new Intl.DateTimeFormat('es-AR', {
   day: '2-digit',
   month: '2-digit',
@@ -157,9 +156,7 @@ const dateTimeFormatter = new Intl.DateTimeFormat('es-AR', {
 
                 <div class="raffle-highlights" aria-label="Datos rápidos de la rifa">
                   <span>{{ currentStats().total }} números en total</span>
-                  @if (currentRaffle.status === 'ACTIVE' || currentRaffle.status === 'PAUSED') {
-                    <span>Hasta {{ maxNumbers }} por compra</span>
-                  }
+                  <span>Elegí todos los disponibles que quieras</span>
                 </div>
 
                 @if (currentRaffle.status === 'DRAWN' && currentRaffle.winningNumber != null) {
@@ -602,16 +599,27 @@ const dateTimeFormatter = new Intl.DateTimeFormat('es-AR', {
                       <h2 id="selection-title" class="text-xl font-black">Tu selección</h2>
                       <span
                         class="rounded-full bg-[var(--color-recovering-bg)] px-3 py-1 text-xs font-extrabold text-[var(--color-accent)]"
-                        >{{ selectedCount() }}/{{ maxNumbers }}</span
+                        >{{ selectedCount() }}
+                        {{ selectedCount() === 1 ? 'seleccionado' : 'seleccionados' }}</span
                       >
                     </div>
 
                     @if (selectedCount()) {
                       <p
-                        class="mt-4 text-left text-lg font-black tracking-wide text-[var(--color-accent)]"
+                        class="mt-4 max-h-30 overflow-y-auto break-words text-left text-base font-extrabold leading-relaxed text-[var(--color-accent)]"
                       >
                         {{ selectedLabels() }}
                       </p>
+                      @if (hasHiddenSelectedNumbers()) {
+                        <button
+                          type="button"
+                          class="mt-1 min-h-9 border-0 bg-transparent p-0 font-extrabold text-[var(--color-accent)] underline underline-offset-4"
+                          [attr.aria-expanded]="showAllSelectedNumbers()"
+                          (click)="showAllSelectedNumbers.update((visible) => !visible)"
+                        >
+                          {{ showAllSelectedNumbers() ? 'Ver resumen' : 'Ver todos' }}
+                        </button>
+                      }
                       <div
                         class="mt-5 space-y-2 border-t border-[var(--color-border)] pt-4 text-sm"
                       >
@@ -804,7 +812,6 @@ export class RafflePageComponent implements OnInit {
   private readonly photoSwipe = inject(PhotoSwipeService);
   private readonly destroyRef = inject(DestroyRef);
 
-  readonly maxNumbers = MAX_NUMBERS;
   readonly detailsExpanded = signal(false);
   readonly loading = signal(true);
   readonly loadError = signal(false);
@@ -814,6 +821,7 @@ export class RafflePageComponent implements OnInit {
   readonly numbersLoaded = signal(false);
   readonly numbersRefreshing = signal(false);
   readonly selected = signal<ReadonlySet<number>>(new Set());
+  readonly showAllSelectedNumbers = signal(false);
   readonly selectionMessage = signal('');
   readonly paymentMessage = signal('');
   readonly conflictNumbers = signal<ReadonlySet<number>>(new Set());
@@ -855,14 +863,9 @@ export class RafflePageComponent implements OnInit {
   });
 
   readonly selectedCount = computed(() => this.selected().size);
-  readonly gridNumbers = computed(() => {
-    const byNumber = new Map(this.numbers().map((item) => [item.number, item]));
-    return Array.from(
-      { length: 100 },
-      (_, number) =>
-        byNumber.get(number) ?? ({ number, status: 'SOLD' } satisfies PublicRaffleNumber),
-    );
-  });
+  readonly gridNumbers = computed(() =>
+    [...this.numbers()].sort((left, right) => left.number - right.number),
+  );
   readonly currentStats = computed(() => {
     const items = this.numbers();
     const raffle = this.raffle();
@@ -871,7 +874,7 @@ export class RafflePageComponent implements OnInit {
       available: items.filter((item) => item.status === 'AVAILABLE').length,
       reserved: items.filter((item) => item.status === 'RESERVED').length,
       sold: items.filter((item) => item.status === 'SOLD').length,
-      total: items.length || 100,
+      total: items.length || raffle?.stats.total || 0,
     };
   });
   readonly soldPercentage = computed(() => {
@@ -880,12 +883,17 @@ export class RafflePageComponent implements OnInit {
     const pct = Math.min(100, (stats.sold / stats.total) * 100);
     return stats.sold > 0 ? Math.max(pct, 2.5) : 0;
   });
-  readonly selectedLabels = computed(() =>
-    [...this.selected()]
-      .sort((left, right) => left - right)
-      .map((number) => this.numberLabel(number))
-      .join(' · '),
+  readonly sortedSelectedNumbers = computed(() =>
+    [...this.selected()].sort((left, right) => left - right),
   );
+  readonly hasHiddenSelectedNumbers = computed(() => this.sortedSelectedNumbers().length > 8);
+  readonly selectedLabels = computed(() => {
+    const numbers = this.sortedSelectedNumbers();
+    const visible = this.showAllSelectedNumbers() ? numbers : numbers.slice(0, 8);
+    const labels = visible.map((number) => this.numberLabel(number)).join(' · ');
+    const hidden = numbers.length - visible.length;
+    return hidden > 0 ? `${labels} · +${hidden} más` : labels;
+  });
   readonly totalPrice = computed(() =>
     this.money((this.raffle()?.priceInCents ?? 0) * this.selectedCount()),
   );
@@ -987,11 +995,6 @@ export class RafflePageComponent implements OnInit {
     if (next.has(item.number)) {
       next.delete(item.number);
       this.selectionMessage.set('');
-    } else if (next.size >= MAX_NUMBERS) {
-      this.selectionMessage.set(
-        `Ya elegiste tus ${MAX_NUMBERS} números. Ese es el máximo por compra.`,
-      );
-      return;
     } else {
       next.add(item.number);
       this.selectionMessage.set('');
@@ -1310,7 +1313,9 @@ export class RafflePageComponent implements OnInit {
         return;
       }
       case 'RAFFLE_TOO_MANY_NUMBERS':
-        this.paymentMessage.set('Podés elegir hasta 10 números por compra.');
+        this.paymentMessage.set(
+          'No pudimos reservar toda la selección. Actualizá la disponibilidad e intentá nuevamente.',
+        );
         return;
       case 'ACTIVE_RESERVATION_LIMIT':
         this.paymentMessage.set(
