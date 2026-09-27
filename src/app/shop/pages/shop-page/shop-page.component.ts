@@ -352,6 +352,7 @@ type ProductSort = 'name-asc' | 'name-desc' | 'price-asc' | 'price-desc';
 
     .shop-card > a {
       display: grid;
+      height: 100%;
       min-height: 13.5rem;
       grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
       grid-template-rows: minmax(0, 1fr) auto;
@@ -366,9 +367,14 @@ type ProductSort = 'name-asc' | 'name-desc' | 'price-asc' | 'price-desc';
 
     .shop-card-media {
       grid-row: 1 / span 2;
-      min-height: 100%;
+      min-height: 0;
       aspect-ratio: auto;
       border-radius: 0.75rem;
+    }
+
+    .shop-card-media > img {
+      position: absolute;
+      inset: 0;
     }
 
     .shop-card > a > div:nth-child(2) {
