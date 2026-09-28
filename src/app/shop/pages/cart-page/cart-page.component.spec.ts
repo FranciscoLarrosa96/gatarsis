@@ -64,6 +64,13 @@ describe('CartPageComponent checkout', () => {
     expect(fixture.nativeElement.textContent).not.toContain('SKU');
   });
 
+  it('keeps the contact form without the outdated pickup notice', () => {
+    const content = fixture.nativeElement.textContent as string;
+    expect(content).toContain('Datos para coordinar el retiro');
+    expect(content).not.toContain('Retiro coordinado');
+    expect(content).not.toContain('Una vez confirmado el pago, nos comunicaremos con vos');
+  });
+
   it('double click creates only one reserve request', () => {
     const redirect = vi
       .spyOn(component as unknown as { redirectTo: (url: string) => void }, 'redirectTo')

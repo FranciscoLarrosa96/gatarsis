@@ -53,6 +53,16 @@ describe('ProductDetailPageComponent variant pricing', () => {
     expect(component.selectedMedia()?.id).toBe('white-image');
   });
 
+  it('shows the presale timing and delivery coordination before the purchase controls', () => {
+    fixture.detectChanges();
+    const notice = fixture.nativeElement.querySelector('[aria-label="Información de preventa y entrega"]') as HTMLElement;
+    expect(notice).not.toBeNull();
+    expect(notice.textContent).toContain('plazo máximo de 10 días desde la compra');
+    expect(notice.textContent).toContain('nos pondremos en contacto con vos para coordinar la entrega');
+    const action = fixture.nativeElement.querySelector('.button-primary') as HTMLButtonElement;
+    expect(notice.compareDocumentPosition(action) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
   it('uses effective legacy color attributes for swatches and never renders a SKU publicly', () => {
     fixture.detectChanges();
 

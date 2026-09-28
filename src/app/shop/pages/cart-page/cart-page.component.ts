@@ -221,10 +221,6 @@ interface StockIssue {
                 </p>
                 <section class="mt-6 border-t border-[var(--color-border)] pt-5">
                   <p class="text-base font-black">Datos para coordinar el retiro</p>
-                  <p class="mt-1 text-sm font-bold text-[var(--color-accent)]">Retiro coordinado</p>
-                  <p class="mt-2 text-sm text-[var(--color-text-muted)]">
-                    Una vez confirmado el pago, nos comunicaremos con vos para coordinar el retiro.
-                  </p>
                   <div class="mt-4 grid gap-3">
                     <label class="grid gap-1 text-sm font-bold"
                       >Nombre y apellido *

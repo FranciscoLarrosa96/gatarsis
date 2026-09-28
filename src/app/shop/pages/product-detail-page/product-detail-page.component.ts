@@ -116,6 +116,29 @@ import { PhotoSwipeService } from '../../../core/services/photo-swipe.service';
             }
             <p class="mt-6 text-2xl font-black">{{ priceLabel(item) }}</p>
 
+            <aside
+              class="mt-6 flex items-start gap-3 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4 sm:gap-4 sm:p-5"
+              aria-label="Información de preventa y entrega"
+            >
+              <span
+                class="grid size-10 shrink-0 place-items-center rounded-xl bg-[var(--color-accent-soft)] text-[var(--color-accent)] sm:size-11"
+                aria-hidden="true"
+              >
+                <app-icon name="info" class="size-5" />
+              </span>
+              <div class="min-w-0">
+                <p class="text-sm font-black uppercase tracking-wide text-[var(--color-accent)]">
+                  Producto en preventa
+                </p>
+                <p class="mt-2 text-sm font-semibold leading-6 text-[var(--color-text)] sm:text-base">
+                  El producto estará disponible dentro de un plazo máximo de 10 días desde la compra.
+                </p>
+                <p class="mt-2 text-sm leading-6 text-[var(--color-text-muted)]">
+                  Una vez que esté listo, nos pondremos en contacto con vos para coordinar la entrega.
+                </p>
+              </div>
+            </aside>
+
             @if (usesStructuredAttributes(item)) {
               @for (key of structuredAttributeKeys(item); track key) {
                 <fieldset class="mt-8">
