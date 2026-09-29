@@ -59,6 +59,13 @@ export const ADMIN_ROUTES: Routes = [
           import('./pages/admin-orders.component').then((m) => m.AdminOrdersComponent),
       },
       {
+        path: 'pagos',
+        loadComponent: () =>
+          import('./pages/admin-simple-payments.component').then(
+            (m) => m.AdminSimplePaymentsComponent,
+          ),
+      },
+      {
         path: 'payments',
         loadComponent: () =>
           import('./pages/admin-payments.component').then((m) => m.AdminPaymentsComponent),

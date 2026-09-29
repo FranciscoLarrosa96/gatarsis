@@ -117,6 +117,11 @@ export class AdminShellComponent {
         },
         {
           path: '/admin/payments',
+          label: 'Pagos técnicos',
+          icon: 'M3 6h18v12H3z M3 10h18 M7 15h3',
+        },
+        {
+          path: '/admin/pagos',
           label: 'Pagos',
           icon: 'M3 6h18v12H3z M3 10h18 M7 15h3',
         },

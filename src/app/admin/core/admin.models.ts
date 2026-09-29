@@ -217,6 +217,11 @@ export interface AdminOrderListItem {
   paidAt: string | null;
   paymentSource?: AdminOrderPaymentSource;
   manualPaymentMethod?: AdminOrderManualPaymentMethod | null;
+  kind?: 'MERCH' | 'RAFFLE' | null;
+  customer?: { name: string; email: string | null; phone: string | null } | null;
+  items?: Array<{ label: string; quantity: number }>;
+  raffle?: { title: string; numbers: number[] } | null;
+  paymentProcessingStatus?: AdminPaymentProcessingStatus | null;
 }
 
 export interface AdminOrderListQuery {
@@ -284,6 +289,7 @@ export interface AdminOrderDetail {
     paymentSource?: AdminOrderPaymentSource;
     manualPaymentMethod?: AdminOrderManualPaymentMethod | null;
     manualSaleNote?: string | null;
+    kind?: 'MERCH' | 'RAFFLE' | null;
   };
   items: AdminOrderItemSnapshot[];
   paymentPreference: AdminPaymentPreference | null;
