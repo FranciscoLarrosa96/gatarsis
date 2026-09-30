@@ -332,6 +332,10 @@ interface StockIssue {
                     >
                   </section>
                 } @else {
+                  <p class="mt-5 flex items-start gap-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-accent-soft)]/40 px-3 py-2.5 text-xs leading-5 text-[var(--color-text-muted)] sm:text-sm">
+                    <app-icon name="pin" class="mt-0.5 size-4 text-[var(--color-accent)]" />
+                    <span>Recordá que por el momento las entregas se realizan únicamente en Tandil.</span>
+                  </p>
                   <button
                     class="button-primary mt-6 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl px-6 font-extrabold disabled:opacity-50"
                     type="button"

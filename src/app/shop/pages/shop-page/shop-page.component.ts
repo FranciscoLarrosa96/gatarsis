@@ -78,6 +78,26 @@ type ProductSort = 'name-asc' | 'name-desc' | 'price-asc' | 'price-desc';
         </p>
       </section>
 
+      <aside
+        appReveal="up"
+        class="mt-7 flex items-start gap-3 rounded-2xl border border-[var(--color-border)] bg-[var(--color-accent-soft)]/45 p-4 sm:items-center sm:gap-4 sm:p-5"
+        aria-label="Información sobre las compras y entregas en Tandil"
+      >
+        <span
+          class="grid size-10 shrink-0 place-items-center rounded-xl bg-[var(--color-card)] text-[var(--color-accent)] shadow-sm"
+          aria-hidden="true"
+        ><app-icon name="pin" class="size-5" /></span>
+        <div class="min-w-0">
+          <h2 class="text-sm font-black text-[var(--color-text)] sm:text-base">Compras disponibles en Tandil</h2>
+          <p class="mt-1 text-sm leading-5 text-[var(--color-text-muted)] sm:leading-6">
+            Por el momento, nuestra tienda está disponible únicamente para personas de Tandil. Una vez que tu pedido esté listo, nos pondremos en contacto para coordinar la entrega.
+          </p>
+          <p class="mt-1 text-xs leading-5 text-[var(--color-text-muted)]">
+            La entrega se coordina localmente; por ahora no realizamos envíos fuera de Tandil.
+          </p>
+        </div>
+      </aside>
+
       @if (loading()) {
         <div
           class="mt-12 rounded-2xl border border-[var(--color-border)] p-8 text-[var(--color-text-muted)]"

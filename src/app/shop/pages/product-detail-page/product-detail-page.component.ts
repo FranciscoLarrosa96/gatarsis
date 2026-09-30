@@ -136,6 +136,17 @@ import { PhotoSwipeService } from '../../../core/services/photo-swipe.service';
                 <p class="mt-2 text-sm leading-6 text-[var(--color-text-muted)]">
                   Una vez que esté listo, nos pondremos en contacto con vos para coordinar la entrega.
                 </p>
+                <div class="mt-4 flex items-start gap-3 border-t border-[var(--color-border)] pt-4">
+                  <app-icon name="pin" class="mt-0.5 size-4 text-[var(--color-accent)]" />
+                  <div class="min-w-0">
+                    <p class="text-xs font-black uppercase tracking-wide text-[var(--color-accent)]">
+                      Entrega en Tandil
+                    </p>
+                    <p class="mt-1 text-sm leading-5 text-[var(--color-text-muted)]">
+                      Compras únicamente para personas de Tandil. La entrega se coordina localmente; por ahora no realizamos envíos fuera de la ciudad.
+                    </p>
+                  </div>
+                </div>
               </div>
             </aside>
 

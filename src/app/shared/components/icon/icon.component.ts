@@ -18,6 +18,7 @@ import {
   LucideInfo,
   LucideMaximize2,
   LucideMenu,
+  LucideMapPin,
   LucideMinus,
   LucideMoon,
   LucidePawPrint,
@@ -56,6 +57,7 @@ export type IconName =
   | 'home'
   | 'info'
   | 'menu'
+  | 'pin'
   | 'minus'
   | 'money'
   | 'moon'
@@ -111,6 +113,7 @@ export class IconComponent {
     home: LucideHouse,
     info: LucideInfo,
     menu: LucideMenu,
+    pin: LucideMapPin,
     minus: LucideMinus,
     money: LucideBanknote,
     moon: LucideMoon,
