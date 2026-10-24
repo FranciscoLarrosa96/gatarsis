@@ -1,0 +1,232 @@
+﻿<div class="page manual-sale">
+  <header class="page-heading">
+    <div>
+      <h1>Registrar venta manual</h1>
+      <p class="page-description">Registrá una compra de tienda cuyo pago ya recibiste.</p>
+    </div>
+    <a class="button button-secondary" routerLink="/admin/orders">Volver a pedidos</a>
+  </header>
+  @if (success(); as result) {
+    <section class="panel success" role="status">
+      <h2>✓ Venta manual registrada</h2>
+      <p>Pedido #{{ result.order.id }}</p>
+      <strong class="total">Total: {{ money(result.order.totalInCents) }}</strong>
+      <div class="actions">
+        <a class="button button-primary" [routerLink]="['/admin/orders', result.order.id]"
+          >Ver pedido</a
+        >
+        <button class="button button-secondary" type="button" (click)="reset()">
+          Registrar otra venta
+        </button>
+      </div>
+    </section>
+  } @else {
+    @if (error()) {
+      <p class="feedback error" role="alert">{{ error() }}</p>
+    }
+    <form #saleForm="ngForm" (ngSubmit)="review()">
+      <fieldset [disabled]="submitting() || confirming()">
+        <section class="panel">
+          <h2>1. Cliente</h2>
+          <label
+            >Nombre *<input
+              name="customerName"
+              [(ngModel)]="customer.name"
+              required
+              autocomplete="name"
+          /></label>
+          <label
+            >Teléfono<input name="phone" [(ngModel)]="customer.phone" type="tel" autocomplete="tel"
+          /></label>
+          <label
+            >Email<input
+              name="email"
+              [(ngModel)]="customer.email"
+              type="email"
+              email
+              autocomplete="email"
+          /></label>
+        </section>
+        <section class="panel">
+          <h2>2. Productos</h2>
+          <label
+            >Buscar producto<input
+              name="search"
+              type="search"
+              placeholder="Nombre, modelo, color o talle…"
+              [ngModel]="search()"
+              (ngModelChange)="search.set($event)"
+          /></label>
+          @if (loading()) {
+            <p role="status">Cargando productos y stock…</p>
+          } @else if (catalogError()) {
+            <p role="alert">No pudimos actualizar los productos y el stock.</p>
+            <button type="button" class="button button-secondary" (click)="loadCatalog()">
+              Reintentar
+            </button>
+          } @else {
+            <div class="catalog">
+              @for (product of filteredProducts(); track product.id) {
+                <article class="product-card">
+                  <h3>{{ product.name }}</h3>
+                  @for (variant of product.variants; track variant.id) {
+                    @if (variant.active) {
+                      <div class="variant-row">
+                        <div>
+                          <strong>{{ variant.name }}</strong>
+                          <p>{{ variantLabel(variant) }}</p>
+                          <p>
+                            {{ money(variant.priceInCents) }} ·
+                            {{
+                              stock(variant.id)
+                                ? 'Stock disponible: ' + stock(variant.id)
+                                : 'Sin stock'
+                            }}
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          class="button button-secondary"
+                          [attr.aria-label]="
+                            'Agregar ' + product.name + ' ' + variantLabel(variant)
+                          "
+                          [disabled]="stock(variant.id) <= (quantities()[variant.id] || 0)"
+                          (click)="changeQuantity(variant.id, (quantities()[variant.id] || 0) + 1)"
+                        >
+                          Agregar
+                        </button>
+                      </div>
+                    }
+                  }
+                </article>
+              } @empty {
+                <p>No encontramos productos activos con esa búsqueda.</p>
+              }
+            </div>
+          }
+        </section>
+        <section class="panel">
+          <h2>Venta manual</h2>
+          @for (line of lines(); track line.variantId) {
+            <article class="cart-line">
+              <strong>{{ line.product?.name || 'Producto no disponible' }}</strong>
+              <p>{{ line.variant ? variantLabel(line.variant) : 'Variante no disponible' }}</p>
+              <p>Stock disponible: {{ line.stock }}</p>
+              @if (!line.valid) {
+                <p class="feedback error" role="alert">
+                  Revisá la cantidad o quitá este producto; ya no está disponible para esta venta.
+                </p>
+              }
+              <div class="quantity-row">
+                <button
+                  class="button button-secondary"
+                  type="button"
+                  [attr.aria-label]="'Disminuir cantidad de ' + line.variant?.name"
+                  [disabled]="loading()"
+                  (click)="changeQuantity(line.variantId, line.quantity - 1)"
+                >
+                  −
+                </button>
+                <span aria-live="polite">{{ line.quantity }}</span>
+                <button
+                  class="button button-secondary"
+                  type="button"
+                  [attr.aria-label]="'Aumentar cantidad de ' + line.variant?.name"
+                  [disabled]="loading() || line.quantity >= line.stock"
+                  (click)="changeQuantity(line.variantId, line.quantity + 1)"
+                >
+                  +
+                </button>
+                <button class="button button-quiet" type="button" (click)="remove(line.variantId)">
+                  Quitar
+                </button>
+              </div>
+              <strong>{{ money(line.total) }}</strong>
+            </article>
+          } @empty {
+            <p>Agregá al menos un producto.</p>
+          }
+          <strong class="total">Total: {{ money(total()) }}</strong>
+          <small class="muted"
+            >El total se confirma al registrar la venta con los precios vigentes.</small
+          >
+        </section>
+        <section class="panel">
+          <h2>3. Pago</h2>
+          <label
+            >Método de pago<select name="paymentMethod" [(ngModel)]="paymentMethod" required>
+              <option value="CASH">Efectivo</option>
+              <option value="TRANSFER">Transferencia</option>
+              <option value="OTHER">Otro</option>
+            </select></label
+          >
+          <label
+            >Nota (opcional)<textarea name="note" [(ngModel)]="note" rows="3"></textarea>
+          </label>
+          <label class="checkbox"
+            ><input
+              name="paymentReceived"
+              type="checkbox"
+              [(ngModel)]="paymentReceived"
+              required
+            />Confirmo que el pago ya fue recibido.</label
+          >
+          <button
+            class="button button-primary"
+            type="submit"
+            [disabled]="saleForm.invalid || !customerValid() || !valid() || !paymentReceived"
+          >
+            Revisar venta manual
+          </button>
+        </section>
+      </fieldset>
+    </form>
+  }
+</div>
+@if (confirming()) {
+  <div class="sale-backdrop">
+    <section
+      class="sale-dialog panel"
+      appAdminDialog
+      (dialogDismiss)="closeConfirmation()"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="confirm-title"
+      [attr.aria-busy]="submitting()"
+    >
+      <h2 id="confirm-title">Confirmar venta manual</h2>
+      <p>
+        Cliente: <strong>{{ customer.name }}</strong>
+      </p>
+      <ul>
+        @for (line of lines(); track line.variantId) {
+          <li>
+            {{ line.quantity }} × {{ line.product?.name }} —
+            {{ line.variant ? variantLabel(line.variant) : '' }}
+          </li>
+        }
+      </ul>
+      <strong class="total">Total: {{ money(total()) }}</strong>
+      <p>Método: {{ methodLabel() }}</p>
+      <p>Esta acción descontará stock y registrará el pedido como pagado.</p>
+      <div class="actions">
+        <button
+          class="button button-secondary"
+          type="button"
+          [disabled]="submitting()"
+          (click)="closeConfirmation()"
+        >
+          Cancelar
+        </button>
+        <button
+          class="button button-primary"
+          type="button"
+          [disabled]="submitting()"
+          (click)="submit()"
+        >
+          {{ submitting() ? 'Registrando…' : 'Confirmar venta' }}
+        </button>
+      </div>
+    </section>
+  </div>
+}

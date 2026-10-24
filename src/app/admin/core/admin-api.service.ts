@@ -34,6 +34,7 @@ import {
   AdminInventoryMovementsQuery,
   AdminInventoryMutationResponse,
   AdminOrderDetail,
+  CreateAdminManualOrderRequest,
   AdminOrderListItem,
   AdminOrderListQuery,
   AdminPaginatedResponse,
@@ -238,6 +239,10 @@ export class AdminApiService {
 
   order(orderId: string): Observable<AdminOrderDetail> {
     return this.http.get<AdminOrderDetail>(`${ADMIN_API_BASE_URL}/orders/${orderId}`);
+  }
+
+  createManualOrder(body: CreateAdminManualOrderRequest): Observable<AdminOrderDetail> {
+    return this.http.post<AdminOrderDetail>(`${ADMIN_API_BASE_URL}/orders/manual`, body);
   }
 
   updateFulfillment(

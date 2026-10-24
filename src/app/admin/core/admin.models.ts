@@ -207,6 +207,13 @@ export type AdminOrderStatus =
 export type AdminOrderPaymentSource = 'MERCADO_PAGO' | 'MANUAL';
 export type AdminOrderManualPaymentMethod = 'CASH' | 'TRANSFER' | 'OTHER';
 
+export interface CreateAdminManualOrderRequest {
+  customer: { name: string; phone: string | null; email: string | null };
+  paymentMethod: AdminOrderManualPaymentMethod;
+  items: Array<{ variantId: string; quantity: number }>;
+  note?: string;
+}
+
 export interface AdminOrderListItem {
   id: string;
   status: AdminOrderStatus;

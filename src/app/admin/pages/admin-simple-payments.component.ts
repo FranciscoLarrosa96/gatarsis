@@ -41,6 +41,7 @@ type KindFilter = '' | 'MERCH' | 'RAFFLE';
             <span class="badge status-{{ badgeClass(order) }}">{{ statusLabel(order) }}</span>
             @if (kindLabel(order)) { <span class="kind-badge">{{ kindLabel(order) }}</span> }
           </div>
+          @if (order.paymentSource === 'MANUAL') { <p class="kind-badge">VENTA MANUAL · {{ manualMethod(order) }}</p> }
           <h2>{{ order.customer?.name || 'Comprador sin datos' }}</h2>
           <p class="purchase-heading">Compró: {{ purchaseTitle(order) }}</p>
           @if (order.kind === 'MERCH') {
@@ -73,10 +74,10 @@ type KindFilter = '' | 'MERCH' | 'RAFFLE';
               <summary>Ver información técnica</summary>
               <dl>
                 <div><dt>Pedido</dt><dd>{{ info.order.id }}</dd></div>
-                @if (info.paymentPreference?.providerPreferenceId) {
+                @if (order.paymentSource !== 'MANUAL' && info.paymentPreference?.providerPreferenceId) {
                   <div><dt>Preferencia</dt><dd>{{ info.paymentPreference?.providerPreferenceId }}</dd></div>
                 }
-                @for (payment of info.payments; track payment.id) {
+                @for (payment of order.paymentSource === 'MANUAL' ? [] : info.payments; track payment.id) {
                   <div><dt>Pago de Mercado Pago</dt><dd>{{ payment.providerPaymentId }}</dd></div>
                   <div><dt>Procesamiento</dt><dd>{{ payment.processingStatus }}</dd></div>
                 }
@@ -128,7 +129,8 @@ type KindFilter = '' | 'MERCH' | 'RAFFLE';
                   <span class="badge status-{{ badgeClass(order) }}">{{ statusLabel(order) }}</span>
                   @if (kindLabel(order)) { <span class="kind-badge">{{ kindLabel(order) }}</span> }
                 </div>
-                <h2>{{ order.customer?.name || 'Comprador sin datos' }}</h2>
+                @if (order.paymentSource === 'MANUAL') { <p class="kind-badge">VENTA MANUAL · {{ manualMethod(order) }}</p> }
+          <h2>{{ order.customer?.name || 'Comprador sin datos' }}</h2>
                 <p class="purchase-heading">{{ purchaseTitle(order) }}</p>
                 @if (order.kind === 'MERCH' || (order.kind !== 'RAFFLE' && order.items?.length)) {
                   @if (order.items?.length) {
@@ -169,7 +171,7 @@ type KindFilter = '' | 'MERCH' | 'RAFFLE';
                   @for (order of filteredOrders(); track order.id) {
                     <tr>
                       <td>{{ date(order.paidAt || order.createdAt) }}</td><td>{{ order.customer?.name || 'Comprador sin datos' }}</td>
-                      <td>{{ kindLabel(order) || 'Compra' }}</td><td>{{ purchaseTitle(order) }}</td>
+                      <td>{{ kindLabel(order) || 'Compra' }} @if (order.paymentSource === 'MANUAL') { <small>VENTA MANUAL · {{ manualMethod(order) }}</small> }</td><td>{{ purchaseTitle(order) }}</td>
                       <td><span class="badge status-{{ badgeClass(order) }}">{{ statusLabel(order) }}</span></td>
                       <td class="numeric">{{ money(order.totalInCents) }}</td>
                       <td><button class="button button-secondary" type="button" (click)="showDetail(order)">Ver</button></td>
@@ -257,6 +259,9 @@ export class AdminSimplePaymentsComponent implements OnInit {
     if (order.kind === 'MERCH') return 'TIENDA';
     if (order.kind === 'RAFFLE') return 'RIFA';
     return '';
+  }
+  manualMethod(order: AdminOrderListItem): string {
+    return order.manualPaymentMethod === 'CASH' ? 'Efectivo' : order.manualPaymentMethod === 'TRANSFER' ? 'Transferencia' : 'Otro';
   }
   purchaseTitle(order: AdminOrderListItem): string {
     if (order.kind === 'RAFFLE') return order.raffle?.title || 'Rifa solidaria';

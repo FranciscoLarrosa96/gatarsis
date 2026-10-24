@@ -9,6 +9,10 @@ import { AdminOrdersComponent } from './admin-orders.component';
 const orderId = 'd7f5ff29-2c18-4e3b-b635-630eda25b5d8';
 
 describe('AdminOrdersComponent fulfillment', () => {
+  it('provides the manual sale entry point from orders', () => {
+    setup(detail());
+    expect(fixture.nativeElement.querySelector('a[href="/admin/orders/nueva-venta-manual"]').textContent).toContain('Registrar venta manual');
+  });
   let fixture: ComponentFixture<AdminOrdersComponent>;
   let component: AdminOrdersComponent;
   let http: HttpTestingController;

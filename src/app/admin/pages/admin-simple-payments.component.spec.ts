@@ -39,6 +39,20 @@ describe('AdminSimplePaymentsComponent', () => {
     expect(fixture.nativeElement.textContent).toContain('María Elena Piloni');
   });
 
+  it('identifies manual sales in cards, table and detail without showing Mercado Pago identifiers', () => {
+    const manual: AdminOrderListItem = { ...storeOrder(), paymentSource: 'MANUAL', manualPaymentMethod: 'TRANSFER' };
+    http.expectOne(r => r.url.endsWith('/orders')).flush({ items: [manual], pagination: pagination() });
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.mobile-payment-list').textContent).toContain('VENTA MANUAL');
+    expect(fixture.nativeElement.querySelector('.desktop-payment-table').textContent).toContain('Transferencia');
+    component.showDetail(manual);
+    http.expectOne(ADMIN_API_BASE_URL + '/orders/store').flush(orderDetail());
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('VENTA MANUAL');
+    expect(fixture.nativeElement.textContent).not.toContain('provider-payment-id');
+    expect(fixture.nativeElement.textContent).not.toContain('Pago de Mercado Pago');
+  });
+
   it('shows store and raffle distinctly without inferring a raffle for an unknown order', () => {
     const unknown = { ...storeOrder(), id: 'unknown', kind: null, raffle: null, items: [] };
     http.expectOne((request) => request.url.endsWith('/orders')).flush({

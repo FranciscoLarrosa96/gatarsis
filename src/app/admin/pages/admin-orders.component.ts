@@ -1,6 +1,6 @@
 import { Component, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { finalize } from 'rxjs';
 import { AdminDatePickerDirective } from '../shared/admin-date-picker.directive';
 import { AdminCopyIdComponent } from '../shared/admin-copy-id.component';
@@ -11,7 +11,7 @@ import { AdminOrderDetail, AdminOrderListItem, AdminOrderStatus } from '../core/
 
 @Component({
   standalone: true,
-  imports: [FormsModule, AdminDatePickerDirective, AdminCopyIdComponent],
+  imports: [FormsModule, RouterLink, AdminDatePickerDirective, AdminCopyIdComponent],
   template: `
     <div class="page order-page">
       <header class="page-heading">
@@ -22,6 +22,7 @@ import { AdminOrderDetail, AdminOrderListItem, AdminOrderStatus } from '../core/
             Seguimiento de reservas, pagos y estados del flujo de compra.
           </p>
         </div>
+        <a class="button button-primary" routerLink="/admin/orders/nueva-venta-manual">Registrar venta manual</a>
         @if (detail()) {
           <button class="button button-secondary" type="button" (click)="backToList()">
             Volver a pedidos
@@ -113,7 +114,7 @@ import { AdminOrderDetail, AdminOrderListItem, AdminOrderStatus } from '../core/
                 <p>Preferencia y pagos asociados al pedido.</p>
               </div>
             </div>
-            @if (orderDetail.paymentPreference) {
+            @if (orderDetail.order.paymentSource !== 'MANUAL' && orderDetail.paymentPreference) {
               <div class="compact-fact">
                 <span>Preference ID</span>
                 <code>{{
@@ -137,7 +138,7 @@ import { AdminOrderDetail, AdminOrderListItem, AdminOrderStatus } from '../core/
               }
             }
             <div class="item-list">
-              @for (payment of orderDetail.payments; track payment.id) {
+              @for (payment of orderDetail.order.paymentSource === 'MANUAL' ? [] : orderDetail.payments; track payment.id) {
                 <div class="item-row">
                   <div>
                     <app-admin-copy-id
@@ -155,7 +156,9 @@ import { AdminOrderDetail, AdminOrderListItem, AdminOrderStatus } from '../core/
                   {{
                     orderDetail.order.status === 'EXPIRED' && !orderDetail.order.paidAt
                       ? 'Reserva vencida sin pago registrado.'
-                      : 'Sin pagos asociados informados.'
+                      : orderDetail.order.paymentSource === 'MANUAL'
+                        ? 'Pago manual registrado en el pedido.'
+                        : 'Sin pagos asociados informados.'
                   }}
                 </p>
               }
@@ -316,6 +319,10 @@ import { AdminOrderDetail, AdminOrderListItem, AdminOrderStatus } from '../core/
                       <button class="row-link" type="button" (click)="show(order.id)">
                         <code [title]="order.id">#{{ short(order.id) }}</code>
                       </button>
+                      @if (order.customer?.name) { <p>{{ order.customer?.name }}</p> }
+                      @for (item of order.items || []; track $index) {
+                        <small>{{ item.quantity }} × {{ item.label }}</small>
+                      }
                     </td>
                     <td>
                       <span class="badge status-{{ order.status.toLowerCase() }}">
